@@ -1,7 +1,0 @@
-£¨1£©The main program is PhiPsi.f.
-
-£¨2£©The source codes has been tested in windows system.
-
-£¨3£©PhiPsi.prj is the Fortran project file of a Fortran development environment (or IDE) called Simply Fortran, you can directly opened this file if Simply Fortran has been installed.
-
-£¨4£©In case of any problem, or if you need the latest version of source codes, please contact me via email: shifang@hyit.edu.cn.
