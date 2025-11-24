@@ -1,2 +1,10 @@
-git.md
-git.html
+/git.md
+/git.html
+/python_script_1_clean_files.py
+/python_script_2_copy_files_from_phipsi_project.py
+/python_script_3_translate_comments.py
+/build/
+/modules/
+/CMakeFiles/
+*.bak/
+**/*.bak/
