@@ -1,0 +1,57 @@
+% This is a PhiPsi kpp file example written by Shi Fang.
+% Pay attention to *Work_Directory, some modification might be necessary!
+
+% Working directory.
+*Work_Directory
+/mnt/x/PhiPsi_Project/GitHub_Prep/examples/2d_xfem
+
+% Filename of input files.
+*Filename
+xfem_2d
+
+% Number of initial cracks.
+*num_Crack
+1
+
+% Analysis type (Quasi-static).
+*Key_Analysis_Type
+1
+
+% Plane strain.
+*Key_Type_2D
+2
+
+% Calculate stress intensity factors using the interaction integral method.
+*Key_SIFs_Method
+2
+
+% Linear system solver.
+*Key_SLOE
+% 1  % Inverse solver
+% 2  % Gaussian elimination solver
+% 5  % LAPACK solver
+%6  % MUMPS solver
+9  % SuperLU
+% 11 % PCG-EBE
+
+% Number of propagation steps.
+*Num_Substeps
+1
+
+% Material(1-E,2-v,3-density,4-thick,5-St,6-KIc,7-Sc,8-20(blank))
+*Material_Para_1   
+20.0e9,0.2,2000.0,1.0,1.0e6,1.0e6,100.0e6,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+
+% Coordinates of initial cracks.
+*CRACK_1
+0.00615,0.013,0.01485,0.018
+
+% Play sound (using python2.7).
+*Key_Play_Sounds
+1
+
+% Close the DOS Window when the calculation is finished.
+*Key_Close_Window
+1
+
+

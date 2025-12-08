@@ -1,0 +1,154 @@
+finish
+/clear
+/FILNAME,3d_hf_toughness_dominated
+/Titie,3d_hf_toughness_dominated
+/PREP7
+/DSCALE,ALL,1.0
+/eshape,1
+/PNUM,KP,1
+/PNUM,LINE,1
+/PNUM,AREA,1
+/PNUM,VOLU,0
+/PNUM,NODE,0
+/PNUM,TABN,0
+/PNUM,SVAL,0
+/PNUM,DOMA,0
+/NUMBER,0
+!---------------------
+! L  =  100  !长,x
+! W  =  100  !宽,y
+! H  =  100  !高,z
+
+! L_of_refined = 25   !加密区域的宽度
+! H_of_refined = 1   !加密区域的高度
+! size_mesh          = 15.0
+! ! size_mesh_of_L_refined  = 0.33
+! num_of_mesh_of_L_refined  = 70
+! num_of_mesh_of_refined_mesh_H = 3
+
+! !
+! ! L_of_refined = 25   !加密区域的宽度
+! ! H_of_refined = 6   !加密区域的高度
+! ! size_mesh          = 8.0
+! ! size_mesh_of_L_refined  = 0.35
+! ! num_of_mesh_of_refined_mesh_H = 7
+! !---------------------
+! ! L  =  150  !长,x
+! ! W  =  150  !宽,y
+! ! H  =  150  !高,z
+! ! !
+! ! L_of_refined = 25   !加密区域的宽度
+! ! H_of_refined = 8   !加密区域的高度
+! ! size_mesh          = 8.0
+! ! size_mesh_of_L_refined  = 0.55
+! ! num_of_mesh_of_refined_mesh_H = 7
+!---------------------
+L  =  200  !长,x
+W  =  200  !宽,y
+H  =  200  !高,z
+
+L_of_refined = 25   !加密区域的宽度
+H_of_refined = 3   !加密区域的高度
+size_mesh          = 30.0
+! size_mesh_of_L_refined  = 0.33
+num_of_mesh_of_L_refined  = 50
+num_of_mesh_of_refined_mesh_H = 3
+
+!---------------------
+et,1,185
+!---------------------
+/REPLO
+/VIEW,1,,-1
+/ANG,1
+/REP,FAST
+!---------------------
+mp,ex,1,20e9
+mp,nuxy,1,0.3
+!---------------------
+K,1,0,0,0
+k,2,L,0,0
+K,3,L,W,0
+K,4,0,W,0
+K,5,0,0,H
+k,6,L,0,H
+K,7,L,W,H
+K,8,0,W,H
+V,1,2,3,4,5,6,7,8
+
+wpof,,,H/2 - H_of_refined/2
+VSBW,       1   
+wpof,,,H_of_refined
+VSBW,       3
+wpro,,,90.000000
+wpof,,,L/2 - L_of_refined/2
+VSBW,all
+wpof,,,L_of_refined
+VSBW,all
+wpro,,90.000000
+wpof,,,-(W/2 - L_of_refined/2)
+VSBW,all
+wpof,,,-L_of_refined
+VSBW,all
+!---------------------视角及显示
+/REPLO
+/VIEW,  1,  0.306110853806    , -0.802050055528    ,  0.512846813006
+/ANG,   1,  -34.0367734235
+/REPLO
+/DIST,1,1.08222638492,1
+/REP,FAST
+/PNUM,LINE,0
+/PNUM,AREA,1
+/PNUM,VOLU,0
+APLOT
+!---------------------
+allsel
+! lesize,all,1,,,-1/10
+! lesize,all,size_mesh
+lsel,s,length,,H_of_refined
+lesize,all,,,num_of_mesh_of_refined_mesh_H
+
+allsel
+lsel,s,length,,L_of_refined
+! lesize,all,size_mesh_of_L_refined
+lesize,all,,,num_of_mesh_of_L_refined
+
+allsel
+lesize,all,size_mesh
+allsel
+!---------------------
+MSHAPE,0,3D
+MSHKEY,1
+VMESH,all
+
+WPCSYS,-1,0 
+CSYS,0  
+WPAVE,0,0,0 
+CSYS,0  
+!----------约束-----------
+!约束全部面
+! allsel
+! asel,all
+! NSLA,S,1
+! D,all,all
+allsel
+NSEL,S,LOC,X,0  
+NSEL,a,LOC,X,L
+d,all,ux
+
+allsel
+NSEL,S,LOC,y,0  
+NSEL,a,LOC,y,W
+d,all,uy
+
+allsel
+NSEL,S,LOC,Z,0  
+NSEL,a,LOC,Z,H
+d,all,uz
+
+allsel
+!---------------------
+Ansys2PhiPsi_3D,'3d_hf_toughness_dominated'
+! /solu
+! solve
+! /post1
+! PLNSOL, S,EQV, 0,1.0

@@ -1,0 +1,84 @@
+% Keywords file of PhiPsi.
+% Written by Fang Shi, USTC.
+% Date: october 28,2016
+% Website: phipsi.top
+
+% Working directory.
+*Work_Directory
+/mnt/x/PhiPsi_Project/GitHub_Prep/examples/3d_xfem_block_tension
+%/Users/fangshi/PhiPsi_Project/GitHub_Prep/examples/3d_xfem_block_tension
+
+% Finename of input files.
+*Filename
+3D_block_tension
+
+% Number of CPU cores.
+*Key_Num_Process
+4
+
+% 3-D problem.
+*Key_Dimension
+3
+
+% Number of initial cracks.
+*num_Crack
+1
+
+% Analysis type (Quasi-static).
+*Key_Analysis_Type
+1
+
+% Linear system solver.
+*Key_SLOE
+% 1  % Inverse solver
+% 2  % Gaussian elimination solver
+% 5  % LAPACK solver
+6  % MUMPS solver
+%9  % SuperLU
+% 11 % PCG-EBE
+
+*Key_K_Sparse
+1
+
+% Number of propagation step.
+*Num_Substeps
+1
+
+% Crack propagation criterion (weighted average maximum principal tensile stress criterion).
+*CFCP
+2
+
+% Crack propagation factor.
+*Factor_Propagation
+0.85
+
+% Material(1-E,2-v,3-density,4-thick,5-St,6-KIc,7-Sc,8-20(blank))
+*Material_Para_1   
+20.0e9,0.3,2000.0,1.0,0.1e6,1.0e6,100.0e6,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+
+% Define the coordinates of each initial cracks (plane in 3D composed of four points) for 3D problem
+% (input format: x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4)
+*Crack3D_Coor_1
+6.5,6.5,11.0,10.5,6.5,11.0,10.5,10.5,6.0,6.5,10.5,6.0   
+
+% Allow crack number 1 to propagate.
+*Cracks_Allow_Propa
+1
+
+% Save vtk file for post-process.
+*Key_Save_vtk
+1
+
+% Get crack and element permeability.
+*Key_Get_Permeability
+1
+
+% Close the Window when the calculation is finished (default).
+*Key_Close_Window
+1
+
+
+
+
+
+

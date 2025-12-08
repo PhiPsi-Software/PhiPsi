@@ -1,0 +1,64 @@
+finish
+/clear
+/FILNAME,hydraulic_fracturing_2d
+/Titie,hydraulic_fracturing_2d
+/PREP7
+/DSCALE,ALL,1.0
+/eshape,1
+!---------------------
+H  =  25
+W  =  25
+size_mesh = 1
+Pressure  = 1e-1
+F_W = W*Pressure/(W/size_mesh)
+F_H = H*Pressure/(H/size_mesh)
+!---------------------
+et,1,42
+!---------------------
+KEYOPT,1,3,2    
+KEYOPT,1,6,0
+keyopt,1,10,0
+!---------------------
+mp,ex,1,30e9
+mp,nuxy,1,0.2
+!---------------------
+K,1,0,0
+k,2,W,0
+K,3,W,H,
+K,4,0,H
+a,1,2,3,4
+!---------------------
+/AUTO,1 
+/REP,FAST   
+!---------------------
+allsel
+lesize,all,size_mesh
+!---------------------
+MSHAPE,0,2D 
+MSHKEY,0
+AMESH,all
+!---------------------
+allsel
+KSEL,S, , ,       1 
+NSLK,R  
+D,all,uy
+allsel
+lsel,s,,,4,
+NSLl,R,1
+D,all,ux, ,
+!---------------------
+allsel
+lsel,s,,,1,
+NSLL,R,1  
+F,all,FY,F_W 
+allsel
+lsel,s,,,3,
+NSLL,R,1  
+F,all,FY,-F_W 
+allsel
+lsel,s,,,2,
+NSLL,R,1  
+F,all,FX,-F_H 
+allsel
+!---------------------
+Ansys2PhiPsi_2D.mac,'hydraulic_fracturing_2d'

@@ -1,0 +1,86 @@
+finish                                                                                                                                                                                                  
+/clear                                                                                                                                                                                                  
+/FILNAME,simple-case-data-matlab                                                                                                                                                                        
+/Titie,SHI Fang,CUMT                                                                                                                                                                                    
+/PREP7                                                                                                                                                                                                  
+/DSCALE,ALL,1.0                                                                                                                                                                                         
+/eshape,1                                                                                                                                                                                               
+!---------------------                                                                                                                                                                                  
+L  =  17  !长,x                                                                                                                                                                                        
+W  =  17  !宽,y                                                                                                                                                                                        
+H  =  17  !高,z                                                                                                                                                                                        
+size_mesh = 1                                                                                                                                                                                           
+F = 1e7                                                                                                                                                                                                 
+!---------------------                                                                                                                                                                                  
+et,1,185                                                                                                                                                                                                
+!---------------------                                                                                                                                                                                  
+/REPLO                                                                                                                                                                                                  
+/VIEW,1,,-1                                                                                                                                                                                             
+/ANG,1                                                                                                                                                                                                  
+/REP,FAST                                                                                                                                                                                               
+!---------------------                                                                                                                                                                                  
+mp,ex,1,30e9                                                                                                                                                                                            
+mp,nuxy,1,0.2                                                                                                                                                                                           
+!---------------------                                                                                                                                                                                  
+K,1,0,0,0                                                                                                                                                                                               
+k,2,L,0,0                                                                                                                                                                                               
+K,3,L,W,0                                                                                                                                                                                               
+K,4,0,W,0                                                                                                                                                                                               
+K,5,0,0,H                                                                                                                                                                                               
+k,6,L,0,H                                                                                                                                                                                               
+K,7,L,W,H                                                                                                                                                                                               
+K,8,0,W,H                                                                                                                                                                                               
+V,1,2,3,4,5,6,7,8                                                                                                                                                                                       
+!---------------------视角及显示                                                                                                                                                                   
+/REPLO                                                                                                                                                                                                  
+/VIEW,  1,  0.306110853806    , -0.802050055528    ,  0.512846813006                                                                                                                                    
+/ANG,   1,  -34.0367734235                                                                                                                                                                              
+/REPLO                                                                                                                                                                                                  
+/DIST,1,1.08222638492,1                                                                                                                                                                                 
+/REP,FAST                                                                                                                                                                                               
+/PNUM,LINE,0                                                                                                                                                                                            
+/PNUM,AREA,1                                                                                                                                                                                            
+/PNUM,VOLU,0                                                                                                                                                                                            
+APLOT                                                                                                                                                                                                   
+!---------------------                                                                                                                                                                                  
+allsel                                                                                                                                                                                                  
+lesize,all,size_mesh                                                                                                                                                                                    
+!---------------------                                                                                                                                                                                  
+MSHAPE,0,3D                                                                                                                                                                                             
+MSHKEY,1                                                                                                                                                                                                
+VMESH,all                                                                                                                                                                                               
+!---------------------                                                                                                                                                                                  
+allsel                                                                                                                                                                                                  
+NSEL,S,LOC,Z,0                                                                                                                                                                                          
+D,all,all  !约束左端面全部自由度                                                                                                                                                              
+! allsel                                                                                                                                                                                                
+! lsel,s,,,2,4,2                                                                                                                                                                                        
+! NSLl,R,1                                                                                                                                                                                              
+! D,all,ux, ,                                                                                                                                                                                           
+!---------------------                                                                                                                                                                                  
+allsel                                                                                                                                                                                                  
+NSEL,S,LOC,Z,H                                                                                                                                                                                          
+F,all,FZ,F                                                                                                                                                                                              
+allsel                                                                                                                                                                                                  
+NSEL,S,LOC,Z,H                                                                                                                                                                                          
+NSEL,R,LOC,X,0                                                                                                                                                                                          
+F,all,FZ,F/2                                                                                                                                                                                            
+allsel                                                                                                                                                                                                  
+NSEL,S,LOC,Z,H                                                                                                                                                                                          
+NSEL,R,LOC,X,L                                                                                                                                                                                          
+F,all,FZ,F/2                                                                                                                                                                                            
+allsel                                                                                                                                                                                                  
+NSEL,S,LOC,Z,H                                                                                                                                                                                          
+NSEL,R,LOC,Y,0                                                                                                                                                                                          
+F,all,FZ,F/2                                                                                                                                                                                            
+allsel                                                                                                                                                                                                  
+NSEL,S,LOC,Z,H                                                                                                                                                                                          
+NSEL,R,LOC,Y,W                                                                                                                                                                                          
+F,all,FZ,F/2                                                                                                                                                                                            
+allsel                                                                                                                                                                                                  
+ksel,s,,,5,8,1                                                                                                                                                                                          
+NSLK,R                                                                                                                                                                                                  
+F,all,FZ,F/4                                                                                                                                                                                            
+allsel                                                                                                                                                                                                  
+!---------------------                                                                                                                                                                                  
+Ansys2PhiPsi_3D,'3D_block_tension'                                                                                                                                                                  

@@ -1,0 +1,95 @@
+% Keywords file of PhiPsi.
+% Written by Fang Shi.
+% Data: 2023-07-29.
+% Website: phipsi.top
+
+% Working directory.
+*Work_Directory
+/mnt/x/PhiPsi_Project/GitHub_Prep/examples/2d_xfem_hydraulic_fracturing
+%X:\PhiPsi_Project\GitHub_Prep\examples\2d_xfem_hydraulic_fracturing
+
+% Finename of input files.
+*Filename
+2d_xfem_hydraulic_fracturing
+
+*Key_Dimension
+2
+
+% Number of initial cracks.
+*num_Crack
+1
+
+% Analysis type (Hydraulic fracturing).
+*Key_Analysis_Type
+3
+
+% Plane strain.
+*Key_Type_2D
+2
+
+% No contact checking.
+*Key_Contact
+0
+
+% Linear system solver.
+*Key_SLOE
+% 1  % Inverse solver
+% 2  % Gaussian elimination solver
+% 5  % LAPACK solver
+%6  % MUMPS solver
+9  % SuperLU
+% 11 % PCG-EBE
+
+% Factor of propagation length (propagation length = factor * the average element size)
+*Factor_Propagation
+1.0
+
+% Crack propagation criterion.
+*CFCP
+2
+
+% Material (1-E,2-v,3-density,4-thick,5-St,6-KIc,7-Sc,8-20(blank))
+*Material_Para_1   
+30.0e9,0.2,2000.0,1.0,0.4e6,1.0e6,100.0e6,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+
+% Number of steps of the hydraulic fracturing simulation. 
+*Num_Frac
+15      
+
+% Symmetric model.
+*Key_Symm_HF
+1
+
+% The viscosity of fracturing fluid.
+*Viscosity
+0.1
+
+% Define the time instants of the data curve of injection rate of fracturing fluid (20 time instants at most).
+*Inject_Q_Time
+0,10000       
+
+% Define the values of injection rate of the data curve of injection rate of fracturing fluid (20 at most).
+*Inject_Q_Val
+0.001,0.001
+
+% Define the coordinates of each initial cracks (x_of_P1, y_of_P1, x_of_P2, y_of_P2, x_of_P3, y_of_P3 ...).
+*CRACK_1
+-0.1,12.5,2.5,12.5
+
+% Allow crack 1 to propagate.
+*Cracks_Allow_Propa
+1
+
+% Initial states of each crack (= 0, free crack without fluid;= 1, hydraulic fluid-driven crack).
+*Cracks_HF_State
+1
+
+% Play sound (no).
+*Key_Play_Sounds
+0
+
+% Close the DOS Window when the calculation is finished.
+*Key_Close_Window
+1
+
+

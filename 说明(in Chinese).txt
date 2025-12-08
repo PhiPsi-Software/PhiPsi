@@ -1,4 +1,0 @@
-（1）主程序为PhiPsi.f.
-（2）源代码在Windows系统下测试通过.
-（3）PhiPsi.prj为借助Simply Fortran编译器生成的Fortran项目文件，若系统中安装了Simply Fortran编译器则可直接打开该文件，并编译本项目提供的全部源码.
-（4）如有问题，或需要最新版完整源代码(含详细的中文代码注释)，联系作者，师访，邮箱: shifang@hyit.edu.cn，qq: 1549221758.

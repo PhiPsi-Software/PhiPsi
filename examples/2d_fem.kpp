@@ -1,0 +1,50 @@
+% Pay attention to *Work_Directory, some modification might be necessary!
+% 
+% 2023-07-29.
+%
+
+% Working directory.
+*Work_Directory
+/mnt/x/PhiPsi_Project/GitHub_Prep/examples/2d_fem
+
+% Filename of input files.
+*Filename
+fem_2d
+
+% Analysis type (Quasi-static).
+*Key_Analysis_Type
+1
+
+% Plane stress.
+*Key_Type_2D
+1
+
+% Linear system solver.
+*Key_SLOE
+% 1  % Inverse solver
+% 2  % Gaussian elimination solver
+% 5  % LAPACK solver
+6  % MUMPS solver
+%9  % SuperLU
+% 11 % PCG-EBE
+
+
+% Number of propagation steps.
+*Num_Substeps
+1
+
+% Material(1-E,2-v,3-density,4-thick,5-St,6-KIc,7-Sc,8-20(blank))
+*Material_Para_1
+70.0e9,0.3,2700.0,1.0,1.0e6,1.0e6,100.0e6,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+
+% Play sound (no).
+*Key_Play_Sounds
+0
+
+% Close the DOS Window when the calculation is finished.
+*Key_Close_Window
+1
+
+
+
+

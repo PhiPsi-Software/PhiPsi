@@ -1,0 +1,256 @@
+% Keywords file of PhiPsi.
+% Written by Fang Shi, HYIT.
+% Data: 2022-11-09
+% 3D HF verification.
+% Website: http://phipsi.top/
+
+% Working directory.
+*Work_Directory
+/mnt/x/PhiPsi_Project/GitHub_Prep/examples/3d_xfem_hydraulic_fracturing
+%/Users/fangshi/PhiPsi_Project/GitHub_Prep/examples/3d_xfem_hydraulic_fracturing
+
+% Finename of input files.
+*Filename
+3d_xfem_hydraulic_fracturing
+
+% 3-D problem.
+*Key_Dimension
+3
+
+% Number of CPU cores.
+*Key_Num_Process
+4
+
+% Number of initial cracks.
+*num_Crack
+0
+
+% Analysis type (Hydraulic fracturing simulation with slick water).
+*Key_Analysis_Type
+4
+
+% Key_3D_HF_Time_Step_Method
+*Key_3D_HF_Time_Step_Method
+1 % Newton-Raphson
+% 2 % Bisection
+
+% Key_3D_HF_SlipWater_fk_Type.
+*Key_3D_HF_SlipWater_fk_Type
+% 1 %Max_KI_eq_3D
+% 2 %Ave_KI_eq_3D
+3 %Min_KI_eq_3D
+
+% Linear system solver.
+*Key_SLOE
+% 1  % Inverse solver
+% 2  % Gaussian elimination solver
+% 5  % LAPACK solver
+6  % MUMPS solver
+%9  % SuperLU
+% 11 % PCG-EBE
+
+*Key_K_Sparse
+1
+
+% EBE-PCG Precondition on.
+*Key_EBE_Precondition
+1
+
+% Crack propagation criterion (Schollmann criterion).
+*CFCP
+3
+
+% =======================================
+% Method to calculate crack aperture.
+*Key_Crack_Aperture_Method
+% 1  % Equation (default)
+2  % Offset
+
+% DIM method to calculate SIFs.
+*Key_SIFs_Method
+1  %DIM
+
+% Number of points to calculate SIFs using DIM method.
+*Key_SIFs_DIM_Points
+2 % default
+
+% Model assumption, 1: Plane stress; 2: plane strain.
+*Key_SIFs_DIM_Method
+% 1 % default,Plane stress
+2 % Plane strain
+
+*SIFs_DIM_3D_Offset_Delta_Factor
+% 0.5 % default
+% 0.25 
+0.2
+
+*SIFs_DIM_3D_r_1_Factor
+% 0.2 % default
+1.0
+
+*SIFs_DIM_3D_r_2_Factor
+% 0.5 % default
+2.5
+
+*SIFs_DIM_3D_r_k_Factor
+2.0
+
+% Print SIFs to screen.
+*Key_Print_SIFs_to_Screen
+1
+% =======================================
+
+% Contact of crack surface.
+*Key_Contact
+0
+*Max_Contact_Iter
+3
+
+% Crack propagation behavior: propagate for posotive K.
+*Key_CFCP_3_Type
+2
+
+% In-plane growth (on).
+*Key_InPlane_Growth
+1
+
+% Denoise Vertex Value (on).
+*Key_Denoise_Vertex_Value
+1
+% Smooth Vertex Value (on).
+*Key_Smooth_Vertex_Value
+1
+*Smooth_Vertex_n
+2
+*Key_Smooth_Vertex_Value2
+1
+*Smooth_Vertex_n2
+2
+% Smooth Growth factor: on.
+*Key_Smooth_GF_Value
+1
+*Smooth_GF_n
+2
+*Key_Smooth_GF_Value2
+1
+*Smooth_GF_n2
+2
+% Smooth crack front.
+*Key_Smooth_Front
+2 %Circle
+% 3 %Ellipse
+% 6 %Tubin scheme
+
+% Crack propagation factor.
+% *Factor_Propagation
+% 1.65
+% 1.0
+% 0.5
+% 2.0
+
+% Crack propagation length.
+*Propagation_Length
+% 0.35714285714285715
+% 0.7142857142857143
+0.5
+
+*KEY_TIP_FLUID_ELEMENT_3D
+1
+
+% Material(1-E,2-v,3-density,4-thick,5-St,6-KIc,7-Sc,8-20(blank))
+*Material_Para_1
+17.0e9,0.25,2828.0,1.0,20.0e6,2.0e6,100.0e6,3.0e-6,0,400.0,400.0,100.0e6,20.0e9,0.0,2.5e3,0.0,0.0,0.0,0.0,0.0,0.0
+
+*Key_CS_Natural_Crack
+0
+% Tip enrichment elements.
+*Key_TipEnrich
+1
+% Adjust initial cracks.
+*Key_Check_and_Adjust_Cracks_3D
+0
+% Data format (ASCII).
+*Key_Data_Format
+1
+% Do not allow crack to grows outside the model.
+*Key_Stop_Outside_Crack
+1
+
+% -------------------
+% Insitu stress.
+% -------------------
+% *Key_InSitu_Strategy
+% 4
+% *InSitu_S1_3D
+% 0.0e6
+% *InSitu_S2_3D
+% 0.0e6
+% *InSitu_S3_3D
+% 0.0e6
+% *InSitu_S1_nv_3D
+% 1.0,0.0,0.0
+% *InSitu_S2_nv_3D
+% 0.0,1.0,0.0
+% *InSitu_S3_nv_3D
+% 0.0,0.0,1.0    
+
+% -------------------------------
+% Wellbore related parameters.
+% -------------------------------
+% Staged fracturing (on).
+*Key_HF_Multistage_3D    
+1                      
+% Number of wellbores.
+*num_Wellbore            
+1    
+% Number of points to define wellbore 1.           
+*num_Points_WB_1       
+2    
+% 2 points to define the wellbore 1.                 
+*Wellbore_Coors_1_1
+% 50.0,50.0,0.1
+100.0,100.0,0.1
+*Wellbore_Coors_1_2
+% 50.0,50.0,99.9
+100.0,100.0,199.9
+*WELLBORES_START_POINT_1
+% 50.0,50.0,40.0
+100.0,100.0,90.0
+*WELLBORES_END_POINT_1
+% 50.0,50.0,60.0
+100.0,100.0,110.0
+% Number of stages per wellbore.
+*num_Stages_Wellbores_1
+1      
+% Number of clusters of stage 1 of wellbore 1.
+*NUM_CRS_STAGES_WELLBORES_1_1              
+1
+% Shape of initial hydraulic fractures(1: rectangle; 2: circle; 3: polygon).        
+*Key_Gen_Ini_Crack_Wellbores
+2
+% Size of initial hydraulic fractures.    
+*Size_Ini_Crack_Wellbores
+3.0 % Initial radius = 1.5
+% 6.0   % Initial radius = 3.0
+% Injection rate of stage 1 of wellbore 1 (m^3/s).
+*INJECTION_Q_STAGES_WELLBORES_1_1
+0.01
+% Injection time of stage 1 of wellbore 1 (s).
+*INJECTION_T_STAGES_WELLBORES_1_1
+20.0
+
+% ------------------------
+% For post-processing.
+% ------------------------
+% Save vtk file for post-process.
+*Key_Save_vtk
+1
+% Simple post.
+*Key_Simple_Post
+0
+
+
+
+
+
+
