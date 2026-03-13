@@ -45,12 +45,12 @@
 % 1  % Inverse solver
 % 2  % Gaussian elimination solver
 % 5  % LAPACK solver
-6  % MUMPS solver
+%6  % MUMPS solver
 %9  % SuperLU
-% 11 % PCG-EBE
+11 % PCG-EBE
 
 *Key_K_Sparse
-1
+0
 
 % EBE-PCG Precondition on.
 *Key_EBE_Precondition
@@ -248,6 +248,10 @@
 % Simple post.
 *Key_Simple_Post
 0
+
+
+
+
 
 
 

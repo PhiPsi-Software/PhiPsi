@@ -662,7 +662,6 @@ do i_WB = 1,num_Wellbore
               write(*,3002) sum(globalK)    
           elseif(Key_K_Sparse==1)then
 #ifdef gfortran
-#ifdef notcbfortran
 !#ifndef github
               print *,'    Get max NNZ before assembling K......'
               call Assemble_Stiffness_Matrix_SPARS_XFEM_3D_Get_MaxNNZ(isub,&
@@ -685,7 +684,6 @@ do i_WB = 1,num_Wellbore
                    K_CSR_NNZ_Max,K_CSR_NNZ,&
                    Total_FD,Total_Num_G_P)
 !#endif
-#endif
 #endif
           endif
 
@@ -725,7 +723,6 @@ do i_WB = 1,num_Wellbore
                     freeDOF(1:num_FreeD)),F(freeDOF(1:num_FreeD)),delta_x(1:num_FreeD),num_FreeD) 
           elseif(Key_K_Sparse==1)then
 #ifdef gfortran
-#ifdef notcbfortran
 #ifndef Silverfrost
 !#ifndef github
               call Matrix_Solve_LSOE_Sparse(0,1,Key_SLOE,&
@@ -745,7 +742,6 @@ do i_WB = 1,num_Wellbore
               endif    
                         
 !#endif
-#endif
 #endif
 #endif
           endif
@@ -987,7 +983,6 @@ do i_WB = 1,num_Wellbore
               write(*,3002) sum(globalK)
           elseif(Key_K_Sparse==1)then
 #ifdef gfortran
-#ifdef notcbfortran
 #ifndef Silverfrost
 !#ifndef github
               ! Get the number of maximum non-zero elements.
@@ -1011,7 +1006,6 @@ do i_WB = 1,num_Wellbore
 !#endif
 #endif
 #endif
-#endif
           endif
           
           !************************
@@ -1027,7 +1021,6 @@ do i_WB = 1,num_Wellbore
                     freeDOF(1:num_FreeD)),F(freeDOF(1:num_FreeD)),tem_DISP,num_FreeD) 
           elseif(Key_K_Sparse==1)then
 #ifdef gfortran
-#ifdef notcbfortran
 !#ifndef github
               call Matrix_Solve_LSOE_Sparse(0,1,Key_SLOE,&
                         K_CSR_NNZ,&
@@ -1046,7 +1039,6 @@ do i_WB = 1,num_Wellbore
               endif  
               
 !#endif
-#endif
 #endif
           endif
           
@@ -1335,11 +1327,9 @@ do i_WB = 1,num_Wellbore
           if (allocated(globalK)) DEALLOCATE(globalK)
       elseif(Key_K_Sparse==1)then
 #ifdef gfortran
-#ifdef notcbfortran
           if (allocated(K_CSR_aa)) DEALLOCATE(K_CSR_aa)
           if (allocated(K_CSR_ja)) DEALLOCATE(K_CSR_ja)
           if (allocated(K_CSR_ia)) DEALLOCATE(K_CSR_ia)
-#endif
 #endif
       endif
       if(Key_Contact/=0 .and. num_Crack.ne.0)then

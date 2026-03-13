@@ -111,7 +111,6 @@ if(Key_K_Sparse==0)then
     Total_Num_G_P_InSitu)
 elseif(Key_K_Sparse==1)then
 #ifdef gfortran
-#ifdef notcbfortran
 #ifndef github
   K_IS_COO_NNZ_Max = CEILING(IS_Total_FD**2*Sparse_Ratio)
   ALLOCATE(K_IS_CSR_aa(K_IS_COO_NNZ_Max))
@@ -122,7 +121,6 @@ elseif(Key_K_Sparse==1)then
          K_IS_CSR_aa,K_IS_CSR_ja,K_IS_CSR_ia,&
          K_IS_COO_NNZ_Max,K_IS_CSR_NNZ,IS_Total_FD,&
          Total_Num_G_P_InSitu)
-#endif
 #endif
 #endif
 endif
@@ -160,7 +158,6 @@ if(Key_K_Sparse==0)then
            num_freeDOF_InSitu)
 elseif(Key_K_Sparse==1)then
 #ifdef gfortran
-#ifdef notcbfortran
 #ifndef github
   call Matrix_Solve_LSOE_Sparse(0,1,Key_SLOE,&
               K_IS_CSR_NNZ,&
@@ -169,7 +166,6 @@ elseif(Key_K_Sparse==1)then
               K_IS_CSR_ia(1:num_freeDOF_InSitu+1),  &
               F_InSitu(freeDOF_InSitu(1:num_freeDOF_InSitu)),&
               tem_DISP_InSitu,num_freeDOF_InSitu)
-#endif
 #endif
 #endif
 endif
@@ -258,10 +254,8 @@ if(Key_K_Sparse==0)then
   DEALLOCATE(globalK_InSitu)
 elseif(Key_K_Sparse==1)then
 #ifdef gfortran
-#ifdef notcbfortran
   DEALLOCATE(K_IS_CSR_aa); DEALLOCATE(K_IS_CSR_ia)
   DEALLOCATE(K_IS_CSR_ja)
-#endif
 #endif
 endif
 DEALLOCATE(freeDOF_InSitu,tem_DISP_InSitu)

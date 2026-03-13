@@ -643,7 +643,6 @@ do isub = 1,Num_Substeps
               print *,'    Sum of globalK: ',  sum(globalK)
           elseif(Key_K_Sparse==1)then
 #ifdef gfortran
-#ifdef notcbfortran
 #ifndef github
               ! K_CSR_NNZ_Max = CEILING(dble(Total_FD)**2*Sparse_Ratio)  ! Maximum number of non-zero elements
               print *,'    Get max NNZ before assembling K......'
@@ -666,7 +665,6 @@ do isub = 1,Num_Substeps
                    Total_FD,Total_Num_G_P)
 #endif
 #endif
-#endif
           endif
           ! Solve for displacement
           ALLOCATE(DISP(Total_FD))
@@ -680,7 +678,6 @@ do isub = 1,Num_Substeps
                          tem_DISP,num_FreeD)
           elseif(Key_K_Sparse==1)then
 #ifdef gfortran
-#ifdef notcbfortran
 #ifndef github
               call Matrix_Solve_LSOE_Sparse(0,1,Key_SLOE,&
                         K_CSR_NNZ,&
@@ -699,7 +696,6 @@ do isub = 1,Num_Substeps
               endif                         
 #endif
 #endif
-#endif
           endif
 
           DISP(freeDOF(1:num_FreeD)) = tem_DISP
@@ -715,7 +711,6 @@ do isub = 1,Num_Substeps
             ori_globalK = globalK
           elseif(Key_K_Sparse==1)then
 #ifdef gfortran
-#ifdef notcbfortran
 #ifndef github
             ! K_CSR_NNZ_Max = CEILING(dble(Total_FD)**2*Sparse_Ratio)  ! Maximum number of non-zero elements
             print *,'    Get max NNZ before assembling K......'
@@ -738,7 +733,6 @@ do isub = 1,Num_Substeps
                    K_CSR_NNZ,Total_FD,Total_Num_G_P)
 #endif
 #endif
-#endif
           endif
 
           ALLOCATE(DISP(Total_FD))
@@ -753,7 +747,6 @@ do isub = 1,Num_Substeps
                          tem_DISP,num_FreeD)
           elseif(Key_K_Sparse==1)then
 #ifdef gfortran
-#ifdef notcbfortran
 #ifndef github
               call Matrix_Solve_LSOE_Sparse(0,1,Key_SLOE,&
                         K_CSR_NNZ,&
@@ -771,7 +764,6 @@ do isub = 1,Num_Substeps
                        K_CSR_aa(1:K_CSR_NNZ),K_CSR_ja(1:K_CSR_NNZ),K_CSR_ia(1:num_FreeD+1))
               endif                         
                         
-#endif
 #endif
 #endif
           endif
@@ -894,7 +886,6 @@ do isub = 1,Num_Substeps
           print *,'    Sum of globalK: ',  sum(globalK)
       elseif(Key_K_Sparse==1)then
 #ifdef gfortran
-#ifdef notcbfortran
 #ifndef github
           ! K_CSR_NNZ_Max = CEILING(Total_FD**2*Sparse_Ratio)      !Maximum number of non-zero elements
           print *,'    Get max NNZ before assembling K......'
@@ -918,7 +909,6 @@ do isub = 1,Num_Substeps
                   K_CSR_NNZ_Max,K_CSR_NNZ,Total_FD,Total_Num_G_P)
 #endif
 #endif
-#endif
       endif
 
       !************************
@@ -936,7 +926,6 @@ do isub = 1,Num_Substeps
                      tem_DISP,num_FreeD)
       elseif(Key_K_Sparse==1)then
 #ifdef gfortran
-#ifdef notcbfortran
 #ifndef github
           call Matrix_Solve_LSOE_Sparse(0,1,Key_SLOE,&
                     K_CSR_NNZ,&
@@ -955,7 +944,6 @@ do isub = 1,Num_Substeps
                    K_CSR_aa(1:K_CSR_NNZ),K_CSR_ja(1:K_CSR_NNZ),K_CSR_ia(1:num_FreeD+1))
           endif             
                     
-#endif
 #endif
 #endif
       endif
@@ -1361,11 +1349,9 @@ do isub = 1,Num_Substeps
       if (allocated(globalK)) DEALLOCATE(globalK)
   elseif(Key_K_Sparse==1)then
 #ifdef gfortran
-#ifdef notcbfortran
       if (allocated(K_CSR_aa)) DEALLOCATE(K_CSR_aa)
       if (allocated(K_CSR_ja)) DEALLOCATE(K_CSR_ja)
       if (allocated(K_CSR_ia)) DEALLOCATE(K_CSR_ia)
-#endif
 #endif
   endif
 

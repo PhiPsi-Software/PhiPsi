@@ -116,9 +116,6 @@
 *Key_3D_SIFs_Print
 1
 
-*Key_Clear_All 
-1
-
 % Applied surface load.
 *Num_Surface_Loads
 1
@@ -133,6 +130,8 @@ surf
 
 *MATERIAL_TYPE_1
 1
+
+
 
 
 

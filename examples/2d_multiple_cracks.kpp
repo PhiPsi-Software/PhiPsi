@@ -6,7 +6,7 @@
 *Filename
 2d_multiple_cracks
 
-% Data format (binary).
+% Data format.
 *Key_Data_Format
 1
 
@@ -101,6 +101,5 @@
 *Key_Close_Window
 0
 
-% Clear results file before starting (default).
-*Key_Clear_All
-1
+
+
