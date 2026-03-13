@@ -1,18 +1,197 @@
+!     ================================================= !
+!             ____  _       _   ____  _____   _         !
+!            |  _ \| |     |_| |  _ \|  ___| |_|        !
+!            | |_) | |___   _  | |_) | |___   _         !
+!            |  _ /|  _  | | | |  _ /|___  | | |        !
+!            | |   | | | | | | | |    ___| | | |        !
+!            |_|   |_| |_| |_| |_|   |_____| |_|        !
+!     ================================================= !
+!     PhiPsi:     a general-purpose computational       !
+!                 mechanics program written in Fortran. !
+!     Website:    http://phipsi.top                     !
+!     Author:     Shi Fang, Huaiyin Institute of        !
+!                 Technology, Huaian, JiangSu, China    !
+!     Email:      shifang@hyit.edu.cn                   !
+!     ------------------------------------------------- !
+!     Please cite the following papers:                 !
+!     (1)Shi F., Lin C. Modeling fluid-driven           !
+!        propagation of 3D complex crossing fractures   !
+!        with the extended finite element method.       !
+!        Computers and Geotechnics, 2024, 172, 106482.  !
+!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
+!        for 3D hydraulic fracturing simulation         !
+!        considering crack front segmentation. Journal  !
+!        of Petroleum Science and Engineering, 2022,    !
+!        214, 110518.                                   !
+!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
+!        numerical strategy to model three-dimensional  !
+!        fracture propagation regarding crack front     !
+!        segmentation. Theoretical and Applied Fracture !
+!        Mechanics, 2022, 118, 103250.                  !
+!     (4)Shi F., Liu J. A fully coupled hydromechanical !
+!        XFEM model for the simulation of 3D non-planar !
+!        fluid-driven fracture propagation. Computers   !
+!        and Geotechnics, 2021, 132: 103971.            !
+!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
+!        XFEM-based method with reduction technique     !
+!        for modeling hydraulic fracture propagation    !
+!        in formations containing frictional natural    !
+!        fractures. Engineering Fracture Mechanics,     !
+!        2017, 173: 64-90.                              !
+!     ------------------------------------------------- !
  
       SUBROUTINE JCG (NN,IA,JA,A,RHS,U,IWKSP,NW,WKSP,IPARM,RPARM,IERR)
+      !http://www.netlib.org/itpack/
+      !Modified by Fang Shi. 2024-09-08. IA(1) to IA(N+1). BUGFIX2024090801.
       
+C       
+C     ITPACK 2C MAIN SUBROUTINE  JCG  (JACOBI CONJUGATE GRADIENT)   
+C     EACH OF THE MAIN SUBROUTINES:   
+C           JCG, JSI, SOR, SSORCG, SSORSI, RSCG, RSSI     
+C     CAN BE USED INDEPENDENTLY OF THE OTHERS   
+C       
+C ... FUNCTION:   
+C       
+C          THIS SUBROUTINE, JCG, DRIVES THE JACOBI CONJUGATE
+C          GRADIENT ALGORITHM.
+C       
+C ... PARAMETER LIST:       
+C       
+C          N      INPUT INTEGER.  DIMENSION OF THE MATRIX. (= NN)   
+C          IA,JA  INPUT INTEGER VECTORS.  THE TWO INTEGER ARRAYS OF 
+C                 THE SPARSE MATRIX REPRESENTATION.       
+C          A      INPUT D.P. VECTOR.  THE D.P. ARRAY OF THE SPARSE  
+C                 MATRIX REPRESENTATION.
+C          RHS    INPUT D.P. VECTOR.  CONTAINS THE RIGHT HAND SIDE  
+C                 OF THE MATRIX PROBLEM.
+C          U      INPUT/OUTPUT D.P. VECTOR.  ON INPUT, U CONTAINS THE 
+C                 INITIAL GUESS TO THE SOLUTION. ON OUTPUT, IT CONTAINS 
+C                 THE LATEST ESTIMATE TO THE SOLUTION.    
+C          IWKSP  INTEGER VECTOR WORKSPACE OF LENGTH 3*N  
+C          NW     INPUT INTEGER.  LENGTH OF AVAILABLE WKSP.  ON OUTPUT, 
+C                 IPARM(8) IS AMOUNT USED.      
+C          WKSP   D.P. VECTOR USED FOR WORKING SPACE.  JACOBI CONJUGATE 
+C                 GRADIENT NEEDS THIS TO BE IN LENGTH AT LEAST      
+C                 4*N + 2*ITMAX,  IF ISYM = 0  (SYMMETRIC STORAGE)  
+C                 4*N + 4*ITMAX,  IF ISYM = 1  (NONSYMMETRIC STORAGE) 
+C                 HERE ITMAX = IPARM(1) AND ISYM = IPARM(5) 
+C                 (ITMAX IS THE MAXIMUM ALLOWABLE NUMBER OF ITERATIONS) 
+C          IPARM  INTEGER VECTOR OF LENGTH 12.  ALLOWS USER TO SPECIFY
+C                 SOME INTEGER PARAMETERS WHICH AFFECT THE METHOD.  
+C          RPARM  D.P. VECTOR OF LENGTH 12. ALLOWS USER TO SPECIFY SOME 
+C                 D.P. PARAMETERS WHICH AFFECT THE METHOD.
+C          IER    OUTPUT INTEGER.  ERROR FLAG. (= IERR)   
+C       
+C ... JCG SUBPROGRAM REFERENCES:      
+C       
+C          FROM ITPACK    BISRCH, CHGCON, DETERM, DFAULT, ECHALL,   
+C                         ECHOUT, EIGVNS, EIGVSS, EQRT1S, ITERM, TIMER, 
+C                         ITJCG, IVFILL, PARCON, PERMAT,  
+C                         c_PERROR, PERVEC, PJAC2, PMULT, PRBNDX,      
+C                         PSTOP, QSORT, DAXPY2, SBELM, SCAL, DCOPY2,  
+C                         DDOT2, SUM3, UNSCAL, VEVMW, VFILL, VOUT,   
+C                         WEVMW, ZBRENT 
+C          SYSTEM         DABS, DLOG10, DBLE(AMAX0), DMAX1, MOD, DSQRT
+C       
+C     VERSION:  ITPACK 2C (MARCH 1982)
+C       
+C     CODE WRITTEN BY:  DAVID KINCAID, ROGER GRIMES, JOHN RESPESS   
+C                       CENTER FOR NUMERICAL ANALYSIS     
+C                       UNIVERSITY OF TEXAS     
+C                       AUSTIN, TX  78712       
+C                       (512) 471-1242
+C       
+C     FOR ADDITIONAL DETAILS ON THE   
+C          (A) SUBROUTINE SEE TOMS ARTICLE 1982 
+C          (B) ALGORITHM  SEE CNA REPORT 150    
+C       
+C     BASED ON THEORY BY:  DAVID YOUNG, DAVID KINCAID, LOU HAGEMAN  
+C       
+C     REFERENCE THE BOOK:  APPLIED ITERATIVE METHODS      
+C                          L. HAGEMAN, D. YOUNG 
+C                          ACADEMIC PRESS, 1981 
+C       
+C     **************************************************  
+C     *               IMPORTANT NOTE                   *  
+C     *                                                *  
+C     *      WHEN INSTALLING ITPACK ROUTINES ON A      *  
+C     *  DIFFERENT COMPUTER, RESET SOME OF THE VALUES  *  
+C     *  IN  SUBROUTNE DFAULT.   MOST IMPORTANT ARE    *  
+C     *                                                *  
+C     *   DRELPR      MACHINE RELATIVE PRECISION       *  
+C     *   RPARM(1)    STOPPING CRITERION               *  
+C     *                                                *  
+C     *   ALSO CHANGE SYSTEM-DEPENDENT ROUTINE         *  
+C     *   SECOND USED IN TIMER                         *  
+C     *                                                *  
+C     **************************************************  
+C       
+C     SPECIFICATIONS FOR ARGUMENTS    
+C       
       INTEGER IA(1),JA(1),IWKSP(1),IPARM(12),NN,NW,IERR   
       DOUBLE PRECISION A(1),RHS(NN),U(NN),WKSP(NW),RPARM(12)
+C       
+C     SPECIFICATIONS FOR LOCAL VARIABLES
+C       
       INTEGER IB1,IB2,IB3,IB4,IB5,IDGTS,IER,IERPER,ITMAX1,LOOP,N,NB,N3
       DOUBLE PRECISION DIGIT1,DIGIT2,TEMP,TIME1,TIME2,TOL 
+C       
+C **** BEGIN: ITPACK COMMON 
+C       
       INTEGER IN,IS,ISYM,ITMAX,LEVEL,NOUT       
       COMMON /ITCOM1/ IN,IS,ISYM,ITMAX,LEVEL,NOUT 
+C       
       LOGICAL ADAPT,BETADT,CASEII,HALT,PARTAD   
       COMMON /ITCOM2/ ADAPT,BETADT,CASEII,HALT,PARTAD     
+C       
       DOUBLE PRECISION BDELNM,BETAB,CME,DELNNM,DELSNM,FF,GAMMA,OMEGA,QA,
      *   QT,RHO,RRR,SIGE,SME,SPECR,SPR,DRELPR,STPTST,UDNM,ZETA      
       COMMON /ITCOM3/ BDELNM,BETAB,CME,DELNNM,DELSNM,FF,GAMMA,OMEGA,QA, 
      *   QT,RHO,RRR,SIGE,SME,SPECR,SPR,DRELPR,STPTST,UDNM,ZETA      
+C       
+C **** END  : ITPACK COMMON 
+C       
+C ... VARIABLES IN COMMON BLOCK - ITCOM1
+C       
+C     IN     - ITERATION NUMBER       
+C     IS     - ITERATION NUMBER WHEN PARAMETERS LAST CHANGED
+C     ISYM   - SYMMETRIC/NONSYMMETRIC STORAGE FORMAT SWITCH 
+C     ITMAX  - MAXIMUM NUMBER OF ITERATIONS ALLOWED       
+C     LEVEL  - LEVEL OF OUTPUT CONTROL SWITCH   
+C     NOUT   - OUTPUT element number     
+C       
+C ... VARIABLES IN COMMON BLOCK - ITCOM2
+C       
+C     ADAPT  - FULLY ADAPTIVE PROCEDURE SWITCH  
+C     BETADT - SWITCH FOR ADAPTIVE DETERMINATION OF BETA  
+C     CASEII - ADAPTIVE PROCEDURE CASE SWITCH   
+C     HALT   - STOPPING TEST SWITCH   
+C     PARTAD - PARTIALLY ADAPTIVE PROCEDURE SWITCH
+C       
+C ... VARIABLES IN COMMON BLOCK - ITCOM3
+C       
+C     BDELNM - TWO NORM OF B TIMES DELTA-SUPER-N
+C     BETAB  - ESTIMATE FOR THE SPECTRAL RADIUS OF LU MATRIX
+C     CME    - ESTIMATE OF LARGEST EIGENVALUE   
+C     DELNNM - INNER PRODUCT OF PSEUDO-RESIDUAL AT ITERATION N      
+C     DELSNM - INNER PRODUCT OF PSEUDO-RESIDUAL AT ITERATION S      
+C     FF     - ADAPTIVE PROCEDURE DAMPING FACTOR
+C     GAMMA  - ACCELERATION PARAMETER 
+C     OMEGA  - OVERRELAXATION PARAMETER FOR SOR AND SSOR  
+C     QA     - PSEUDO-RESIDUAL RATIO  
+C     QT     - VIRTUAL SPECTRAL RADIUS
+C     RHO    - ACCELERATION PARAMETER 
+C     RRR    - ADAPTIVE PARAMETER     
+C     SIGE   - PARAMETER SIGMA-SUB-E  
+C     SME    - ESTIMATE OF SMALLEST EIGENVALUE  
+C     SPECR  - SPECTRAL RADIUS ESTIMATE FOR SSOR
+C     DRELPR - MACHINE RELATIVE PRECISION       
+C     STPTST - STOPPING PARAMETER     
+C     UDNM   - TWO NORM OF U
+C     ZETA   - STOPPING CRITERION     
+C       
+C ... INITIALIZE COMMON BLOCKS
+C     
       
       LEVEL = IPARM(2)    
       
@@ -41,6 +220,9 @@
       TIME2 = RPARM(10)     
       DIGIT1 = RPARM(11)    
       DIGIT2 = RPARM(12)    
+C       
+C ... VERIFY N    
+C       
       IF (N.GT.0) GO TO 70  
       IER = 11    
       IF (LEVEL.GE.0) WRITE (NOUT,60) N 
@@ -49,6 +231,9 @@
      *   '    INVALID MATRIX DIMENSION, N =',I8)
       GO TO 370   
    70 CONTINUE    
+C       
+C ... REMOVE ROWS AND COLUMNS IF REQUESTED      
+C       
       IF (IPARM(10).EQ.0) GO TO 90    
       TOL = RPARM(8)
       CALL IVFILL (N,IWKSP,0) 
@@ -63,6 +248,9 @@
      *   '    WHEN DIAGONAL ENTRY TOO LARGE  '/' ','    IER = ',I5,5X,
      *   ' RPARM(8) = ',D10.3,' (TOL)') 
       GO TO 370   
+C       
+C ... INITIALIZE WKSP BASE ADDRESSES. 
+C       
    90 IB1 = 1     
       IB2 = IB1+N 
       IB3 = IB2+N 
@@ -78,6 +266,9 @@
      *   '    NOT ENOUGH WORKSPACE AT ',I10/' ','    SET IPARM(8) =',I10
      *   ,' (NW)')
       GO TO 370   
+C       
+C ... PERMUTE TO  RED-BLACK SYSTEM IF REQUESTED 
+C       
   110 NB = IPARM(9) 
       IF (NB.LT.0) GO TO 170
       N3 = 3*N    
@@ -91,6 +282,9 @@
      *   '    WHICH COMPUTES THE RED-BLACK INDEXING'/' ','    IER = ',I5
      *   ,' IPARM(9) = ',I5,' (NB)')  
       GO TO 370   
+C       
+C ... PERMUTE MATRIX AND RHS
+C       
   130 IF (LEVEL.GE.2) WRITE (NOUT,140) NB       
   140 FORMAT (/10X,'ORDER OF BLACK SUBSYSTEM = ',I5,' (NB)')
       CALL PERMAT (N,IA,JA,A,IWKSP,IWKSP(IB3),ISYM,LEVEL,NOUT,IER)  
@@ -103,6 +297,10 @@
       GO TO 370   
   160 CALL PERVEC (N,RHS,IWKSP)       
       CALL PERVEC (N,U,IWKSP) 
+C       
+C ... SCALE LINEAR SYSTEM, U, AND RHS BY THE SQUARE ROOT OF THE     
+C ... DIAGONAL ELEMENTS.    
+C       
   170 CONTINUE    
       CALL VFILL (IPARM(8),WKSP,0.0D0)
       CALL SCAL (N,IA,JA,A,RHS,U,WKSP,LEVEL,NOUT,IER)     
@@ -122,22 +320,45 @@
      *   ' THE JACOBI MATRIX')
   220 IF (IPARM(11).NE.0) GO TO 230   
       TIMI1 = TIMER(DUMMY)  
+C       
+C ... COMPUTE INITIAL PSEUDO-RESIDUAL 
+C       
   230 CONTINUE    
       CALL DCOPY2 (N,RHS,1,WKSP(IB2),1)
       CALL PJAC2 (N,IA,JA,A,U,WKSP(IB2)) 
       CALL VEVMW (N,WKSP(IB2),U)      
+C       
+C ... ITERATION SEQUENCE    
+C       
       ITMAX1 = ITMAX+1      
       DO 250 LOOP = 1,ITMAX1
          IN = LOOP-1
          IF (MOD(IN,2).EQ.1) GO TO 240
+C       
+C ... CODE FOR THE EVEN ITERATIONS.   
+C       
+C     U           = U(IN)             WKSP(IB2) = DEL(IN) 
+C     WKSP(IB1)   = U(IN-1)           WKSP(IB3) = DEL(IN-1) 
+C       
          CALL ITJCG (N,IA,JA,A,U,WKSP(IB1),WKSP(IB2),WKSP(IB3),WKSP(IB4)
      *      ,WKSP(IB5))     
+C       
          IF (HALT) GO TO 280
          GO TO 250
+C       
+C ... CODE FOR THE ODD ITERATIONS.    
+C       
+C     U           = U(IN-1)           WKSP(IB2) = DEL(IN-1) 
+C     WKSP(IB1)   = U(IN)             WKSP(IB3) = DEL(IN) 
+C       
   240    CALL ITJCG (N,IA,JA,A,WKSP(IB1),U,WKSP(IB3),WKSP(IB2),WKSP(IB4)
      *      ,WKSP(IB5))     
+C       
          IF (HALT) GO TO 280
   250 CONTINUE    
+C       
+C ... ITMAX HAS BEEN REACHED
+C       
       IF (IPARM(11).NE.0) GO TO 260   
       TIMI2 = TIMER(DUMMY)  
       TIME1 = DBLE(TIMI2-TIMI1)       
@@ -148,14 +369,26 @@
      *  I5 ,' ITERATIONS')
       IF (IPARM(3).EQ.0) RPARM(1) = STPTST      
       GO TO 310   
+C       
+C ... METHOD HAS CONVERGED  
+C       
   280 IF (IPARM(11).NE.0) GO TO 290   
       TIMI2 = TIMER(DUMMY)  
       TIME1 = DBLE(TIMI2-TIMI1)       
   290 IF (LEVEL.GE.1) WRITE (NOUT,300) IN       
   300 FORMAT (/1X,'JCG  HAS CONVERGED IN ',I5,' ITERATIONS')
+C       
+C ... PUT SOLUTION INTO U IF NOT ALREADY THERE. 
+C       
   310 CONTINUE    
       IF (MOD(IN,2).EQ.1) CALL DCOPY2 (N,WKSP(IB1),1,U,1)  
+C       
+C ... UNSCALE THE MATRIX, SOLUTION, AND RHS VECTORS.      
+C       
       CALL UNSCAL (N,IA,JA,A,RHS,U,WKSP)
+C       
+C ... UN-PERMUTE MATRIX,RHS, AND SOLUTION       
+C       
       IF (IPARM(9).LT.0) GO TO 340    
       CALL PERMAT (N,IA,JA,A,IWKSP(IB2),IWKSP(IB3),ISYM,LEVEL,NOUT, 
      *   IERPER)  
@@ -170,10 +403,16 @@
       GO TO 370   
   330 CALL PERVEC (N,RHS,IWKSP(IB2))  
       CALL PERVEC (N,U,IWKSP(IB2))    
+C       
+C ... OPTIONAL ERROR ANALYSIS 
+C       
   340 IDGTS = IPARM(12)     
       IF (IDGTS.LT.0) GO TO 350       
       IF (IPARM(2).LE.0) IDGTS = 0    
       CALL c_PERROR (N,IA,JA,A,RHS,U,WKSP,DIGIT1,DIGIT2,IDGTS)
+C       
+C ... SET RETURN PARAMETERS IN IPARM AND RPARM  
+C       
   350 IPARM(8) = IPARM(8)-2*(ITMAX-IN)
       IF (IPARM(11).NE.0) GO TO 360   
       TIMJ2 = TIMER(DUMMY)  
@@ -188,26 +427,163 @@
       RPARM(10) = TIME2     
       RPARM(11) = DIGIT1    
       RPARM(12) = DIGIT2    
+C       
   370 CONTINUE    
       IERR = IER  
       IF (LEVEL.GE.3) CALL ECHALL (N,IA,JA,A,RHS,IPARM,RPARM,2)     
+C       
       RETURN      
       END 
       SUBROUTINE JSI (NN,IA,JA,A,RHS,U,IWKSP,NW,WKSP,IPARM,RPARM,IERR)
+C       
+C     ITPACK 2C MAIN SUBROUTINE  JSI  (JACOBI SEMI-ITERATIVE)       
+C     EACH OF THE MAIN SUBROUTINES:   
+C           JCG, JSI, SOR, SSORCG, SSORSI, RSCG, RSSI     
+C     CAN BE USED INDEPENDENTLY OF THE OTHERS   
+C       
+C ... FUNCTION:   
+C       
+C          THIS SUBROUTINE, JSI, DRIVES THE JACOBI SEMI-  
+C          ITERATION ALGORITHM.       
+C       
+C ... PARAMETER LIST:       
+C       
+C          N      INPUT INTEGER.  DIMENSION OF THE MATRIX. (= NN)   
+C          IA,JA  INPUT INTEGER VECTORS.  THE TWO INTEGER ARRAYS OF 
+C                 THE SPARSE MATRIX REPRESENTATION.       
+C          A      INPUT D.P. VECTOR.  THE D.P. ARRAY OF THE SPARSE  
+C                 MATRIX REPRESENTATION.
+C          RHS    INPUT D.P. VECTOR.  CONTAINS THE RIGHT HAND SIDE  
+C                 OF THE MATRIX PROBLEM.
+C          U      INPUT/OUTPUT D.P. VECTOR.  ON INPUT, U CONTAINS THE 
+C                 INITIAL GUESS TO THE SOLUTION. ON OUTPUT, IT CONTAINS 
+C                 THE LATEST ESTIMATE TO THE SOLUTION.    
+C          IWKSP  INTEGER VECTOR WORKSPACE OF LENGTH 3*N  
+C          NW     INPUT INTEGER.  LENGTH OF AVAILABLE WKSP.  ON OUTPUT, 
+C                 IPARM(8) IS AMOUNT USED.      
+C          WKSP   D.P. VECTOR USED FOR WORKING SPACE.  JACOBI SI    
+C                 NEEDS THIS TO BE IN LENGTH AT LEAST     
+C                 2*N       
+C          IPARM  INTEGER VECTOR OF LENGTH 12.  ALLOWS USER TO SPECIFY
+C                 SOME INTEGER PARAMETERS WHICH AFFECT THE METHOD.  
+C          RPARM  D.P. VECTOR OF LENGTH 12.  ALLOWS USER TO SPECIFY SOME
+C                 D.P. PARAMETERS WHICH AFFECT THE METHOD.
+C          IER    OUTPUT INTEGER.  ERROR FLAG. (= IERR)   
+C       
+C ... JSI SUBPROGRAM REFERENCES:      
+C       
+C          FROM ITPACK   BISRCH, CHEBY, CHGSI, CHGSME, DFAULT, ECHALL,
+C                        ECHOUT, ITERM, TIMER, ITJSI, IVFILL, PAR   
+C                        PERMAT, c_PERROR, PERVEC, PJAC2, PMULT, PRBNDX, 
+C                        PSTOP, PVTBV, QSORT, DAXPY2, SBELM, SCAL,   
+C                        DCOPY2, DDOT2, SUM3, TSTCHG, UNSCAL, VEVMW,  
+C                        VFILL, VOUT, WEVMW     
+C          SYSTEM        DABS, DLOG10, DBLE(AMAX0), DMAX1, DBLE(FLOAT), 
+C                        MOD,DSQRT    
+C       
+C     VERSION:  ITPACK 2C (MARCH 1982)
+C       
+C     CODE WRITTEN BY:  DAVID KINCAID, ROGER GRIMES, JOHN RESPESS   
+C                       CENTER FOR NUMERICAL ANALYSIS     
+C                       UNIVERSITY OF TEXAS     
+C                       AUSTIN, TX  78712       
+C                       (512) 471-1242
+C       
+C     FOR ADDITIONAL DETAILS ON THE   
+C          (A) SUBROUTINE SEE TOMS ARTICLE 1982 
+C          (B) ALGORITHM  SEE CNA REPORT 150    
+C       
+C     BASED ON THEORY BY:  DAVID YOUNG, DAVID KINCAID, LOU HAGEMAN  
+C       
+C     REFERENCE THE BOOK:  APPLIED ITERATIVE METHODS      
+C                          L. HAGEMAN, D. YOUNG 
+C                          ACADEMIC PRESS, 1981 
+C       
+C     **************************************************  
+C     *               IMPORTANT NOTE                   *  
+C     *                                                *  
+C     *      WHEN INSTALLING ITPACK ROUTINES ON A      *  
+C     *  DIFFERENT COMPUTER, RESET SOME OF THE VALUES  *  
+C     *  IN  SUBROUTNE DFAULT.   MOST IMPORTANT ARE    *  
+C     *                                                *  
+C     *   DRELPR      MACHINE RELATIVE PRECISION       *  
+C     *   RPARM(1)    STOPPING CRITERION               *  
+C     *                                                *  
+C     *   ALSO CHANGE SYSTEM-DEPENDENT ROUTINE         *  
+C     *   SECOND USED IN TIMER                         *  
+C     *                                                *  
+C     **************************************************  
+C       
+C     SPECIFICATIONS FOR ARGUMENTS    
+C       
       INTEGER IA(1),JA(1),IWKSP(1),IPARM(12),NN,NW,IERR   
       DOUBLE PRECISION A(1),RHS(NN),U(NN),WKSP(NW),RPARM(12)
+C       
+C     SPECIFICATIONS FOR LOCAL VARIABLES
+C       
       INTEGER IB1,IB2,IB3,ICNT,IDGTS,IER,IERPER,ITMAX1,LOOP,N,NB,N3 
       DOUBLE PRECISION DIGIT1,DIGIT2,TEMP,TIME1,TIME2,TOL 
+C       
+C *** BEGIN: ITPACK COMMON  
+C       
       INTEGER IN,IS,ISYM,ITMAX,LEVEL,NOUT       
       COMMON /ITCOM1/ IN,IS,ISYM,ITMAX,LEVEL,NOUT 
+C       
       LOGICAL ADAPT,BETADT,CASEII,HALT,PARTAD   
       COMMON /ITCOM2/ ADAPT,BETADT,CASEII,HALT,PARTAD     
+C       
       DOUBLE PRECISION BDELNM,BETAB,CME,DELNNM,DELSNM,FF,GAMMA,OMEGA,QA,
      *   QT,RHO,RRR,SIGE,SME,SPECR,SPR,DRELPR,STPTST,UDNM,ZETA      
       COMMON /ITCOM3/ BDELNM,BETAB,CME,DELNNM,DELSNM,FF,GAMMA,OMEGA,QA, 
      *   QT,RHO,RRR,SIGE,SME,SPECR,SPR,DRELPR,STPTST,UDNM,ZETA      
+C       
+C *** END  : ITPACK COMMON  
+C       
+C ... VARIABLES IN COMMON BLOCK - ITCOM1
+C       
+C     IN     - ITERATION NUMBER       
+C     IS     - ITERATION NUMBER WHEN PARAMETERS LAST CHANGED
+C     ISYM   - SYMMETRIC/NONSYMMETRIC STORAGE FORMAT SWITCH 
+C     ITMAX  - MAXIMUM NUMBER OF ITERATIONS ALLOWED       
+C     LEVEL  - LEVEL OF OUTPUT CONTROL SWITCH   
+C     NOUT   - OUTPUT element number     
+C       
+C ... VARIABLES IN COMMON BLOCK - ITCOM2
+C       
+C     ADAPT  - FULLY ADAPTIVE PROCEDURE SWITCH  
+C     BETADT - SWITCH FOR ADAPTIVE DETERMINATION OF BETA  
+C     CASEII - ADAPTIVE PROCEDURE CASE SWITCH   
+C     HALT   - STOPPING TEST SWITCH   
+C     PARTAD - PARTIALLY ADAPTIVE PROCEDURE SWITCH
+C       
+C ... VARIABLES IN COMMON BLOCK - ITCOM3
+C       
+C     BDELNM - TWO NORM OF B TIMES DELTA-SUPER-N
+C     BETAB  - ESTIMATE FOR THE SPECTRAL RADIUS OF LU MATRIX
+C     CME    - ESTIMATE OF LARGEST EIGENVALUE   
+C     DELNNM - INNER PRODUCT OF PSEUDO-RESIDUAL AT ITERATION N      
+C     DELSNM - INNER PRODUCT OF PSEUDO-RESIDUAL AT ITERATION S      
+C     FF     - ADAPTIVE PROCEDURE DAMPING FACTOR
+C     GAMMA  - ACCELERATION PARAMETER 
+C     OMEGA  - OVERRELAXATION PARAMETER FOR SOR AND SSOR  
+C     QA     - PSEUDO-RESIDUAL RATIO  
+C     QT     - VIRTUAL SPECTRAL RADIUS
+C     RHO    - ACCELERATION PARAMETER 
+C     RRR    - ADAPTIVE PARAMETER     
+C     SIGE   - PARAMETER SIGMA-SUB-E  
+C     SME    - ESTIMATE OF SMALLEST EIGENVALUE  
+C     SPECR  - SPECTRAL RADIUS ESTIMATE FOR SSOR
+C     DRELPR - MACHINE RELATIVE PRECISION       
+C     STPTST - STOPPING PARAMETER     
+C     UDNM   - TWO NORM OF U
+C     ZETA   - STOPPING CRITERION     
+C       
+C ... INITIALIZE COMMON BLOCKS
+C       
       LEVEL = IPARM(2)      
       NOUT = IPARM(4)       
+C     IF (LEVEL.GE.1) WRITE (NOUT,10) 
+C  10 FORMAT (8X,'BEGINNING OF ITPACK SOLUTION MODULE  JSI')  
       IER = 0     
       IF (IPARM(1).LE.0) RETURN       
       N = NN      
@@ -230,6 +606,9 @@
       TIME2 = RPARM(10)     
       DIGIT1 = RPARM(11)    
       DIGIT2 = RPARM(12)    
+C       
+C ... VERIFY N    
+C       
       IF (N.GT.0) GO TO 70  
       IER = 21    
       IF (LEVEL.GE.0) WRITE (NOUT,60) N 
@@ -238,6 +617,9 @@
      *   '    INVALID MATRIX DIMENSION, N =',I8)
       GO TO 360   
    70 CONTINUE    
+C       
+C ... REMOVE ROWS AND COLUMNS IF REQUESTED      
+C       
       IF (IPARM(10).EQ.0) GO TO 90    
       TOL = RPARM(8)
       CALL IVFILL (N,IWKSP,0) 
@@ -252,6 +634,9 @@
      *   '    WHEN DIAGONAL ENTRY TOO LARGE  '/' ','    IER = ',I5,5X,
      *   ' RPARM(8) = ',D10.3,' (TOL)') 
       GO TO 360   
+C       
+C ... INITIALIZE WKSP BASE ADDRESSES. 
+C       
    90 IB1 = 1     
       IB2 = IB1+N 
       IB3 = IB2+N 
@@ -264,6 +649,9 @@
      *   '    NOT ENOUGH WORKSPACE AT ',I10/' ','    SET IPARM(8) =',I10
      *   ,' (NW)')
       GO TO 360   
+C       
+C ... PERMUTE TO  RED-BLACK SYSTEM IF REQUESTED 
+C       
   110 NB = IPARM(9) 
       IF (NB.LT.0) GO TO 170
       N3 = 3*N    
@@ -277,6 +665,9 @@
      *   '    WHICH COMPUTES THE RED-BLACK INDEXING'/' ','    IER = ',I5
      *   ,' IPARM(9) = ',I5,' (NB)')  
       GO TO 360   
+C       
+C ... PERMUTE MATRIX AND RHS
+C       
   130 IF (LEVEL.GE.2) WRITE (NOUT,140) NB       
   140 FORMAT (/10X,'ORDER OF BLACK SUBSYSTEM = ',I5,' (NB)')
       CALL PERMAT (N,IA,JA,A,IWKSP,IWKSP(IB3),ISYM,LEVEL,NOUT,IER)  
@@ -289,9 +680,14 @@
       GO TO 360   
   160 CALL PERVEC (N,RHS,IWKSP)       
       CALL PERVEC (N,U,IWKSP) 
+C       
+C ... SCALE LINEAR SYSTEM, U, AND RHS BY THE SQUARE ROOT OF THE     
+C ... DIAGONAL ELEMENTS.    
+C       
   170 CONTINUE    
       CALL VFILL (IPARM(8),WKSP,0.0D0)
       CALL SCAL (N,IA,JA,A,RHS,U,WKSP,LEVEL,NOUT,IER)     
+      !SCAL (NN,IA,JA,A,RHS,U,D,LEVEL,NOUT,IER) 
       
       IF (IER.EQ.0) GO TO 190 
       IF (LEVEL.GE.0) WRITE (NOUT,180) IER      
@@ -306,16 +702,36 @@
      *   ' ACCELERATION PARAMETERS')  
   210 IF (IPARM(11).NE.0) GO TO 220   
       TIMI1 = TIMER(DUMMY)  
+C       
+C ... ITERATION SEQUENCE    
+C       
   220 ITMAX1 = ITMAX+1      
       DO 240 LOOP = 1,ITMAX1
          IN = LOOP-1
          IF (MOD(IN,2).EQ.1) GO TO 230
+C       
+C ... CODE FOR THE EVEN ITERATIONS.   
+C       
+C     U           = U(IN)   
+C     WKSP(IB1)   = U(IN-1) 
+C       
          CALL ITJSI (N,IA,JA,A,RHS,U,WKSP(IB1),WKSP(IB2),ICNT)      
+C       
          IF (HALT) GO TO 270
          GO TO 240
+C       
+C ... CODE FOR THE ODD ITERATIONS.    
+C       
+C     U           = U(IN-1) 
+C     WKSP(IB1)   = U(IN)   
+C       
   230    CALL ITJSI (N,IA,JA,A,RHS,WKSP(IB1),U,WKSP(IB2),ICNT)      
+C       
          IF (HALT) GO TO 270
   240 CONTINUE    
+C       
+C ... ITMAX HAS BEEN REACHED
+C       
       IF (IPARM(11).NE.0) GO TO 250   
       TIMI2 = TIMER(DUMMY)  
       TIME1 = DBLE(TIMI2-TIMI1)       
@@ -326,14 +742,26 @@
      *,' ITERATIONS')
       IF (IPARM(3).EQ.0) RPARM(1) = STPTST      
       GO TO 300   
+C       
+C ... METHOD HAS CONVERGED  
+C       
   270 IF (IPARM(11).NE.0) GO TO 280   
       TIMI2 = TIMER(DUMMY)  
       TIME1 = DBLE(TIMI2-TIMI1)       
   280 IF (LEVEL.GE.1) WRITE (NOUT,290) IN       
   290 FORMAT (9X,'  JSI has converged after ',I5,' interations')
+C       
+C ... PUT SOLUTION INTO U IF NOT ALREADY THERE. 
+C       
   300 CONTINUE    
       IF (MOD(IN,2).EQ.1) CALL DCOPY2 (N,WKSP(IB1),1,U,1)  
+C       
+C ... UNSCALE THE MATRIX, SOLUTION, AND RHS VECTORS.      
+C       
       CALL UNSCAL (N,IA,JA,A,RHS,U,WKSP)
+C       
+C ... UN-PERMUTE MATRIX,RHS, AND SOLUTION       
+C       
       IF (IPARM(9).LT.0) GO TO 330    
       CALL PERMAT (N,IA,JA,A,IWKSP(IB2),IWKSP(IB3),ISYM,LEVEL,NOUT, 
      *   IERPER)  
@@ -348,11 +776,17 @@
       GO TO 360   
   320 CALL PERVEC (N,RHS,IWKSP(IB2))  
       CALL PERVEC (N,U,IWKSP(IB2))    
+C       
+C ... OPTIONAL ERROR ANALYSIS 
+C       
   330 IDGTS = IPARM(12)     
       IF (IDGTS.LT.0) GO TO 340       
       IF (IPARM(2).LE.0) IDGTS = 0    
       CALL c_PERROR(N,IA,JA,A,RHS,U,WKSP,DIGIT1,DIGIT2,IDGTS)
 
+C       
+C ... SET RETURN PARAMETERS IN IPARM AND RPARM  
+C       
   340 IF (IPARM(11).NE.0) GO TO 350   
       TIMJ2 = TIMER(DUMMY)  
       TIME2 = DBLE(TIMJ2-TIMJ1)       
@@ -365,24 +799,157 @@
       RPARM(10) = TIME2     
       RPARM(11) = DIGIT1    
       RPARM(12) = DIGIT2    
+C       
   360 CONTINUE    
       IERR = IER  
       IF (LEVEL.GE.3) CALL ECHALL (N,IA,JA,A,RHS,IPARM,RPARM,2)     
+C       
       RETURN      
       END 
       SUBROUTINE SOR (NN,IA,JA,A,RHS,U,IWKSP,NW,WKSP,IPARM,RPARM,IERR)
+C       
+C     ITPACK 2C MAIN SUBROUTINE  SOR  (SUCCESSIVE OVERRELATION)     
+C     EACH OF THE MAIN SUBROUTINES:   
+C           JCG, JSI, SOR, SSORCG, SSORSI, RSCG, RSSI     
+C     CAN BE USED INDEPENDENTLY OF THE OTHERS   
+C       
+C ... FUNCTION:   
+C       
+C          THIS SUBROUTINE, SOR, DRIVES THE  SUCCESSIVE   
+C          OVERRELAXATION ALGORITHM.  
+C       
+C ... PARAMETER LIST:       
+C       
+C          N      INPUT INTEGER.  DIMENSION OF THE MATRIX. (= NN)   
+C          IA,JA  INPUT INTEGER VECTORS.  THE TWO INTEGER ARRAYS OF 
+C                 THE SPARSE MATRIX REPRESENTATION.       
+C          A      INPUT D.P. VECTOR.  THE D.P. ARRAY OF THE SPARSE  
+C                 MATRIX REPRESENTATION 
+C          RHS    INPUT D.P. VECTOR.  CONTAINS THE RIGHT HAND SIDE  
+C                 OF THE MATRIX PROBLEM.
+C          U      INPUT/OUTPUT D.P. VECTOR.  ON INPUT, U CONTAINS THE 
+C                 INITIAL GUESS TO THE SOLUTION. ON OUTPUT, IT CONTAINS 
+C                 THE LATEST ESTIMATE TO THE SOLUTION.    
+C          IWKSP  INTEGER VECTOR WORKSPACE OF LENGTH 3*N  
+C          NW     INPUT INTEGER.  LENGTH OF AVAILABLE WKSP.  ON OUTPUT, 
+C                 IPARM(8) IS AMOUNT USED.      
+C          WKSP   D.P. VECTOR USED FOR WORKING SPACE.  SOR NEEDS THIS 
+C                 TO BE IN LENGTH AT LEAST  N   
+C          IPARM  INTEGER VECTOR OF LENGTH 12.  ALLOWS USER TO SPECIFY
+C                 SOME INTEGER PARAMETERS WHICH AFFECT THE METHOD.  
+C          RPARM  D.P. VECTOR OF LENGTH 12. ALLOWS USER TO SPECIFY SOME 
+C                 D.P. PARAMETERS WHICH AFFECT THE METHOD.
+C          IER    OUTPUT INTEGER.  ERROR FLAG. (= IERR)   
+C       
+C ... SOR SUBPROGRAM REFERENCES:      
+C       
+C          FROM ITPACK   BISRCH, DFAULT, ECHALL, ECHOUT, IPSTR, ITERM,
+C                        TIMER, ITSOR, IVFILL, PERMAT, c_PERROR,      
+C                        PERVEC, PFSOR1, PMULT, PRBNDX, PSTOP, QSORT, 
+C                        SBELM, SCAL, DCOPY2, DDOT2, TAU, UNSCAL, VFILL,
+C                        VOUT, WEVMW  
+C          SYSTEM        DABS, DLOG10, DBLE(AMAX0), DMAX1, DBLE(FLOAT), 
+C                        DSQRT
+C       
+C     VERSION:  ITPACK 2C (MARCH 1982)
+C       
+C     CODE WRITTEN BY:  DAVID KINCAID, ROGER GRIMES, JOHN RESPESS   
+C                       CENTER FOR NUMERICAL ANALYSIS     
+C                       UNIVERSITY OF TEXAS     
+C                       AUSTIN, TX  78712       
+C                       (512) 471-1242
+C       
+C     FOR ADDITIONAL DETAILS ON THE   
+C          (A) SUBROUTINE SEE TOMS ARTICLE 1982 
+C          (B) ALGORITHM  SEE CNA REPORT 150    
+C       
+C     BASED ON THEORY BY:  DAVID YOUNG, DAVID KINCAID, LOU HAGEMAN  
+C       
+C     REFERENCE THE BOOK:  APPLIED ITERATIVE METHODS      
+C                          L. HAGEMAN, D. YOUNG 
+C                          ACADEMIC PRESS, 1981 
+C       
+C     **************************************************  
+C     *               IMPORTANT NOTE                   *  
+C     *                                                *  
+C     *      WHEN INSTALLING ITPACK ROUTINES ON A      *  
+C     *  DIFFERENT COMPUTER, RESET SOME OF THE VALUES  *  
+C     *  IN  SUBROUTNE DFAULT.   MOST IMPORTANT ARE    *  
+C     *                                                *  
+C     *   DRELPR      MACHINE RELATIVE PRECISION       *  
+C     *   RPARM(1)    STOPPING CRITERION               *  
+C     *                                                *  
+C     *   ALSO CHANGE SYSTEM-DEPENDENT ROUTINE         *  
+C     *   SECOND USED IN TIMER                         *  
+C     *                                                *  
+C     **************************************************  
+C       
+C     SPECIFICATIONS FOR ARGUMENTS    
+C       
       INTEGER IA(1),JA(1),IWKSP(1),IPARM(12),NN,NW,IERR   
       DOUBLE PRECISION A(1),RHS(NN),U(NN),WKSP(NW),RPARM(12)
+C       
+C     SPECIFICATIONS FOR LOCAL VARIABLES
+C       
       INTEGER IB1,IB2,IB3,IDGTS,IER,IERPER,ITMAX1,LOOP,N,NB,N3      
       DOUBLE PRECISION DIGIT1,DIGIT2,TEMP,TIME1,TIME2,TOL 
+C       
+C *** BEGIN: ITPACK COMMON  
+C       
       INTEGER IN,IS,ISYM,ITMAX,LEVEL,NOUT       
       COMMON /ITCOM1/ IN,IS,ISYM,ITMAX,LEVEL,NOUT 
+C       
       LOGICAL ADAPT,BETADT,CASEII,HALT,PARTAD   
       COMMON /ITCOM2/ ADAPT,BETADT,CASEII,HALT,PARTAD     
+C       
       DOUBLE PRECISION BDELNM,BETAB,CME,DELNNM,DELSNM,FF,GAMMA,OMEGA,QA,
      *   QT,RHO,RRR,SIGE,SME,SPECR,SPR,DRELPR,STPTST,UDNM,ZETA      
       COMMON /ITCOM3/ BDELNM,BETAB,CME,DELNNM,DELSNM,FF,GAMMA,OMEGA,QA, 
      *   QT,RHO,RRR,SIGE,SME,SPECR,SPR,DRELPR,STPTST,UDNM,ZETA      
+C       
+C *** END  : ITPACK COMMON  
+C       
+C ... VARIABLES IN COMMON BLOCK - ITCOM1
+C       
+C     IN     - ITERATION NUMBER       
+C     IS     - ITERATION NUMBER WHEN PARAMETERS LAST CHANGED
+C     ISYM   - SYMMETRIC/NONSYMMETRIC STORAGE FORMAT SWITCH 
+C     ITMAX  - MAXIMUM NUMBER OF ITERATIONS ALLOWED       
+C     LEVEL  - LEVEL OF OUTPUT CONTROL SWITCH   
+C     NOUT   - OUTPUT element number     
+C       
+C ... VARIABLES IN COMMON BLOCK - ITCOM2
+C       
+C     ADAPT  - FULLY ADAPTIVE PROCEDURE SWITCH  
+C     BETADT - SWITCH FOR ADAPTIVE DETERMINATION OF BETA  
+C     CASEII - ADAPTIVE PROCEDURE CASE SWITCH   
+C     HALT   - STOPPING TEST SWITCH   
+C     PARTAD - PARTIALLY ADAPTIVE PROCEDURE SWITCH
+C       
+C ... VARIABLES IN COMMON BLOCK - ITCOM3
+C       
+C     BDELNM - TWO NORM OF B TIMES DELTA-SUPER-N
+C     BETAB  - ESTIMATE FOR THE SPECTRAL RADIUS OF LU MATRIX
+C     CME    - ESTIMATE OF LARGEST EIGENVALUE   
+C     DELNNM - INNER PRODUCT OF PSEUDO-RESIDUAL AT ITERATION N      
+C     DELSNM - INNER PRODUCT OF PSEUDO-RESIDUAL AT ITERATION S      
+C     FF     - ADAPTIVE PROCEDURE DAMPING FACTOR
+C     GAMMA  - ACCELERATION PARAMETER 
+C     OMEGA  - OVERRELAXATION PARAMETER FOR SOR AND SSOR  
+C     QA     - PSEUDO-RESIDUAL RATIO  
+C     QT     - VIRTUAL SPECTRAL RADIUS
+C     RHO    - ACCELERATION PARAMETER 
+C     RRR    - ADAPTIVE PARAMETER     
+C     SIGE   - PARAMETER SIGMA-SUB-E  
+C     SME    - ESTIMATE OF SMALLEST EIGENVALUE  
+C     SPECR  - SPECTRAL RADIUS ESTIMATE FOR SSOR
+C     DRELPR - MACHINE RELATIVE PRECISION       
+C     STPTST - STOPPING PARAMETER     
+C     UDNM   - TWO NORM OF U
+C     ZETA   - STOPPING CRITERION     
+C       
+C ... INITIALIZE COMMON BLOCKS
+C       
       LEVEL = IPARM(2)      
       NOUT = IPARM(4)       
       IF (LEVEL.GE.1) WRITE (NOUT,10) 
@@ -409,6 +976,9 @@
       TIME2 = RPARM(10)     
       DIGIT1 = RPARM(11)    
       DIGIT2 = RPARM(12)    
+C       
+C ... VERIFY N    
+C       
       IF (N.GT.0) GO TO 70  
       IER = 31    
       IF (LEVEL.GE.0) WRITE (NOUT,60) N 
@@ -417,6 +987,9 @@
      *   '    INVALID MATRIX DIMENSION, N =',I8)
       GO TO 360   
    70 CONTINUE    
+C       
+C ... REMOVE ROWS AND COLUMNS IF REQUESTED      
+C       
       IF (IPARM(10).EQ.0) GO TO 90    
       TOL = RPARM(8)
       CALL IVFILL (N,IWKSP,0) 
@@ -431,6 +1004,9 @@
      *   '    WHEN DIAGONAL ENTRY TOO LARGE  '/' ','    IER = ',I5,5X,
      *   ' RPARM(8) = ',D10.3,' (TOL)') 
       GO TO 360   
+C       
+C ... INITIALIZE WKSP BASE ADDRESSES. 
+C       
    90 IB1 = 1     
       IB2 = IB1+N 
       IB3 = IB2+N 
@@ -443,6 +1019,9 @@
      *   '    NOT ENOUGH WORKSPACE AT ',I10/' ','    SET IPARM(8) =',I10
      *   ,' (NW)')
       GO TO 360   
+C       
+C ... PERMUTE TO  RED-BLACK SYSTEM IF REQUESTED 
+C       
   110 NB = IPARM(9) 
       IF (NB.LT.0) GO TO 170
       N3 = 3*N    
@@ -456,6 +1035,9 @@
      *   '    WHICH COMPUTES THE RED-BLACK INDEXING'/' ','    IER = ',I5
      *   ,' IPARM(9) = ',I5,' (NB)')  
       GO TO 360   
+C       
+C ... PERMUTE MATRIX AND RHS
+C       
   130 IF (LEVEL.GE.2) WRITE (NOUT,140) NB       
   140 FORMAT (/10X,'ORDER OF BLACK SUBSYSTEM = ',I5,' (NB)')
       CALL PERMAT (N,IA,JA,A,IWKSP,IWKSP(IB3),ISYM,LEVEL,NOUT,IER)  
@@ -468,6 +1050,10 @@
       GO TO 360   
   160 CALL PERVEC (N,RHS,IWKSP)       
       CALL PERVEC (N,U,IWKSP) 
+C       
+C ... SCALE LINEAR SYSTEM, U, AND RHS BY THE SQUARE ROOT OF THE     
+C ... DIAGONAL ELEMENTS.    
+C       
   170 CONTINUE    
       CALL VFILL (IPARM(8),WKSP,0.0D0)
       CALL SCAL (N,IA,JA,A,RHS,U,WKSP,LEVEL,NOUT,IER)     
@@ -486,12 +1072,24 @@
   210 FORMAT (1X,'OMEGA IS THE RELAXATION FACTOR')
   220 IF (IPARM(11).NE.0) GO TO 230   
       TIMI1 = TIMER(DUMMY)  
+C       
+C ... ITERATION SEQUENCE    
+C       
   230 ITMAX1 = ITMAX+1      
       DO 240 LOOP = 1,ITMAX1
          IN = LOOP-1
+C       
+C ... CODE FOR ONE ITERATION. 
+C       
+C     U           = U(IN)   
+C       
          CALL ITSOR (N,IA,JA,A,RHS,U,WKSP(IB1)) 
+C       
          IF (HALT) GO TO 270
   240 CONTINUE    
+C       
+C ... ITMAX HAS BEEN REACHED
+C       
       IF (IPARM(11).NE.0) GO TO 250   
       TIMI2 = TIMER(DUMMY)  
       TIME1 = DBLE(TIMI2-TIMI1)       
@@ -502,12 +1100,21 @@
       IER = 33    
       IF (IPARM(3).EQ.0) RPARM(1) = STPTST      
       GO TO 300   
+C       
+C ... METHOD HAS CONVERGED  
+C       
   270 IF (IPARM(11).NE.0) GO TO 280   
       TIMI2 = TIMER(DUMMY)  
       TIME1 = DBLE(TIMI2-TIMI1)       
   280 IF (LEVEL.GE.1) WRITE (NOUT,290) IN       
   290 FORMAT (/1X,'SOR  HAS CONVERGED IN ',I5,' ITERATIONS')
+C       
+C ... UNSCALE THE MATRIX, SOLUTION, AND RHS VECTORS.      
+C       
   300 CALL UNSCAL (N,IA,JA,A,RHS,U,WKSP)
+C       
+C ... UN-PERMUTE MATRIX,RHS, AND SOLUTION       
+C       
       IF (IPARM(9).LT.0) GO TO 330    
       CALL PERMAT (N,IA,JA,A,IWKSP(IB2),IWKSP(IB3),ISYM,LEVEL,NOUT, 
      *   IERPER)  
@@ -522,10 +1129,16 @@
       GO TO 360   
   320 CALL PERVEC (N,RHS,IWKSP(IB2))  
       CALL PERVEC (N,U,IWKSP(IB2))    
+C       
+C ... OPTIONAL ERROR ANALYSIS 
+C       
   330 IDGTS = IPARM(12)     
       IF (IDGTS.LT.0) GO TO 340       
       IF (IPARM(2).LE.0) IDGTS = 0    
       CALL c_PERROR (N,IA,JA,A,RHS,U,WKSP,DIGIT1,DIGIT2,IDGTS)
+C       
+C ... SET RETURN PARAMETERS IN IPARM AND RPARM  
+C       
   340 IF (IPARM(11).NE.0) GO TO 350   
       TIMJ2 = TIMER(DUMMY)  
       TIME2 = DBLE(TIMJ2-TIMJ1)       
@@ -539,26 +1152,165 @@
       RPARM(10) = TIME2     
       RPARM(11) = DIGIT1    
       RPARM(12) = DIGIT2    
+C       
   360 CONTINUE    
       IERR = IER  
       IF (LEVEL.GE.3) CALL ECHALL (N,IA,JA,A,RHS,IPARM,RPARM,2)     
+C       
       RETURN      
       END 
       SUBROUTINE SSORCG (NN,IA,JA,A,RHS,U,IWKSP,NW,WKSP,IPARM,RPARM,
      *   IERR)    
+C       
+C     ITPACK 2C MAIN SUBROUTINE  SSORCG  (SYMMETRIC SUCCESSIVE OVER-
+C                                        RELAXATION CONJUGATE GRADIENT) 
+C     EACH OF THE MAIN SUBROUTINES:   
+C           JCG, JSI, SOR, SSORCG, SSORSI, RSCG, RSSI     
+C     CAN BE USED INDEPENDENTLY OF THE OTHERS   
+C       
+C ... FUNCTION:   
+C       
+C          THIS SUBROUTINE, SSORCG, DRIVES THE  SYMMETRIC SOR-CG    
+C          ALGORITHM.       
+C       
+C ... PARAMETER LIST:       
+C       
+C          N      INPUT INTEGER.  DIMENSION OF THE MATRIX. (= NN)   
+C          IA,JA  INPUT INTEGER VECTORS.  THE TWO INTEGER ARRAYS OF 
+C                 THE SPARSE MATRIX REPRESENTATION.       
+C          A      INPUT D.P. VECTOR.  THE D.P. ARRAY OF THE SPARSE  
+C                 MATRIX REPRESENTATION.
+C          RHS    INPUT D.P. VECTOR.  CONTAINS THE RIGHT HAND SIDE  
+C                 OF THE MATRIX PROBLEM.
+C          U      INPUT/OUTPUT D.P. VECTOR.  ON INPUT, U CONTAINS THE 
+C                 INITIAL GUESS TO THE SOLUTION. ON OUTPUT, IT CONTAINS 
+C                 THE LATEST ESTIMATE TO THE SOLUTION.    
+C          IWKSP  INTEGER VECTOR WORKSPACE OF LENGTH 3*N  
+C          NW     INPUT INTEGER.  LENGTH OF AVAILABLE WKSP.  ON OUTPUT, 
+C                 IPARM(8) IS AMOUNT USED.      
+C          WKSP   D.P. VECTOR USED FOR WORKING SPACE.  SSOR-CG      
+C                 NEEDS TO BE IN LENGTH AT LEAST
+C                 6*N + 2*ITMAX,  IF IPARM(5)=0  (SYMMETRIC STORAGE)
+C                 6*N + 4*ITMAX,  IF IPARM(5)=1  (NONSYMMETRIC STORAGE) 
+C          IPARM  INTEGER VECTOR OF LENGTH 12.  ALLOWS USER TO SPECIFY
+C                 SOME INTEGER PARAMETERS WHICH AFFECT THE METHOD.  IF
+C          RPARM  D.P. VECTOR OF LENGTH 12. ALLOWS USER TO SPECIFY SOME 
+C                 D.P. PARAMETERS WHICH AFFECT THE METHOD.
+C          IER    OUTPUT INTEGER.  ERROR FLAG. (= IERR)   
+C       
+C ... SSORCG SUBPROGRAM REFERENCES:   
+C       
+C          FROM ITPACK    BISRCH, CHGCON, DETERM, DFAULT, ECHALL,   
+C                         ECHOUT, EIGVNS, EIGVSS, EQRT1S, ITERM, TIMER, 
+C                         ITSRCG, IVFILL, OMEG, OMGCHG, OMGSTR,     
+C                         PARCON, PBETA, PBSOR, PERMAT, c_PERROR,     
+C                         PERVEC, PFSOR, PJAC2, PMULT, PRBNDX, PSTOP, PVT
+C                         QSORT, SBELM, SCAL, DCOPY2, DDOT2, SUM3,    
+C                         UNSCAL, VEVMW, VEVPW, VFILL, VOUT, WEVMW, 
+C                         ZBRENT      
+C          SYSTEM         DABS, DLOG, DLOG10, DBLE(AMAX0), DMAX1, AMIN1,
+C                         MOD, DSQRT  
+C       
+C     VERSION:  ITPACK 2C (MARCH 1982)
+C       
+C     CODE WRITTEN BY:  DAVID KINCAID, ROGER GRIMES, JOHN RESPESS   
+C                       CENTER FOR NUMERICAL ANALYSIS     
+C                       UNIVERSITY OF TEXAS     
+C                       AUSTIN, TX  78712       
+C                       (512) 471-1242
+C       
+C     FOR ADDITIONAL DETAILS ON THE   
+C          (A) SUBROUTINE SEE TOMS ARTICLE 1982 
+C          (B) ALGORITHM  SEE CNA REPORT 150    
+C       
+C     BASED ON THEORY BY:  DAVID YOUNG, DAVID KINCAID, LOU HAGEMAN  
+C       
+C     REFERENCE THE BOOK:  APPLIED ITERATIVE METHODS      
+C                          L. HAGEMAN, D. YOUNG 
+C                          ACADEMIC PRESS, 1981 
+C       
+C     **************************************************  
+C     *               IMPORTANT NOTE                   *  
+C     *                                                *  
+C     *      WHEN INSTALLING ITPACK ROUTINES ON A      *  
+C     *  DIFFERENT COMPUTER, RESET SOME OF THE VALUES  *  
+C     *  IN  SUBROUTNE DFAULT.   MOST IMPORTANT ARE    *  
+C     *                                                *  
+C     *   DRELPR      MACHINE RELATIVE PRECISION       *  
+C     *   RPARM(1)    STOPPING CRITERION               *  
+C     *                                                *  
+C     *   ALSO CHANGE SYSTEM-DEPENDENT ROUTINE         *  
+C     *   SECOND USED IN TIMER                         *  
+C     *                                                *  
+C     **************************************************  
+C       
+C     SPECIFICATIONS FOR ARGUMENTS    
+C       
       INTEGER IA(1),JA(1),IWKSP(1),IPARM(12),NN,NW,IERR   
       DOUBLE PRECISION A(1),RHS(NN),U(NN),WKSP(NW),RPARM(12)
+C       
+C     SPECIFICATIONS FOR LOCAL VARIABLES
+C       
       INTEGER IB1,IB2,IB3,IB4,IB5,IB6,IB7,IDGTS,IER,IERPER,ITMAX1,LOOP,N
      *   ,NB,N3   
       DOUBLE PRECISION BETNEW,DIGIT1,DIGIT2,PBETA,TEMP,TIME1,TIME2,TOL
+C       
+C *** BEGIN: ITPACK COMMON  
+C       
       INTEGER IN,IS,ISYM,ITMAX,LEVEL,NOUT       
       COMMON /ITCOM1/ IN,IS,ISYM,ITMAX,LEVEL,NOUT 
+C       
       LOGICAL ADAPT,BETADT,CASEII,HALT,PARTAD   
       COMMON /ITCOM2/ ADAPT,BETADT,CASEII,HALT,PARTAD     
+C       
       DOUBLE PRECISION BDELNM,BETAB,CME,DELNNM,DELSNM,FF,GAMMA,OMEGA,QA,
      *   QT,RHO,RRR,SIGE,SME,SPECR,SPR,DRELPR,STPTST,UDNM,ZETA      
       COMMON /ITCOM3/ BDELNM,BETAB,CME,DELNNM,DELSNM,FF,GAMMA,OMEGA,QA, 
      *   QT,RHO,RRR,SIGE,SME,SPECR,SPR,DRELPR,STPTST,UDNM,ZETA      
+C       
+C *** END  : ITPACK COMMON  
+C       
+C ... VARIABLES IN COMMON BLOCK - ITCOM1
+C       
+C     IN     - ITERATION NUMBER       
+C     IS     - ITERATION NUMBER WHEN PARAMETERS LAST CHANGED
+C     ISYM   - SYMMETRIC/NONSYMMETRIC STORAGE FORMAT SWITCH 
+C     ITMAX  - MAXIMUM NUMBER OF ITERATIONS ALLOWED       
+C     LEVEL  - LEVEL OF OUTPUT CONTROL SWITCH   
+C     NOUT   - OUTPUT element number     
+C       
+C ... VARIABLES IN COMMON BLOCK - ITCOM2
+C       
+C     ADAPT  - FULLY ADAPTIVE PROCEDURE SWITCH  
+C     BETADT - SWITCH FOR ADAPTIVE DETERMINATION OF BETA  
+C     CASEII - ADAPTIVE PROCEDURE CASE SWITCH   
+C     HALT   - STOPPING TEST SWITCH   
+C     PARTAD - PARTIALLY ADAPTIVE PROCEDURE SWITCH
+C       
+C ... VARIABLES IN COMMON BLOCK - ITCOM3
+C       
+C     BDELNM - TWO NORM OF B TIMES DELTA-SUPER-N
+C     BETAB  - ESTIMATE FOR THE SPECTRAL RADIUS OF LU MATRIX
+C     CME    - ESTIMATE OF LARGEST EIGENVALUE   
+C     DELNNM - INNER PRODUCT OF PSEUDO-RESIDUAL AT ITERATION N      
+C     DELSNM - INNER PRODUCT OF PSEUDO-RESIDUAL AT ITERATION S      
+C     FF     - ADAPTIVE PROCEDURE DAMPING FACTOR
+C     GAMMA  - ACCELERATION PARAMETER 
+C     OMEGA  - OVERRELAXATION PARAMETER FOR SOR AND SSOR  
+C     QA     - PSEUDO-RESIDUAL RATIO  
+C     QT     - VIRTUAL SPECTRAL RADIUS
+C     RHO    - ACCELERATION PARAMETER 
+C     RRR    - ADAPTIVE PARAMETER     
+C     SIGE   - PARAMETER SIGMA-SUB-E  
+C     SME    - ESTIMATE OF SMALLEST EIGENVALUE  
+C     SPECR  - SPECTRAL RADIUS ESTIMATE FOR SSOR
+C     DRELPR - MACHINE RELATIVE PRECISION       
+C     STPTST - STOPPING PARAMETER     
+C     UDNM   - TWO NORM OF U
+C     ZETA   - STOPPING CRITERION     
+C       
+C ... INITIALIZE COMMON BLOCKS
+C       
       LEVEL = IPARM(2)      
       NOUT = IPARM(4)       
       IF (IPARM(9).GE.0) IPARM(6) = 2 
@@ -586,6 +1338,9 @@
       TIME2 = RPARM(10)     
       DIGIT1 = RPARM(11)    
       DIGIT2 = RPARM(12)    
+C       
+C ... VERIFY N    
+C       
       IF (N.GT.0) GO TO 70  
       IER = 41    
       IF (LEVEL.GE.0) WRITE (NOUT,60) N 
@@ -594,6 +1349,9 @@
      *   '    INVALID MATRIX DIMENSION, N =',I8)
       GO TO 390   
    70 CONTINUE    
+C       
+C ... REMOVE ROWS AND COLUMNS IF REQUESTED      
+C       
       IF (IPARM(10).EQ.0) GO TO 90    
       TOL = RPARM(8)
       CALL IVFILL (N,IWKSP,0) 
@@ -608,6 +1366,9 @@
      *   '    WHEN DIAGONAL ENTRY TOO LARGE  '/' ','    IER = ',I5,5X,
      *   ' RPARM(8) = ',D10.3,' (TOL)') 
       GO TO 390   
+C       
+C ... INITIALIZE WKSP BASE ADDRESSES. 
+C       
    90 IB1 = 1     
       IB2 = IB1+N 
       IB3 = IB2+N 
@@ -625,6 +1386,9 @@
      *   '    NOT ENOUGH WORKSPACE AT ',I10/' ','    SET IPARM(8) =',I10
      *   ,' (NW)')
       GO TO 390   
+C       
+C ... PERMUTE TO  RED-BLACK SYSTEM IF REQUESTED 
+C       
   110 NB = IPARM(9) 
       IF (NB.LT.0) GO TO 170
       N3 = 3*N    
@@ -638,6 +1402,9 @@
      *   '    WHICH COMPUTES THE RED-BLACK INDEXING'/' ','    IER = ',I5
      *   ,' IPARM(9) = ',I5,' (NB)')  
       GO TO 390   
+C       
+C ... PERMUTE MATRIX AND RHS
+C       
   130 IF (LEVEL.GE.2) WRITE (NOUT,140) NB       
   140 FORMAT (/10X,'ORDER OF BLACK SUBSYSTEM = ',I5,' (NB)')
       CALL PERMAT (N,IA,JA,A,IWKSP,IWKSP(IB3),ISYM,LEVEL,NOUT,IER)  
@@ -650,6 +1417,10 @@
       GO TO 390   
   160 CALL PERVEC (N,RHS,IWKSP)       
       CALL PERVEC (N,U,IWKSP) 
+C       
+C ... SCALE LINEAR SYSTEM, U, AND RHS BY THE SQUARE ROOT OF THE     
+C ... DIAGONAL ELEMENTS.    
+C       
   170 CONTINUE    
       CALL VFILL (IPARM(8),WKSP,0.0D0)
       CALL SCAL (N,IA,JA,A,RHS,U,WKSP,LEVEL,NOUT,IER)     
@@ -668,6 +1439,9 @@
   210 FORMAT (1X,'S-PRIME IS AN INITIAL ESTIMATE FOR NEW CME')      
   220 IF (IPARM(11).NE.0) GO TO 230   
       TIMI1 = TIMER(DUMMY)  
+C       
+C ... SPECIAL PROCEDURE FOR FULLY ADAPTIVE CASE.
+C       
   230 CONTINUE    
       IF (.NOT.ADAPT) GO TO 250       
       IF (.NOT.BETADT) GO TO 240      
@@ -677,22 +1451,45 @@
       BETAB = DMAX1(BETAB,.25D0,BETNEW) 
   240 CALL OMEG (0.D0,1)    
       IS = 0      
+C       
+C ... INITIALIZE FORWARD PSEUDO-RESIDUAL
+C       
   250 CALL DCOPY2 (N,RHS,1,WKSP(IB1),1)
       CALL DCOPY2 (N,U,1,WKSP(IB2),1)  
       CALL PFSOR (N,IA,JA,A,WKSP(IB2),WKSP(IB1))
       CALL VEVMW (N,WKSP(IB2),U)      
+C       
+C ... ITERATION SEQUENCE    
+C       
       ITMAX1 = ITMAX+1      
       DO 270 LOOP = 1,ITMAX1
          IN = LOOP-1
          IF (MOD(IN,2).EQ.1) GO TO 260
+C       
+C ... CODE FOR THE EVEN ITERATIONS.   
+C       
+C     U           = U(IN)       WKSP(IB2) = C(IN) 
+C     WKSP(IB1)   = U(IN-1)     WKSP(IB3) = C(IN-1)       
+C       
          CALL ITSRCG (N,IA,JA,A,RHS,U,WKSP(IB1),WKSP(IB2),WKSP(IB3),
      *      WKSP(IB4),WKSP(IB5),WKSP(IB6),WKSP(IB7))      
+C       
          IF (HALT) GO TO 300
          GO TO 270
+C       
+C ... CODE FOR THE ODD ITERATIONS.    
+C       
+C     U           = U(IN-1)     WKSP(IB2) = C(IN-1)       
+C     WKSP(IB1)   = U(IN)       WKSP(IB3) =C(IN)
+C       
   260    CALL ITSRCG (N,IA,JA,A,RHS,WKSP(IB1),U,WKSP(IB3),WKSP(IB2),
      *      WKSP(IB4),WKSP(IB5),WKSP(IB6),WKSP(IB7))      
+C       
          IF (HALT) GO TO 300
   270 CONTINUE    
+C       
+C ... ITMAX HAS BEEN REACHED
+C       
       IF (IPARM(11).NE.0) GO TO 280   
       TIMI2 = TIMER(DUMMY)  
       TIME1 = DBLE(TIMI2-TIMI1)       
@@ -703,14 +1500,26 @@
       IER = 43    
       IF (IPARM(3).EQ.0) RPARM(1) = STPTST      
       GO TO 330   
+C       
+C ... METHOD HAS CONVERGED  
+C       
   300 IF (IPARM(11).NE.0) GO TO 310   
       TIMI2 = TIMER(DUMMY)  
       TIME1 = DBLE(TIMI2-TIMI1)       
   310 IF (LEVEL.GE.1) WRITE (NOUT,320) IN       
   320 FORMAT (/1X,'SSORCG  HAS CONVERGED IN ',I5,' ITERATIONS')     
+C       
+C ... PUT SOLUTION INTO U IF NOT ALREADY THERE. 
+C       
   330 CONTINUE    
       IF (MOD(IN,2).EQ.1) CALL DCOPY2 (N,WKSP(IB1),1,U,1)  
+C       
+C ... UNSCALE THE MATRIX, SOLUTION, AND RHS VECTORS.      
+C       
       CALL UNSCAL (N,IA,JA,A,RHS,U,WKSP)
+C       
+C ... UN-PERMUTE MATRIX,RHS, AND SOLUTION       
+C       
       IF (IPARM(9).LT.0) GO TO 360    
       CALL PERMAT (N,IA,JA,A,IWKSP(IB2),IWKSP(IB3),ISYM,LEVEL,NOUT, 
      *   IERPER)  
@@ -725,10 +1534,16 @@
       GO TO 390   
   350 CALL PERVEC (N,RHS,IWKSP(IB2))  
       CALL PERVEC (N,U,IWKSP(IB2))    
+C       
+C ... OPTIONAL ERROR ANALYSIS 
+C       
   360 IDGTS = IPARM(12)     
       IF (IDGTS.LT.0) GO TO 370       
       IF (IPARM(2).LE.0) IDGTS = 0    
       CALL c_PERROR (N,IA,JA,A,RHS,U,WKSP,DIGIT1,DIGIT2,IDGTS)
+C       
+C ... SET RETURN PARAMETERS IN IPARM AND RPARM  
+C       
   370 IF (IPARM(11).NE.0) GO TO 380   
       TIMJ2 = TIMER(DUMMY)  
       TIME2 = DBLE(TIMJ2-TIMJ1)       
@@ -746,25 +1561,161 @@
       RPARM(10) = TIME2     
       RPARM(11) = DIGIT1    
       RPARM(12) = DIGIT2    
+C       
   390 CONTINUE    
       IERR = IER  
       IF (LEVEL.GE.3) CALL ECHALL (N,IA,JA,A,RHS,IPARM,RPARM,2)     
+C       
       RETURN      
       END 
       SUBROUTINE SSORSI (NN,IA,JA,A,RHS,U,IWKSP,NW,WKSP,IPARM,RPARM,
      *   IERR)    
+C       
+C     ITPACK 2C MAIN SUBROUTINE  SSORSI  (SYMMETRIC SUCCESSIVE RELAX- 
+C                                         ATION SEMI-ITERATION)     
+C     EACH OF THE MAIN SUBROUTINES:   
+C           JCG, JSI, SOR, SSORCG, SSORSI, RSCG, RSSI     
+C     CAN BE USED INDEPENDENTLY OF THE OTHERS   
+C       
+C ... FUNCTION:   
+C       
+C          THIS SUBROUTINE, SSORSI, DRIVES THE  SYMMETRIC SOR-SI    
+C          ALGORITHM.       
+C       
+C ... PARAMETER LIST:       
+C       
+C          N      INPUT INTEGER.  DIMENSION OF THE MATRIX. (= NN)   
+C          IA,JA  INPUT INTEGER VECTORS.  THE TWO INTEGER ARRAYS OF 
+C                 THE SPARSE MATRIX REPRESENTATION.       
+C          A      INPUT D.P. VECTOR.  THE D.P. ARRAY OF THE SPARSE  
+C                 MATRIX REPRESENTATION.
+C          RHS    INPUT D.P. VECTOR.  CONTAINS THE RIGHT HAND SIDE  
+C                 OF THE MATRIX PROBLEM.
+C          U      INPUT/OUTPUT D.P. VECTOR.  ON INPUT, U CONTAINS THE 
+C                 INITIAL GUESS TO THE SOLUTION. ON OUTPUT, IT CONTAINS 
+C                 THE LATEST ESTIMATE TO THE SOLUTION.    
+C          IWKSP  INTEGER VECTOR WORKSPACE OF LENGTH 3*N  
+C          NW     INPUT INTEGER.  LENGTH OF AVAILABLE WKSP.  ON OUTPUT, 
+C                 IPARM(8) IS AMOUNT USED.      
+C          WKSP   D.P. VECTOR USED FOR WORKING SPACE.  SSORSI       
+C                 NEEDS THIS TO BE IN LENGTH AT LEAST  5*N
+C          IPARM  INTEGER VECTOR OF LENGTH 12.  ALLOWS USER TO SPECIFY
+C                 SOME INTEGER PARAMETERS WHICH AFFECT THE METHOD.  IF
+C          RPARM  D.P. VECTOR OF LENGTH 12. ALLOWS USER TO SPECIFY SOME 
+C                 D.P. PARAMETERS WHICH AFFECT THE METHOD.
+C          IER    OUTPUT INTEGER.  ERROR FLAG. (= IERR)   
+C       
+C ... SSORSI SUBPROGRAM REFERENCES:   
+C       
+C          FROM ITPACK    BISRCH, CHEBY, CHGSI, DFAULT, ECHALL, ECHOUT, 
+C                         ITERM, TIMER, ITSRSI, IVFILL, OMEG,       
+C                         OMGSTR, PARSI, PBETA, PERMAT, c_PERROR,     
+C                         PERVEC, PFSOR, PMULT, PRBNDX, PSSOR1,     
+C                         PSTOP, PVTBV, QSORT, SBELM, SCAL, DCOPY2,  
+C                         DDOT2, SUM3, TSTCHG, UNSCAL, VEVPW, VFILL, 
+C                         VOUT, WEVMW 
+C          SYSTEM         DABS, DLOG, DLOG10, DBLE(AMAX0), DMAX1, DBLE(F
+C                         MOD, DSQRT  
+C       
+C     VERSION:  ITPACK 2C (MARCH 1982)
+C       
+C     CODE WRITTEN BY:  DAVID KINCAID, ROGER GRIMES, JOHN RESPESS   
+C                       CENTER FOR NUMERICAL ANALYSIS     
+C                       UNIVERSITY OF TEXAS     
+C                       AUSTIN, TX  78712       
+C                       (512) 471-1242
+C       
+C     FOR ADDITIONAL DETAILS ON THE   
+C          (A) SUBROUTINE SEE TOMS ARTICLE 1982 
+C          (B) ALGORITHM  SEE CNA REPORT 150    
+C       
+C     BASED ON THEORY BY:  DAVID YOUNG, DAVID KINCAID, LOU HAGEMAN  
+C       
+C     REFERENCE THE BOOK:  APPLIED ITERATIVE METHODS      
+C                          L. HAGEMAN, D. YOUNG 
+C                          ACADEMIC PRESS, 1981 
+C       
+C     **************************************************  
+C     *               IMPORTANT NOTE                   *  
+C     *                                                *  
+C     *      WHEN INSTALLING ITPACK ROUTINES ON A      *  
+C     *  DIFFERENT COMPUTER, RESET SOME OF THE VALUES  *  
+C     *  IN  SUBROUTNE DFAULT.   MOST IMPORTANT ARE    *  
+C     *                                                *  
+C     *   DRELPR      MACHINE RELATIVE PRECISION       *  
+C     *   RPARM(1)    STOPPING CRITERION               *  
+C     *                                                *  
+C     *   ALSO CHANGE SYSTEM-DEPENDENT ROUTINE         *  
+C     *   SECOND USED IN TIMER                         *  
+C     *                                                *  
+C     **************************************************  
+C       
+C     SPECIFICATIONS FOR ARGUMENTS    
+C       
       INTEGER IA(1),JA(1),IWKSP(1),IPARM(12),NN,NW,IERR   
       DOUBLE PRECISION A(1),RHS(NN),U(NN),WKSP(NW),RPARM(12)
+C       
+C     SPECIFICATIONS FOR LOCAL VARIABLES
+C       
       INTEGER IB1,IB2,IB3,IB4,IB5,IDGTS,IER,IERPER,ITMAX1,LOOP,N,NB,N3
       DOUBLE PRECISION BETNEW,DIGIT1,DIGIT2,PBETA,TEMP,TIME1,TIME2,TOL
+C       
+C *** BEGIN: ITPACK COMMON  
+C       
       INTEGER IN,IS,ISYM,ITMAX,LEVEL,NOUT       
       COMMON /ITCOM1/ IN,IS,ISYM,ITMAX,LEVEL,NOUT 
+C       
       LOGICAL ADAPT,BETADT,CASEII,HALT,PARTAD   
       COMMON /ITCOM2/ ADAPT,BETADT,CASEII,HALT,PARTAD     
+C       
       DOUBLE PRECISION BDELNM,BETAB,CME,DELNNM,DELSNM,FF,GAMMA,OMEGA,QA,
      *   QT,RHO,RRR,SIGE,SME,SPECR,SPR,DRELPR,STPTST,UDNM,ZETA      
       COMMON /ITCOM3/ BDELNM,BETAB,CME,DELNNM,DELSNM,FF,GAMMA,OMEGA,QA, 
      *   QT,RHO,RRR,SIGE,SME,SPECR,SPR,DRELPR,STPTST,UDNM,ZETA      
+C       
+C *** END  : ITPACK COMMON  
+C       
+C ... VARIABLES IN COMMON BLOCK - ITCOM1
+C       
+C     IN     - ITERATION NUMBER       
+C     ISYM   - SYMMETRIC/NONSYMMETRIC STORAGE FORMAT SWITCH 
+C     IS     - ITERATION NUMBER WHEN PARAMETERS LAST CHANGED
+C     ITMAX  - MAXIMUM NUMBER OF ITERATIONS ALLOWED       
+C     LEVEL  - LEVEL OF OUTPUT CONTROL SWITCH   
+C     NOUT   - OUTPUT element number     
+C       
+C ... VARIABLES IN COMMON BLOCK - ITCOM2
+C       
+C     ADAPT  - FULLY ADAPTIVE PROCEDURE SWITCH  
+C     BETADT - SWITCH FOR ADAPTIVE DETERMINATION OF BETA  
+C     CASEII - ADAPTIVE PROCEDURE CASE SWITCH   
+C     HALT   - STOPPING TEST SWITCH   
+C     PARTAD - PARTIALLY ADAPTIVE PROCEDURE SWITCH
+C       
+C ... VARIABLES IN COMMON BLOCK - ITCOM3
+C       
+C     BDELNM - TWO NORM OF B TIMES DELTA-SUPER-N
+C     BETAB  - ESTIMATE FOR THE SPECTRAL RADIUS OF LU MATRIX
+C     CME    - ESTIMATE OF LARGEST EIGENVALUE   
+C     DELNNM - INNER PRODUCT OF PSEUDO-RESIDUAL AT ITERATION N      
+C     DELSNM - INNER PRODUCT OF PSEUDO-RESIDUAL AT ITERATION S      
+C     FF     - ADAPTIVE PROCEDURE DAMPING FACTOR
+C     GAMMA  - ACCELERATION PARAMETER 
+C     OMEGA  - OVERRELAXATION PARAMETER FOR SOR AND SSOR  
+C     QA     - PSEUDO-RESIDUAL RATIO  
+C     QT     - VIRTUAL SPECTRAL RADIUS
+C     RHO    - ACCELERATION PARAMETER 
+C     RRR    - ADAPTIVE PARAMETER     
+C     SIGE   - PARAMETER SIGMA-SUB-E  
+C     SME    - ESTIMATE OF SMALLEST EIGENVALUE  
+C     SPECR  - SPECTRAL RADIUS ESTIMATE FOR SSOR
+C     DRELPR - MACHINE RELATIVE PRECISION       
+C     STPTST - STOPPING PARAMETER     
+C     UDNM   - TWO NORM OF U
+C     ZETA   - STOPPING CRITERION     
+C       
+C ... INITIALIZE COMMON BLOCKS
+C       
       LEVEL = IPARM(2)      
       NOUT = IPARM(4)       
       IF (IPARM(9).GE.0) IPARM(6) = 2 
@@ -792,6 +1743,9 @@
       TIME2 = RPARM(10)     
       DIGIT1 = RPARM(11)    
       DIGIT2 = RPARM(12)    
+C       
+C ... VERIFY N    
+C       
       IF (N.GT.0) GO TO 70  
       IER = 51    
       IF (LEVEL.GE.0) WRITE (NOUT,60) N 
@@ -800,6 +1754,9 @@
      *   '    INVALID MATRIX DIMENSION, N =',I8)
       GO TO 380   
    70 CONTINUE    
+C       
+C ... REMOVE ROWS AND COLUMNS IF REQUESTED      
+C       
       IF (IPARM(10).EQ.0) GO TO 90    
       TOL = RPARM(8)
       CALL IVFILL (N,IWKSP,0) 
@@ -814,6 +1771,9 @@
      *   '    WHEN DIAGONAL ENTRY TOO LARGE  '/' ','    IER = ',I5,5X,
      *   ' RPARM(8) = ',D10.3,' (TOL)') 
       GO TO 380   
+C       
+C ... INITIALIZE WKSP BASE ADDRESSES. 
+C       
    90 IB1 = 1     
       IB2 = IB1+N 
       IB3 = IB2+N 
@@ -827,6 +1787,9 @@
      *   '    CALLED FROM ITPACK ROUTINE SSORSI '/' ',    
      *   '    NOT ENOUGH WORKSPACE AT ',I10/' ','    SET IPARM(8) =',I10
      *   ,' (NW)')
+C       
+C ... PERMUTE TO  RED-BLACK SYSTEM IF REQUESTED 
+C       
   110 NB = IPARM(9) 
       IF (NB.LT.0) GO TO 170
       N3 = 3*N    
@@ -840,6 +1803,9 @@
      *   '    WHICH COMPUTES THE RED-BLACK INDEXING'/' ','    IER = ',I5
      *   ,' IPARM(9) = ',I5,' (NB)')  
       GO TO 380   
+C       
+C ... PERMUTE MATRIX AND RHS
+C       
   130 IF (LEVEL.GE.2) WRITE (NOUT,140) NB       
   140 FORMAT (/10X,'ORDER OF BLACK SUBSYSTEM = ',I5,' (NB)')
       CALL PERMAT (N,IA,JA,A,IWKSP,IWKSP(IB3),ISYM,LEVEL,NOUT,IER)  
@@ -852,6 +1818,10 @@
       GO TO 380   
   160 CALL PERVEC (N,RHS,IWKSP)       
       CALL PERVEC (N,U,IWKSP) 
+C       
+C ... SCALE LINEAR SYSTEM, U, AND RHS BY THE SQUARE ROOT OF THE     
+C ... DIAGONAL ELEMENTS.    
+C       
   170 CONTINUE    
       CALL VFILL (IPARM(8),WKSP,0.0D0)
       CALL SCAL (N,IA,JA,A,RHS,U,WKSP,LEVEL,NOUT,IER)     
@@ -868,6 +1838,9 @@
      *   ' ACCELERATION PARAMETERS')  
   210 IF (IPARM(11).NE.0) GO TO 220   
       TIMI1 = TIMER(DUMMY)  
+C       
+C ... SPECIAL PROCEDURE FOR FULLY ADAPTIVE CASE.
+C       
   220 CONTINUE    
       IF (.NOT.ADAPT) GO TO 240       
       IF (.NOT.BETADT) GO TO 230      
@@ -877,18 +1850,38 @@
       BETAB = DMAX1(BETAB,.25D0,BETNEW) 
   230 CALL OMEG (0.D0,1)    
       IS = 0      
+C       
+C ... ITERATION SEQUENCE    
+C       
   240 ITMAX1 = ITMAX+1      
       DO 260 LOOP = 1,ITMAX1
          IN = LOOP-1
          IF (MOD(IN,2).EQ.1) GO TO 250
+C       
+C ... CODE FOR THE EVEN ITERATIONS.   
+C       
+C     U           = U(IN)   
+C     WKSP(IB1)   = U(IN-1) 
+C       
          CALL ITSRSI (N,IA,JA,A,RHS,U,WKSP(IB1),WKSP(IB2),WKSP(IB3),
      *      WKSP(IB4),WKSP(IB5))      
+C       
          IF (HALT) GO TO 290
          GO TO 260
+C       
+C ... CODE FOR THE ODD ITERATIONS.    
+C       
+C     U           = U(IN-1) 
+C     WKSP(IB1)   = U(IN)   
+C       
   250    CALL ITSRSI (N,IA,JA,A,RHS,WKSP(IB1),U,WKSP(IB2),WKSP(IB3),
      *      WKSP(IB4),WKSP(IB5))      
+C       
          IF (HALT) GO TO 290
   260 CONTINUE    
+C       
+C ... ITMAX HAS BEEN REACHED
+C       
       IF (IPARM(11).NE.0) GO TO 270   
       TIMI2 = TIMER(DUMMY)  
       TIME1 = DBLE(TIMI2-TIMI1)       
@@ -899,14 +1892,26 @@
       IER = 53    
       IF (IPARM(3).EQ.0) RPARM(1) = STPTST      
       GO TO 320   
+C       
+C ... METHOD HAS CONVERGED  
+C       
   290 IF (IPARM(11).NE.0) GO TO 300   
       TIMI2 = TIMER(DUMMY)  
       TIME1 = DBLE(TIMI2-TIMI1)       
   300 IF (LEVEL.GE.1) WRITE (NOUT,310) IN       
   310 FORMAT (/1X,'SSORSI  HAS CONVERGED IN ',I5,' ITERATIONS')     
+C       
+C ... PUT SOLUTION INTO U IF NOT ALREADY THERE. 
+C       
   320 CONTINUE    
       IF (MOD(IN,2).EQ.1) CALL DCOPY2 (N,WKSP(IB1),1,U,1)  
+C       
+C ... UNSCALE THE MATRIX, SOLUTION, AND RHS VECTORS.      
+C       
       CALL UNSCAL (N,IA,JA,A,RHS,U,WKSP)
+C       
+C ... UN-PERMUTE MATRIX,RHS, AND SOLUTION       
+C       
       IF (IPARM(9).LT.0) GO TO 350    
       CALL PERMAT (N,IA,JA,A,IWKSP(IB2),IWKSP(IB3),ISYM,LEVEL,NOUT, 
      *   IERPER)  
@@ -921,10 +1926,16 @@
       GO TO 380   
   340 CALL PERVEC (N,RHS,IWKSP(IB2))  
       CALL PERVEC (N,U,IWKSP(IB2))    
+C       
+C ... OPTIONAL ERROR ANALYSIS 
+C       
   350 IDGTS = IPARM(12)     
       IF (IDGTS.LT.0) GO TO 360       
       IF (IPARM(2).LE.0) IDGTS = 0    
       CALL c_PERROR (N,IA,JA,A,RHS,U,WKSP,DIGIT1,DIGIT2,IDGTS)
+C       
+C ... SET RETURN PARAMETERS IN IPARM AND RPARM  
+C       
   360 IF (IPARM(11).NE.0) GO TO 370   
       TIMJ2 = TIMER(DUMMY)  
       TIME2 = DBLE(TIMJ2-TIMJ1)       
@@ -940,25 +1951,164 @@
       RPARM(10) = TIME2     
       RPARM(11) = DIGIT1    
       RPARM(12) = DIGIT2    
+C       
   380 CONTINUE    
       IERR = IER  
       IF (LEVEL.GE.3) CALL ECHALL (N,IA,JA,A,RHS,IPARM,RPARM,2)     
+C       
       RETURN      
       END 
       SUBROUTINE RSCG (NN,IA,JA,A,RHS,U,IWKSP,NW,WKSP,IPARM,RPARM,IERR) 
+C       
+C     ITPACK 2C MAIN SUBROUTINE  RSCG  (REDUCED SYSTEM CONJUGATE    
+C                                       GRADIENT) 
+C     EACH OF THE MAIN SUBROUTINES:   
+C           JCG, JSI, SOR, SSORCG, SSORSI, RSCG, RSSI     
+C     CAN BE USED INDEPENDENTLY OF THE OTHERS   
+C       
+C ... FUNCTION:   
+C       
+C          THIS SUBROUTINE, RSCG, DRIVES THE  REDUCED SYSTEM CG     
+C          ALGORITHM.       
+C       
+C ... PARAMETER LIST:       
+C       
+C          N     INPUT INTEGER.  DIMENSION OF THE MATRIX. (= NN)    
+C                 IN THE RED-BLACK MATRIX.      
+C          IA,JA  INPUT INTEGER VECTORS.  THE TWO INTEGER ARRAYS OF 
+C                 THE SPARSE MATRIX REPRESENTATION.       
+C          A      INPUT D.P. VECTOR.  THE D.P. ARRAY OF THE SPARSE  
+C                 MATRIX REPRESENTATION.
+C          RHS    INPUT D.P. VECTOR.  CONTAINS THE RIGHT HAND SIDE  
+C                 OF THE MATRIX PROBLEM.
+C          U      INPUT/OUTPUT D.P. VECTOR.  ON INPUT, U CONTAINS THE 
+C                 INITIAL GUESS TO THE SOLUTION. ON OUTPUT, IT CONTAINS 
+C                 THE LATEST ESTIMATE TO THE SOLUTION.    
+C          IWKSP  INTEGER VECTOR WORKSPACE OF LENGTH 3*N  
+C          NW     INPUT INTEGER.  LENGTH OF AVAILABLE WKSP.  ON OUTPUT, 
+C                 IPARM(8) IS AMOUNT USED.      
+C          WKSP   D.P. VECTOR USED FOR WORKING SPACE.  RSCG NEEDS   
+C                 THIS TO BE IN LENGTH AT LEAST 
+C                 N+3*NB+2*ITMAX, IF IPARM(5)=0  (SYMMETRIC STORAGE)
+C                 N+3*NB+4*ITMAX, IF IPARM(5)=1  (NONSYMMETRIC STORAGE) 
+C                 HERE NB IS THE ORDER OF THE BLACK SUBSYSTEM       
+C          IPARM  INTEGER VECTOR OF LENGTH 12.  ALLOWS USER TO SPECIFY
+C                 SOME INTEGER PARAMETERS WHICH AFFECT THE METHOD.  IF
+C          RPARM  D.P. VECTOR OF LENGTH 12. ALLOWS USER TO SPECIFY SOME 
+C                 D.P. PARAMETERS WHICH AFFECT THE METHOD.
+C          IER    OUTPUT INTEGER. ERROR FLAG. (= IERR)    
+C       
+C ... RSCG SUBPROGRAM REFERENCES:     
+C       
+C          FROM ITPACK    BISRCH, CHGCON, DETERM, DFAULT, ECHALL,   
+C                         ECHOUT, EIGVNS, EIGVSS, EQRT1S, ITERM, TIMER
+C                         ITRSCG, IVFILL, PARCON, PERMAT, 
+C                         c_PERROR, PERVEC, PMULT, PRBNDX, PRSBLK,    
+C                         PRSRED, PSTOP, QSORT, SBELM, SCAL, DCOPY2, 
+C                         DDOT2, SUM3, UNSCAL, VFILL, VOUT, WEVMW,   
+C                         ZBRENT      
+C          SYSTEM         DABS, DLOG10, DBLE(AMAX0), DMAX1, MOD, DSQRT
+C       
+C     VERSION:  ITPACK 2C (MARCH 1982)
+C       
+C     CODE WRITTEN BY:  DAVID KINCAID, ROGER GRIMES, JOHN RESPESS   
+C                       CENTER FOR NUMERICAL ANALYSIS     
+C                       UNIVERSITY OF TEXAS     
+C                       AUSTIN, TX  78712       
+C                       (512) 471-1242
+C       
+C     FOR ADDITIONAL DETAILS ON THE   
+C          (A) SUBROUTINE SEE TOMS ARTICLE 1982 
+C          (B) ALGORITHM  SEE CNA REPORT 150    
+C       
+C     BASED ON THEORY BY:  DAVID YOUNG, DAVID KINCAID, LOU HAGEMAN  
+C       
+C     REFERENCE THE BOOK:  APPLIED ITERATIVE METHODS      
+C                          L. HAGEMAN, D. YOUNG 
+C                          ACADEMIC PRESS, 1981 
+C       
+C     **************************************************  
+C     *               IMPORTANT NOTE                   *  
+C     *                                                *  
+C     *      WHEN INSTALLING ITPACK ROUTINES ON A      *  
+C     *  DIFFERENT COMPUTER, RESET SOME OF THE VALUES  *  
+C     *  IN  SUBROUTNE DFAULT.   MOST IMPORTANT ARE    *  
+C     *                                                *  
+C     *   DRELPR      MACHINE RELATIVE PRECISION       *  
+C     *   RPARM(1)    STOPPING CRITERION               *  
+C     *                                                *  
+C     *   ALSO CHANGE SYSTEM-DEPENDENT ROUTINE         *  
+C     *   SECOND USED IN TIMER                         *  
+C     *                                                *  
+C     **************************************************  
+C       
+C     SPECIFICATIONS FOR ARGUMENTS    
+C       
       INTEGER IA(1),JA(1),IWKSP(1),IPARM(12),NN,NW,IERR   
       DOUBLE PRECISION A(1),RHS(NN),U(NN),WKSP(NW),RPARM(12)
+C       
+C     SPECIFICATIONS FOR LOCAL VARIABLES
+C       
       INTEGER IB1,IB2,IB3,IB4,IB5,IDGTS,IER,IERPER,ITMAX1,JB3,LOOP,N,NB,
      *   NR,NRP1,N3 
       DOUBLE PRECISION DIGIT1,DIGIT2,TEMP,TIME1,TIME2,TOL 
+C       
+C *** BEGIN: ITPACK COMMON  
+C       
       INTEGER IN,IS,ISYM,ITMAX,LEVEL,NOUT       
       COMMON /ITCOM1/ IN,IS,ISYM,ITMAX,LEVEL,NOUT 
+C       
       LOGICAL ADAPT,BETADT,CASEII,HALT,PARTAD   
       COMMON /ITCOM2/ ADAPT,BETADT,CASEII,HALT,PARTAD     
+C       
       DOUBLE PRECISION BDELNM,BETAB,CME,DELNNM,DELSNM,FF,GAMMA,OMEGA,QA,
      *   QT,RHO,RRR,SIGE,SME,SPECR,SPR,DRELPR,STPTST,UDNM,ZETA      
       COMMON /ITCOM3/ BDELNM,BETAB,CME,DELNNM,DELSNM,FF,GAMMA,OMEGA,QA, 
      *   QT,RHO,RRR,SIGE,SME,SPECR,SPR,DRELPR,STPTST,UDNM,ZETA      
+C       
+C *** END  : ITPACK COMMON  
+C       
+C ... VARIABLES IN COMMON BLOCK - ITCOM1
+C       
+C     IN     - ITERATION NUMBER       
+C     IS     - ITERATION NUMBER WHEN PARAMETERS LAST CHANGED
+C     ISYM   - SYMMETRIC/NONSYMMETRIC STORAGE FORMAT SWITCH 
+C     ITMAX  - MAXIMUM NUMBER OF ITERATIONS ALLOWED       
+C     LEVEL  - LEVEL OF OUTPUT CONTROL SWITCH   
+C     NOUT   - OUTPUT element number     
+C       
+C ... VARIABLES IN COMMON BLOCK - ITCOM2
+C       
+C     ADAPT  - FULLY ADAPTIVE PROCEDURE SWITCH  
+C     BETADT - SWITCH FOR ADAPTIVE DETERMINATION OF BETA  
+C     CASEII - ADAPTIVE PROCEDURE CASE SWITCH   
+C     HALT   - STOPPING TEST SWITCH   
+C     PARTAD - PARTIALLY ADAPTIVE PROCEDURE SWITCH
+C       
+C ... VARIABLES IN COMMON BLOCK - ITCOM3
+C       
+C     BDELNM - TWO NORM OF B TIMES DELTA-SUPER-N
+C     BETAB  - ESTIMATE FOR THE SPECTRAL RADIUS OF LU MATRIX
+C     CME    - ESTIMATE OF LARGEST EIGENVALUE   
+C     DELNNM - INNER PRODUCT OF PSEUDO-RESIDUAL AT ITERATION N      
+C     DELSNM - INNER PRODUCT OF PSEUDO-RESIDUAL AT ITERATION S      
+C     FF     - ADAPTIVE PROCEDURE DAMPING FACTOR
+C     GAMMA  - ACCELERATION PARAMETER 
+C     OMEGA  - OVERRELAXATION PARAMETER FOR SOR AND SSOR  
+C     QA     - PSEUDO-RESIDUAL RATIO  
+C     QT     - VIRTUAL SPECTRAL RADIUS
+C     RHO    - ACCELERATION PARAMETER 
+C     RRR    - ADAPTIVE PARAMETER     
+C     SIGE   - PARAMETER SIGMA-SUB-E  
+C     SME    - ESTIMATE OF SMALLEST EIGENVALUE  
+C     SPECR  - SPECTRAL RADIUS ESTIMATE FOR SSOR
+C     DRELPR - MACHINE RELATIVE PRECISION       
+C     STPTST - STOPPING PARAMETER     
+C     UDNM   - TWO NORM OF U
+C     ZETA   - STOPPING CRITERION     
+C       
+C ... INITIALIZE COMMON BLOCKS
+C       
       LEVEL = IPARM(2)      
       NOUT = IPARM(4)       
       IF (LEVEL.GE.1) WRITE (NOUT,10) 
@@ -985,6 +2135,9 @@
       TIME2 = RPARM(10)     
       DIGIT1 = RPARM(11)    
       DIGIT2 = RPARM(12)    
+C       
+C ... VERIFY N    
+C       
       IF (N.GT.0) GO TO 70  
       IER = 61    
       IF (LEVEL.GE.0) WRITE (NOUT,60) N 
@@ -993,6 +2146,9 @@
      *   '    INVALID MATRIX DIMENSION, N =',I8)
       GO TO 430   
    70 CONTINUE    
+C       
+C ... REMOVE ROWS AND COLUMNS IF REQUESTED      
+C       
       IF (IPARM(10).EQ.0) GO TO 90    
       TOL = RPARM(8)
       CALL IVFILL (N,IWKSP,0) 
@@ -1007,9 +2163,15 @@
      *   '    WHEN DIAGONAL ENTRY TOO LARGE  '/' ','    IER = ',I5,5X,
      *   ' RPARM(8) = ',D10.3,' (TOL)') 
       GO TO 430   
+C       
+C ... INITIALIZE WKSP BASE ADDRESSES. 
+C       
    90 IB1 = 1     
       IB2 = IB1+N 
       JB3 = IB2+N 
+C       
+C ... PERMUTE TO  RED-BLACK SYSTEM IF POSSIBLE  
+C       
       NB = IPARM(9) 
       IF (NB.GE.0) GO TO 110
       N3 = 3*N    
@@ -1034,6 +2196,9 @@
       IF (LEVEL.GE.2.AND.IPARM(9).GE.0) WRITE (NOUT,140) IPARM(9),NB
   140 FORMAT (/10X,' IPARM(9) = ',I5,' IMPLIES MATRIX IS DIAGONAL'/10X, 
      *   ' NB RESET TO ',I5)
+C       
+C ... PERMUTE MATRIX AND RHS
+C       
   150 IF (IPARM(9).GE.0) GO TO 190    
       IF (LEVEL.GE.2) WRITE (NOUT,160) NB       
   160 FORMAT (/10X,'ORDER OF BLACK SUBSYSTEM = ',I5,' (NB)')
@@ -1047,6 +2212,9 @@
       GO TO 430   
   180 CALL PERVEC (N,RHS,IWKSP)       
       CALL PERVEC (N,U,IWKSP) 
+C       
+C ... FINISH WKSP BASE ADDRESSES      
+C       
   190 IB3 = IB2+NB
       IB4 = IB3+NB
       IB5 = IB4+NB
@@ -1062,6 +2230,10 @@
      *   '    NOT ENOUGH WORKSPACE AT ',I10/' ','    SET IPARM(8) =',I10
      *   ,' (NW)')
       GO TO 430   
+C       
+C ... SCALE LINEAR SYSTEM, U, AND RHS BY THE SQUARE ROOT OF THE     
+C ... DIAGONAL ELEMENTS.    
+C       
   210 CONTINUE    
       CALL VFILL (IPARM(8),WKSP,0.0D0)
       CALL SCAL (N,IA,JA,A,RHS,U,WKSP,LEVEL,NOUT,IER)     
@@ -1081,6 +2253,9 @@
      *   ' THE JACOBI MATRIX')
   260 IF (IPARM(11).NE.0) GO TO 270   
       TIMI1 = TIMER(DUMMY)  
+C       
+C ... INITIALIZE FORWARD PSEUDO-RESIDUAL
+C       
   270 CONTINUE    
       IF (N.GT.1) GO TO 280 
       U(1) = RHS(1) 
@@ -1090,18 +2265,38 @@
       CALL DCOPY2 (NB,RHS(NRP1),1,WKSP(IB2),1)   
       CALL PRSBLK (NB,NR,IA,JA,A,WKSP(IB1),WKSP(IB2))     
       CALL VEVMW (NB,WKSP(IB2),U(NRP1)) 
+C       
+C ... ITERATION SEQUENCE    
+C       
       ITMAX1 = ITMAX+1      
       DO 300 LOOP = 1,ITMAX1
          IN = LOOP-1
          IF (MOD(IN,2).EQ.1) GO TO 290
+C       
+C ... CODE FOR THE EVEN ITERATIONS.   
+C       
+C     U           = U(IN)       WKSP(IB2) = D(IN) 
+C     WKSP(IB1)   = U(IN-1)     WKSP(IB3) = D(IN-1)       
+C       
          CALL ITRSCG (N,NB,IA,JA,A,U,WKSP(IB1),WKSP(IB2),WKSP(IB3), 
      *      WKSP(IB4),WKSP(IB5))      
+C       
          IF (HALT) GO TO 330
          GO TO 300
+C       
+C ... CODE FOR THE ODD ITERATIONS.    
+C       
+C     U           = U(IN-1)     WKSP(IB2) = D(IN-1)       
+C     WKSP(IB1)   = U(IN)       WKSP(IB3) = D(IN) 
+C       
   290    CALL ITRSCG (N,NB,IA,JA,A,WKSP(IB1),U,WKSP(IB3),WKSP(IB2), 
      *      WKSP(IB4),WKSP(IB5))      
+C       
          IF (HALT) GO TO 330
   300 CONTINUE    
+C       
+C ... ITMAX HAS BEEN REACHED
+C       
       IF (IPARM(11).NE.0) GO TO 310   
       TIMI2 = TIMER(DUMMY)  
       TIME1 = DBLE(TIMI2-TIMI1)       
@@ -1112,17 +2307,29 @@
       IER = 63    
       IF (IPARM(3).EQ.0) RPARM(1) = STPTST      
       GO TO 360   
+C       
+C ... METHOD HAS CONVERGED  
+C       
   330 IF (IPARM(11).NE.0) GO TO 340   
       TIMI2 = TIMER(DUMMY)  
       TIME1 = DBLE(TIMI2-TIMI1)       
   340 IF (LEVEL.GE.1) WRITE (NOUT,350) IN       
   350 FORMAT (/1X,'RSCG  HAS CONVERGED IN ',I5,' ITERATIONS')       
+C       
+C ... PUT SOLUTION INTO U IF NOT ALREADY THERE. 
+C       
   360 CONTINUE    
       IF (N.EQ.1) GO TO 370 
       IF (MOD(IN,2).EQ.1) CALL DCOPY2 (N,WKSP(IB1),1,U,1)  
       CALL DCOPY2 (NR,RHS,1,U,1)       
       CALL PRSRED (NB,NR,IA,JA,A,U(NRP1),U)     
+C       
+C ... UNSCALE THE MATRIX, SOLUTION, AND RHS VECTORS.      
+C       
   370 CALL UNSCAL (N,IA,JA,A,RHS,U,WKSP)
+C       
+C ... UN-PERMUTE MATRIX,RHS, AND SOLUTION       
+C       
       IF (IPARM(9).GE.0) GO TO 400    
       CALL PERMAT (N,IA,JA,A,IWKSP(IB2),IWKSP(JB3),ISYM,LEVEL,NOUT, 
      *   IERPER)  
@@ -1137,10 +2344,16 @@
       GO TO 430   
   390 CALL PERVEC (N,RHS,IWKSP(IB2))  
       CALL PERVEC (N,U,IWKSP(IB2))    
+C       
+C ... OPTIONAL ERROR ANALYSIS 
+C       
   400 IDGTS = IPARM(12)     
       IF (IDGTS.LT.0) GO TO 410       
       IF (IPARM(2).LE.0) IDGTS = 0    
       CALL c_PERROR (N,IA,JA,A,RHS,U,WKSP,DIGIT1,DIGIT2,IDGTS)
+C       
+C ... SET RETURN PARAMETERS IN IPARM AND RPARM  
+C       
   410 IF (IPARM(11).NE.0) GO TO 420   
       TIMJ2 = TIMER(DUMMY)  
       TIME2 = DBLE(TIMJ2-TIMJ1)       
@@ -1155,24 +2368,160 @@
       RPARM(10) = TIME2     
       RPARM(11) = DIGIT1    
       RPARM(12) = DIGIT2    
+C       
   430 CONTINUE    
       IERR = IER  
       IF (LEVEL.GE.3) CALL ECHALL (N,IA,JA,A,RHS,IPARM,RPARM,2)     
+C       
       RETURN      
       END 
       SUBROUTINE RSSI (NN,IA,JA,A,RHS,U,IWKSP,NW,WKSP,IPARM,RPARM,IERR) 
+C       
+C     ITPACK 2C MAIN SUBROUTINE  RSSI  (REDUCED SYSTEM SEMI-ITERATIVE)
+C     EACH OF THE MAIN SUBROUTINES:   
+C           JCG, JSI, SOR, SSORCG, SSORSI, RSCG, RSSI     
+C     CAN BE USED INDEPENDENTLY OF THE OTHERS   
+C       
+C ... FUNCTION:   
+C       
+C          THIS SUBROUTINE, RSSI, DRIVES THE  REDUCED SYSTEM SI     
+C          ALGORITHM.       
+C       
+C ... PARAMETER LIST:       
+C       
+C          N     INPUT INTEGER.  DIMENSION OF THE MATRIX. (= NN)    
+C          IA,JA  INPUT INTEGER VECTORS.  THE TWO INTEGER ARRAYS OF 
+C                 THE SPARSE MATRIX REPRESENTATION.       
+C          A      INPUT D.P. VECTOR.  THE D.P. ARRAY OF THE SPARSE  
+C                 MATRIX REPRESENTATION.
+C          RHS    INPUT D.P. VECTOR.  CONTAINS THE RIGHT HAND SIDE  
+C                 OF THE MATRIX PROBLEM.
+C          U      INPUT/OUTPUT D.P. VECTOR.  ON INPUT, U CONTAINS THE 
+C                 INITIAL GUESS TO THE SOLUTION. ON OUTPUT, IT CONTAINS 
+C                 THE LATEST ESTIMATE TO THE SOLUTION.    
+C          IWKSP  INTEGER VECTOR WORKSPACE OF LENGTH 3*N  
+C          NW     INPUT INTEGER.  LENGTH OF AVAILABLE WKSP.  ON OUTPUT, 
+C                 IPARM(8) IS AMOUNT USED.      
+C          WKSP   D.P. VECTOR USED FOR WORKING SPACE.  RSSI 
+C                 NEEDS THIS TO BE IN LENGTH AT LEAST  N + NB       
+C                 HERE NB IS THE ORDER OF THE BLACK SUBSYSTEM       
+C          IPARM  INTEGER VECTOR OF LENGTH 12.  ALLOWS USER TO SPECIFY
+C                 SOME INTEGER PARAMETERS WHICH AFFECT THE METHOD.  IF
+C          RPARM  D.P. VECTOR OF LENGTH 12. ALLOWS USER TO SPECIFY SOME 
+C                 D.P. PARAMETERS WHICH AFFECT THE METHOD.
+C          IER     OUTPUT INTEGER.  ERROR FLAG. (= IERR)  
+C       
+C ... RSSI SUBPROGRAM REFERENCES:     
+C       
+C          FROM ITPACK    BISRCH, CHEBY, CHGSI, DFAULT, ECHALL,     
+C                         ECHOUT, ITERM, TIMER, ITRSSI, IVFILL,     
+C                         PARSI, PERMAT, c_PERROR, PERVEC, PMULT,     
+C                         PRBNDX, PRSBLK, PRSRED, PSTOP, QSORT,     
+C                         DAXPY2, SBELM, SCAL, DCOPY2, DDOT2, SUM3,    
+C                         TSTCHG, UNSCAL, VEVMW, VFILL, VOUT,       
+C                         WEVMW       
+C          SYSTEM         DABS, DLOG10, DBLE(AMAX0), DMAX1, DBLE(FLOAT),
+C                         DSQRT       
+C       
+C     VERSION:  ITPACK 2C (MARCH 1982)
+C       
+C     CODE WRITTEN BY:  DAVID KINCAID, ROGER GRIMES, JOHN RESPESS   
+C                       CENTER FOR NUMERICAL ANALYSIS     
+C                       UNIVERSITY OF TEXAS     
+C                       AUSTIN, TX  78712       
+C                       (512) 471-1242
+C       
+C     FOR ADDITIONAL DETAILS ON THE   
+C          (A) SUBROUTINE SEE TOMS ARTICLE 1982 
+C          (B) ALGORITHM  SEE CNA REPORT 150    
+C       
+C     BASED ON THEORY BY:  DAVID YOUNG, DAVID KINCAID, LOU HAGEMAN  
+C       
+C     REFERENCE THE BOOK:  APPLIED ITERATIVE METHODS      
+C                          L. HAGEMAN, D. YOUNG 
+C                          ACADEMIC PRESS, 1981 
+C       
+C     **************************************************  
+C     *               IMPORTANT NOTE                   *  
+C     *                                                *  
+C     *      WHEN INSTALLING ITPACK ROUTINES ON A      *  
+C     *  DIFFERENT COMPUTER, RESET SOME OF THE VALUES  *  
+C     *  IN  SUBROUTNE DFAULT.   MOST IMPORTANT ARE    *  
+C     *                                                *  
+C     *   DRELPR      MACHINE RELATIVE PRECISION       *  
+C     *   RPARM(1)    STOPPING CRITERION               *  
+C     *                                                *  
+C     *   ALSO CHANGE SYSTEM-DEPENDENT ROUTINE         *  
+C     *   SECOND USED IN TIMER                         *  
+C     *                                                *  
+C     **************************************************  
+C       
+C     SPECIFICATIONS FOR ARGUMENTS    
+C       
       INTEGER IA(1),JA(1),IWKSP(1),IPARM(12),NN,NW,IERR   
       DOUBLE PRECISION A(1),RHS(NN),U(NN),WKSP(NW),RPARM(12)
+C       
+C     SPECIFICATIONS FOR LOCAL VARIABLES
+C       
       INTEGER IB1,IB2,IDGTS,IER,IERPER,ITMAX1,JB3,LOOP,N,NB,NR,NRP1,N3
       DOUBLE PRECISION DIGIT1,DIGIT2,TEMP,TIME1,TIME2,TOL 
+C       
+C *** BEGIN: ITPACK COMMON  
+C       
       INTEGER IN,IS,ISYM,ITMAX,LEVEL,NOUT       
       COMMON /ITCOM1/ IN,IS,ISYM,ITMAX,LEVEL,NOUT 
+C       
       LOGICAL ADAPT,BETADT,CASEII,HALT,PARTAD   
       COMMON /ITCOM2/ ADAPT,BETADT,CASEII,HALT,PARTAD     
+C       
       DOUBLE PRECISION BDELNM,BETAB,CME,DELNNM,DELSNM,FF,GAMMA,OMEGA,QA,
      *   QT,RHO,RRR,SIGE,SME,SPECR,SPR,DRELPR,STPTST,UDNM,ZETA      
       COMMON /ITCOM3/ BDELNM,BETAB,CME,DELNNM,DELSNM,FF,GAMMA,OMEGA,QA, 
      *   QT,RHO,RRR,SIGE,SME,SPECR,SPR,DRELPR,STPTST,UDNM,ZETA      
+C       
+C *** END  : ITPACK COMMON  
+C       
+C ... VARIABLES IN COMMON BLOCK - ITCOM1
+C       
+C     IN     - ITERATION NUMBER       
+C     IS     - ITERATION NUMBER WHEN PARAMETERS LAST CHANGED
+C     ISYM   - SYMMETRIC/NONSYMMETRIC STORAGE FORMAT SWITCH 
+C     ITMAX  - MAXIMUM NUMBER OF ITERATIONS ALLOWED       
+C     LEVEL  - LEVEL OF OUTPUT CONTROL SWITCH   
+C     NOUT   - OUTPUT element number     
+C       
+C ... VARIABLES IN COMMON BLOCK - ITCOM2
+C       
+C     ADAPT  - FULLY ADAPTIVE PROCEDURE SWITCH  
+C     BETADT - SWITCH FOR ADAPTIVE DETERMINATION OF BETA  
+C     CASEII - ADAPTIVE PROCEDURE CASE SWITCH   
+C     HALT   - STOPPING TEST SWITCH   
+C     PARTAD - PARTIALLY ADAPTIVE PROCEDURE SWITCH
+C       
+C ... VARIABLES IN COMMON BLOCK - ITCOM3
+C       
+C     BDELNM - TWO NORM OF B TIMES DELTA-SUPER-N
+C     BETAB  - ESTIMATE FOR THE SPECTRAL RADIUS OF LU MATRIX
+C     CME    - ESTIMATE OF LARGEST EIGENVALUE   
+C     DELNNM - INNER PRODUCT OF PSEUDO-RESIDUAL AT ITERATION N      
+C     DELSNM - INNER PRODUCT OF PSEUDO-RESIDUAL AT ITERATION S      
+C     FF     - ADAPTIVE PROCEDURE DAMPING FACTOR
+C     GAMMA  - ACCELERATION PARAMETER 
+C     OMEGA  - OVERRELAXATION PARAMETER FOR SOR AND SSOR  
+C     QA     - PSEUDO-RESIDUAL RATIO  
+C     QT     - VIRTUAL SPECTRAL RADIUS
+C     RHO    - ACCELERATION PARAMETER 
+C     RRR    - ADAPTIVE PARAMETER     
+C     SIGE   - PARAMETER SIGMA-SUB-E  
+C     SME    - ESTIMATE OF SMALLEST EIGENVALUE  
+C     SPECR  - SPECTRAL RADIUS ESTIMATE FOR SSOR
+C     DRELPR - MACHINE RELATIVE PRECISION       
+C     STPTST - STOPPING PARAMETER     
+C     UDNM   - TWO NORM OF U
+C     ZETA   - STOPPING CRITERION     
+C       
+C ... INITIALIZE COMMON BLOCKS
+C       
       LEVEL = IPARM(2)      
       NOUT = IPARM(4)       
       IF (LEVEL.GE.1) WRITE (NOUT,10) 
@@ -1199,6 +2548,9 @@
       TIME2 = RPARM(10)     
       DIGIT1 = RPARM(11)    
       DIGIT2 = RPARM(12)    
+C       
+C ... VERIFY N    
+C       
       IF (N.GT.0) GO TO 70  
       IER = 71    
       IF (LEVEL.GE.0) WRITE (NOUT,60) N 
@@ -1207,6 +2559,9 @@
      *   '    INVALID MATRIX DIMENSION, N =',I8)
       GO TO 420   
    70 CONTINUE    
+C       
+C ... REMOVE ROWS AND COLUMNS IF REQUESTED      
+C       
       IF (IPARM(10).EQ.0) GO TO 90    
       TOL = RPARM(8)
       CALL IVFILL (N,IWKSP,0) 
@@ -1220,9 +2575,15 @@
      *   '    WHICH REMOVES ROWS AND COLUMNS OF SYSTEM '/' ',       
      *   '    WHEN DIAGONAL ENTRY TOO LARGE  '/' ','    IER = ',I5,5X,
      *   ' RPARM(8) = ',D10.3,' (TOL)') 
+C       
+C ... INITIALIZE WKSP BASE ADDRESSES. 
+C       
    90 IB1 = 1     
       IB2 = IB1+N 
       JB3 = IB2+N 
+C       
+C ... PERMUTE TO  RED-BLACK SYSTEM IF POSSIBLE  
+C       
       NB = IPARM(9) 
       IF (NB.GE.0) GO TO 110
       N3 = 3*N    
@@ -1247,6 +2608,9 @@
       IF (LEVEL.GE.2.AND.IPARM(9).GE.0) WRITE (NOUT,140) IPARM(9),NB
   140 FORMAT (/10X,' IPARM(9) = ',I5,' IMPLIES MATRIX IS DIAGONAL'/10X, 
      *   ' NB RESET TO ',I5)
+C       
+C ... PERMUTE MATRIX AND RHS
+C       
   150 IF (IPARM(9).GE.0) GO TO 190    
       IF (LEVEL.GE.2) WRITE (NOUT,160) NB       
   160 FORMAT (/10X,'ORDER OF BLACK SUBSYSTEM = ',I5,' (NB)')
@@ -1260,7 +2624,11 @@
       GO TO 420   
   180 CALL PERVEC (N,RHS,IWKSP)       
       CALL PERVEC (N,U,IWKSP) 
+C       
+C ... INITIALIZE WKSP BASE ADDRESSES  
+C       
   190 NR = N-NB   
+C       
       NRP1 = NR+1 
       IPARM(8) = N+NB       
       IF (NW.GE.IPARM(8)) GO TO 210   
@@ -1271,6 +2639,10 @@
      *   '    NOT ENOUGH WORKSPACE AT ',I10/' ','    SET IPARM(8) =',I10
      *   ,' (NW)')
       GO TO 420   
+C       
+C ... SCALE LINEAR SYSTEM, U, AND RHS BY THE SQUARE ROOT OF THE     
+C ... DIAGONAL ELEMENTS.    
+C       
   210 CONTINUE    
       CALL VFILL (IPARM(8),WKSP,0.0D0)
       CALL SCAL (N,IA,JA,A,RHS,U,WKSP,LEVEL,NOUT,IER)     
@@ -1287,6 +2659,9 @@
      *   ' ACCELERATION PARAMETERS')  
   250 IF (IPARM(11).NE.0) GO TO 260   
       TIMI1 = TIMER(DUMMY)  
+C       
+C ... ITERATION SEQUENCE    
+C       
   260 IF (N.GT.1) GO TO 270 
       U(1) = RHS(1) 
       GO TO 320   
@@ -1294,12 +2669,29 @@
       DO 290 LOOP = 1,ITMAX1
          IN = LOOP-1
          IF (MOD(IN,2).EQ.1) GO TO 280
+C       
+C ... CODE FOR THE EVEN ITERATIONS.   
+C       
+C     U           = U(IN)   
+C     WKSP(IB1)   = U(IN-1) 
+C       
          CALL ITRSSI (N,NB,IA,JA,A,RHS,U,WKSP(IB1),WKSP(IB2))       
+C       
          IF (HALT) GO TO 320
          GO TO 290
+C       
+C ... CODE FOR THE ODD ITERATIONS.    
+C       
+C     U           = U(IN-1) 
+C     WKSP(IB1)   = U(IN)   
+C       
   280    CALL ITRSSI (N,NB,IA,JA,A,RHS,WKSP(IB1),U,WKSP(IB2))       
+C       
          IF (HALT) GO TO 320
   290 CONTINUE    
+C       
+C ... ITMAX HAS BEEN REACHED
+C       
       IF (IPARM(11).NE.0) GO TO 300   
       TIMI2 = TIMER(DUMMY)  
       TIME1 = DBLE(TIMI2-TIMI1)       
@@ -1310,17 +2702,29 @@
       IER = 73    
       IF (IPARM(3).EQ.0) RPARM(1) = STPTST      
       GO TO 350   
+C       
+C ... METHOD HAS CONVERGED  
+C       
   320 IF (IPARM(11).NE.0) GO TO 330   
       TIMI2 = TIMER(DUMMY)  
       TIME1 = DBLE(TIMI2-TIMI1)       
   330 IF (LEVEL.GE.1) WRITE (NOUT,340) IN       
   340 FORMAT (/1X,'RSSI  HAS CONVERGED IN ',I5,' ITERATIONS')       
+C       
+C ... PUT SOLUTION INTO U IF NOT ALREADY THERE. 
+C       
   350 CONTINUE    
       IF (N.EQ.1) GO TO 360 
       IF (MOD(IN,2).EQ.1) CALL DCOPY2 (N,WKSP(IB1),1,U,1)  
       CALL DCOPY2 (NR,RHS,1,U,1)       
       CALL PRSRED (NB,NR,IA,JA,A,U(NRP1),U)     
+C       
+C ... UNSCALE THE MATRIX, SOLUTION, AND RHS VECTORS.      
+C       
   360 CALL UNSCAL (N,IA,JA,A,RHS,U,WKSP)
+C       
+C ... UN-PERMUTE MATRIX,RHS, AND SOLUTION       
+C       
       IF (IPARM(9).GE.0) GO TO 390    
       CALL PERMAT (N,IA,JA,A,IWKSP(IB2),IWKSP(JB3),ISYM,LEVEL,NOUT, 
      *   IERPER)  
@@ -1335,10 +2739,16 @@
       GO TO 420   
   380 CALL PERVEC (N,RHS,IWKSP(IB2))  
       CALL PERVEC (N,U,IWKSP(IB2))    
+C       
+C ... OPTIONAL ERROR ANALYSIS 
+C       
   390 IDGTS = IPARM(12)     
       IF (IDGTS.LT.0) GO TO 400       
       IF (IPARM(2).LE.0) IDGTS = 0    
       CALL c_PERROR (N,IA,JA,A,RHS,U,WKSP,DIGIT1,DIGIT2,IDGTS)
+C       
+C ... SET RETURN PARAMETERS IN IPARM AND RPARM  
+C       
   400 IF (IPARM(11).NE.0) GO TO 410   
       TIMJ2 = TIMER(DUMMY)  
       TIME2 = DBLE(TIMJ2-TIMJ1)       
@@ -1351,33 +2761,93 @@
       RPARM(10) = TIME2     
       RPARM(11) = DIGIT1    
       RPARM(12) = DIGIT2    
+C       
   420 CONTINUE    
       IERR = IER  
       IF (LEVEL.GE.3) CALL ECHALL (N,IA,JA,A,RHS,IPARM,RPARM,2)     
+C       
       RETURN      
       END 
       SUBROUTINE ITJCG (NN,IA,JA,A,U,U1,D,D1,DTWD,TRI)    
+C       
+C ... FUNCTION:   
+C       
+C          THIS SUBROUTINE, ITJCG, PERFORMS ONE ITERATION OF THE    
+C          JACOBI CONJUGATE GRADIENT ALGORITHM.  IT IS CALLED BY JCG. 
+C       
+C ... PARAMETER LIST:       
+C       
+C          N      INPUT INTEGER.  DIMENSION OF THE MATRIX. (= NN)   
+C          IA,JA  INPUT INTEGER VECTORS.  CONTAINS INFORMATION DEFINING 
+C                 THE SPARSE MATRIX REPRESENTATION.       
+C          A      INPUT D.P. VECTOR. CONTAINS THE NONZERO VALUES OF THE 
+C                 LINEAR SYSTEM.      
+C          U      INPUT D.P. VECTOR.  CONTAINS THE VALUE OF THE     
+C                 SOLUTION VECTOR AT THE END OF IN ITERATIONS.      
+C          U1     INPUT/OUTPUT D.P. VECTOR.  ON INPUT, IT CONTAINS  
+C                 THE VALUE OF THE SOLUTION AT THE END OF THE IN-1  
+C                 ITERATION.  ON OUTPUT, IT WILL CONTAIN THE NEWEST 
+C                 ESTIMATE FOR THE SOLUTION VECTOR.       
+C          D      INPUT D.P. VECTOR.  CONTAINS THE PSEUDO-RESIDUAL  
+C                 VECTOR AFTER IN ITERATIONS.   
+C          D1     INPUT/OUTPUT D.P. VECTOR.  ON INPUT, D1 CONTAINS  
+C                 THE PSEUDO-RESIDUAL VECTOR AFTER IN-1 ITERATIONS.  ON 
+C                 OUTPUT, IT WILL CONTAIN THE NEWEST PSEUDO-RESIDUAL
+C                 VECTOR.   
+C          DTWD   D.P. ARRAY.  USED IN THE COMPUTATIONS OF THE      
+C                 ACCELERATION PARAMETER GAMMA AND THE NEW PSEUDO-  
+C                 RESIDUAL. 
+C          TRI    D.P. ARRAY.  STORES THE TRIDIAGONAL MATRIX ASSOCIATED 
+C                 WITH THE EIGENVALUES OF THE CONJUGATE GRADIENT    
+C                 POLYNOMIAL. 
+C       
+C ... SPECIFICATIONS FOR ARGUMENTS    
+C       
       INTEGER IA(1),JA(1),NN
       DOUBLE PRECISION A(1),U(NN),U1(NN),D(NN),D1(NN),DTWD(NN),TRI(2,1) 
+C       
+C ... SPECIFICATIONS FOR LOCAL VARIABLES
+C       
       INTEGER N   
       DOUBLE PRECISION CON,C1,C2,C3,C4,DNRM,DTNRM,GAMOLD,RHOOLD,RHOTMP
       LOGICAL Q1  
+C       
+C ... SPECIFICATIONS FOR FUNCTION SUBPROGRAMS   
+C       
       DOUBLE PRECISION DDOT2 
+C       
+C *** BEGIN: ITPACK COMMON  
+C       
       INTEGER IN,IS,ISYM,ITMAX,LEVEL,NOUT       
       COMMON /ITCOM1/ IN,IS,ISYM,ITMAX,LEVEL,NOUT 
+C       
       LOGICAL ADAPT,BETADT,CASEII,HALT,PARTAD   
       COMMON /ITCOM2/ ADAPT,BETADT,CASEII,HALT,PARTAD     
+C       
       DOUBLE PRECISION BDELNM,BETAB,CME,DELNNM,DELSNM,FF,GAMMA,OMEGA,QA,
      *   QT,RHO,RRR,SIGE,SME,SPECR,SPR,DRELPR,STPTST,UDNM,ZETA      
       COMMON /ITCOM3/ BDELNM,BETAB,CME,DELNNM,DELSNM,FF,GAMMA,OMEGA,QA, 
      *   QT,RHO,RRR,SIGE,SME,SPECR,SPR,DRELPR,STPTST,UDNM,ZETA      
+C       
+C *** END  : ITPACK COMMON  
+C       
+C     DESCRIPTION OF VARIABLES IN COMMON BLOCKS IN SUBROUTINE JCG   
+C       
+C ... COMPUTE NEW ESTIMATE FOR CME IF ADAPT = .TRUE.      
+C       
       IF (ADAPT) CALL CHGCON (TRI,GAMOLD,RHOOLD,1)
+C       
+C ... TEST FOR STOPPING     
+C       
       N = NN      
       DELNNM = DDOT2(N,D,1,D,1)
       DNRM = DELNNM 
       CON = CME   
       CALL PSTOP (N,U,DNRM,CON,1,Q1)  
       IF (HALT) GO TO 30    
+C       
+C ... COMPUTE RHO AND GAMMA - ACCELERATION PARAMETERS     
+C       
       CALL VFILL (N,DTWD,0.D0)
       CALL PJAC2 (N,IA,JA,A,D,DTWD)    
       DTNRM = DDOT2(N,D,1,DTWD,1)      
@@ -1387,13 +2857,49 @@
       RHOOLD = RHOTMP       
       GO TO 20    
    10 CALL PARCON (DTNRM,C1,C2,C3,C4,GAMOLD,RHOOLD,1)     
+C       
+C ... COMPUTE U(IN+1) AND D(IN+1)     
+C       
    20 CALL SUM3 (N,C1,D,C2,U,C3,U1)   
       CALL SUM3 (N,C1,DTWD,C4,D,C3,D1)
+C       
+C ... OUTPUT INTERMEDIATE INFORMATION 
+C       
    30 CALL ITERM (N,A,U,DTWD,1)       
+C       
       RETURN      
       END 
       SUBROUTINE ITJSI (NN,IA,JA,A,RHS,U,U1,D,ICNT)       
+C       
+C ... FUNCTION:   
+C       
+C          THIS SUBROUTINE, ITJSI, PERFORMS ONE ITERATION OF THE    
+C          JACOBI SEMI-ITERATIVE ALGORITHM.  IT IS CALLED BY JSI.   
+C       
+C ... PARAMETER LIST:       
+C       
+C          N      INPUT INTEGER.  DIMENSION OF THE MATRIX. (= NN)   
+C          IA,JA  INPUT INTEGER VECTORS.  THE TWO INTEGER ARRAYS OF 
+C                 THE SPARSE MATRIX REPRESENTATION.       
+C          A      INPUT D.P. VECTOR.  THE D.P. ARRAY OF THE SPARSE  
+C                 MATRIX REPRESENTATION.
+C          RHS    INPUT D.P. VECTOR.  CONTAINS THE RIGHT HAND SIDE  
+C                 OF THE MATRIX PROBLEM.
+C          U      INPUT D.P. VECTOR.  CONTAINS THE ESTIMATE FOR THE 
+C                 SOLUTION VECTOR AFTER IN ITERATIONS.    
+C          U1     INPUT/OUTPUT D.P. VECTOR.  ON INPUT, U1 CONTAINS THE
+C                 SOLUTION VECTOR AFTER IN-1 ITERATIONS.  ON OUTPUT,
+C                 IT WILL CONTAIN THE NEWEST ESTIMATE FOR THE SOLUTION
+C                 VECTOR.   
+C          D      D.P. ARRAY.  D IS USED FOR THE COMPUTATION OF THE 
+C                 PSEUDO-RESIDUAL ARRAY FOR THE CURRENT ITERATION.  
+C          ICNT   NUMBER OF ITERATIONS SINCE LAST CHANGE OF SME     
+C       
+C ... SPECIFICATIONS OF ARGUMENTS     
+C       
+      !DOUBLE PRECISION A(1),RHS(NN),U(NN),U1(NN),D(NN)    
       
+      !BUGFIX2024091302.
       use Global_ITPACK
       INTEGER IA(NN+1),JA(ITPACK_NNZ),NN,ICNT     
       DOUBLE PRECISION A(ITPACK_NNZ),RHS(NN),U(NN),U1(NN),D(NN)    

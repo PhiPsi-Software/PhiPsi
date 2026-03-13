@@ -1,9 +1,54 @@
+!     ================================================= !
+!             ____  _       _   ____  _____   _         !
+!            |  _ \| |     |_| |  _ \|  ___| |_|        !
+!            | |_) | |___   _  | |_) | |___   _         !
+!            |  _ /|  _  | | | |  _ /|___  | | |        !
+!            | |   | | | | | | | |    ___| | | |        !
+!            |_|   |_| |_| |_| |_|   |_____| |_|        !
+!     ================================================= !
+!     PhiPsi:     a general-purpose computational       !
+!                 mechanics program written in Fortran. !
+!     Website:    http://phipsi.top                     !
+!     Author:     Shi Fang, Huaiyin Institute of        !
+!                 Technology, Huaian, JiangSu, China    !
+!     Email:      shifang@hyit.edu.cn                   !
+!     ------------------------------------------------- !
+!     Please cite the following papers:                 !
+!     (1)Shi F., Lin C. Modeling fluid-driven           !
+!        propagation of 3D complex crossing fractures   !
+!        with the extended finite element method.       !
+!        Computers and Geotechnics, 2024, 172, 106482.  !
+!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
+!        for 3D hydraulic fracturing simulation         !
+!        considering crack front segmentation. Journal  !
+!        of Petroleum Science and Engineering, 2022,    !
+!        214, 110518.                                   !
+!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
+!        numerical strategy to model three-dimensional  !
+!        fracture propagation regarding crack front     !
+!        segmentation. Theoretical and Applied Fracture !
+!        Mechanics, 2022, 118, 103250.                  !
+!     (4)Shi F., Liu J. A fully coupled hydromechanical !
+!        XFEM model for the simulation of 3D non-planar !
+!        fluid-driven fracture propagation. Computers   !
+!        and Geotechnics, 2021, 132: 103971.            !
+!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
+!        XFEM-based method with reduction technique     !
+!        for modeling hydraulic fracture propagation    !
+!        in formations containing frictional natural    !
+!        fractures. Engineering Fracture Mechanics,     !
+!        2017, 173: 64-90.                              !
+!     ------------------------------------------------- !
  
       subroutine Cal_Ele_Str_N8_3D(i_E,i_N,Key_to_cal,Key_CoorSys,
      &                             X_NODES,
      &                             Y_NODES,Z_NODES,
      &                             c_D,kesi,yita,zeta,U,
      &                             c_Str) 
+      ! Used to calculate the FEM nodal stress or strain of an 8-node three-dimensional element.
+      ! Calculate stress when Key_to_cal=1, and calculate strain when Key_to_cal=2.
+      ! Key_CoorSys=1, Cartesian coordinate system, Key_CoorSys==2, cylindrical coordinate system
+      ! Modified on 2021-09-10.
       use Global_Float_Type
       use Global_Material
       use Global_Common

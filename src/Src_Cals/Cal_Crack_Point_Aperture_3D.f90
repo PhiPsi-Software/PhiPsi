@@ -1,7 +1,62 @@
+!     ================================================= !
+!             ____  _       _   ____  _____   _         !
+!            |  _ \| |     |_| |  _ \|  ___| |_|        !
+!            | |_) | |___   _  | |_) | |___   _         !
+!            |  _ /|  _  | | | |  _ /|___  | | |        !
+!            | |   | | | | | | | |    ___| | | |        !
+!            |_|   |_| |_| |_| |_|   |_____| |_|        !
+!     ================================================= !
+!     PhiPsi:     a general-purpose computational       !
+!                 mechanics program written in Fortran. !
+!     Website:    http://phipsi.top                     !
+!     Author:     Shi Fang, Huaiyin Institute of        !
+!                 Technology, Huaian, JiangSu, China    !
+!     Email:      shifang@hyit.edu.cn                   !
+!     ------------------------------------------------- !
+!     Please cite the following papers:                 !
+!     (1)Shi F., Lin C. Modeling fluid-driven           !
+!        propagation of 3D complex crossing fractures   !
+!        with the extended finite element method.       !
+!        Computers and Geotechnics, 2024, 172, 106482.  !
+!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
+!        for 3D hydraulic fracturing simulation         !
+!        considering crack front segmentation. Journal  !
+!        of Petroleum Science and Engineering, 2022,    !
+!        214, 110518.                                   !
+!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
+!        numerical strategy to model three-dimensional  !
+!        fracture propagation regarding crack front     !
+!        segmentation. Theoretical and Applied Fracture !
+!        Mechanics, 2022, 118, 103250.                  !
+!     (4)Shi F., Liu J. A fully coupled hydromechanical !
+!        XFEM model for the simulation of 3D non-planar !
+!        fluid-driven fracture propagation. Computers   !
+!        and Geotechnics, 2021, 132: 103971.            !
+!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
+!        XFEM-based method with reduction technique     !
+!        for modeling hydraulic fracture propagation    !
+!        in formations containing frictional natural    !
+!        fractures. Engineering Fracture Mechanics,     !
+!        2017, 173: 64-90.                              !
+!     ------------------------------------------------- !
  
 subroutine Cal_Crack_Point_Aperture_3D(c_DISP,Crack_Number,Crack_Point,Crack_Point_Aperture,&
                                        Fluid_element_number,Fluid_node_number,&
                                        Crack_mesh_ele_number,Crack_mesh_node_number)
+! Calculate the aperture vector at any point on a 3D fracture surface (aperture vector in the global
+! coordinate system). NEWFTU2023081202.
+! Fluid_element_number: The fluid element number on the crack surface where the input Crack_Point is
+! located. This is not mandatory; if this parameter is unknown, enter 0.
+! Fluid_node_number: The fluid node number on the crack surface where the Crack_Point is located.
+! This is optional; if this parameter is unknown, enter 0.
+! Crack_mesh_ele_number: The number of the discrete element on the crack surface where the
+! Crack_Point is located. This is optional; if this parameter is unknown, enter 0.
+! Crack_mesh_node_number: The node number of the discrete element on the crack surface where the
+! Crack_Point is located. This parameter is optional; if it is unknown, enter 0.
+!
+! Ref: Extended Finite Element Theory and Fortran Programming, Section 3.8.1.
+! 2023-08-12.
+!
 
 use Global_Float_Type
 use Global_Common

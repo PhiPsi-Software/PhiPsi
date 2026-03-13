@@ -1,4 +1,24 @@
 subroutine Cal_JDomain_Element_of_Point_3D_Simple_HEX8(TipCoor, rJ, J_Elem,Max_J_Elem, num_J_Elem, Q_Elem_Nodes)
+!==============================================
+!  Cal_JDomain_Element_of_Point_3D_Simple_HEX8
+!==============================================
+!  PURPOSE
+!    A simple (and slow) placeholder to build:
+!      - the list of elements within a sphere radius rJ around TipCoor
+!      - nodal weight function q at each J-domain element
+!
+!  INPUT
+!    TipCoor(3)  : crack-front point coordinate
+!    rJ          : J-domain radius
+!
+!  OUTPUT
+!    J_Elem(:)   : element list
+!    num_J_Elem  : number of elements in list
+!    Q_Elem_Nodes(num_Elem,8) : nodal q for each element
+!
+!  NOTE
+!    Replace with your official J-domain routine for better accuracy and speed.
+!===============================================================================
 use Global_Float_Type
 use Global_Model
 implicit none

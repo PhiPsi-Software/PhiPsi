@@ -1,7 +1,35 @@
+!     ...........................................
+!             ____  _       _   ____  _____   _        
+!            |  _ \| |     |_| |  _ \|  ___| |_|       
+!            | |_) | |___   _  | |_) | |___   _        
+!            |  _ /|  _  | | | |  _ /|___  | | |       
+!            | |   | | | | | | | |    ___| | | |       
+!            |_|   |_| |_| |_| |_|   |_____| |_|       
+!     ...........................................
+!     PhiPsi:     a general-purpose computational      
+!                 mechanics program written in Fortran.
+!     Website:    http://phipsi.top                    
+!     Author:     Fang Shi  
+!     Contact me: shifang@hyit.edu.cn     
 
 subroutine Cal_Equal_Division_Points_and_Offset(Num_Diversion, Line_AB, &
 offset_delta,Div_Points, Offsetted_D_P_Up, &
     Offsetted_D_P_Down)
+!=========================================================================
+! Get the equal diversion points of line AB, then offset them by a small delta.
+! Diversion points are arranged from A to B.
+! Note: Key_Include_Endpoint is fixed to 0
+! 
+! Input:
+!   Num_Diversion        - Number of divisions
+!   Line_AB(2,2)         - Line segment [a_x a_y; b_x b_y]
+!   offset_delta         - Offset distance
+!
+! Output:
+!   Div_Points(Num_Diversion-1, 2)          - Division points
+!   Offsetted_D_P_Up(Num_Diversion-1, 2)    - Offset points to left
+!   Offsetted_D_P_Down(Num_Diversion-1, 2)  - Offset points to right
+!=========================================================================
 use Global_Float_Type
 implicit none
 

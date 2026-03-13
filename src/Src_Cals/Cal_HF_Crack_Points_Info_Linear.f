@@ -1,8 +1,109 @@
+!     ================================================= !
+!             ____  _       _   ____  _____   _         !
+!            |  _ \| |     |_| |  _ \|  ___| |_|        !
+!            | |_) | |___   _  | |_) | |___   _         !
+!            |  _ /|  _  | | | |  _ /|___  | | |        !
+!            | |   | | | | | | | |    ___| | | |        !
+!            |_|   |_| |_| |_| |_|   |_____| |_|        !
+!     ================================================= !
+!     PhiPsi:     a general-purpose computational       !
+!                 mechanics program written in Fortran. !
+!     Website:    http://phipsi.top                     !
+!     Author:     Shi Fang, Huaiyin Institute of        !
+!                 Technology, Huaian, JiangSu, China    !
+!     Email:      shifang@hyit.edu.cn                   !
+!     ------------------------------------------------- !
+!     Please cite the following papers:                 !
+!     (1)Shi F., Lin C. Modeling fluid-driven           !
+!        propagation of 3D complex crossing fractures   !
+!        with the extended finite element method.       !
+!        Computers and Geotechnics, 2024, 172, 106482.  !
+!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
+!        for 3D hydraulic fracturing simulation         !
+!        considering crack front segmentation. Journal  !
+!        of Petroleum Science and Engineering, 2022,    !
+!        214, 110518.                                   !
+!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
+!        numerical strategy to model three-dimensional  !
+!        fracture propagation regarding crack front     !
+!        segmentation. Theoretical and Applied Fracture !
+!        Mechanics, 2022, 118, 103250.                  !
+!     (4)Shi F., Liu J. A fully coupled hydromechanical !
+!        XFEM model for the simulation of 3D non-planar !
+!        fluid-driven fracture propagation. Computers   !
+!        and Geotechnics, 2021, 132: 103971.            !
+!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
+!        XFEM-based method with reduction technique     !
+!        for modeling hydraulic fracture propagation    !
+!        in formations containing frictional natural    !
+!        fractures. Engineering Fracture Mechanics,     !
+!        2017, 173: 64-90.                              !
+!     ------------------------------------------------- !
  
       subroutine Cal_HF_Crack_Points_Info_Linear(isub)
           
+      ! Calculate the coordinates and orientation of fracture calculation points, the fracture segment
+      ! number they belong to, and the element number they are in, for hydraulic fracturing linear HF
+      ! elements.
+      ! In addition, this subroutine also needs to specify the type of calculation point.
+      ! The keyword Key_Kink_Point is used to control whether the kink points of crack segments are
+      ! treated as calculation points.
       
+      ! The core variables involved are explained as follows:
+      ! real(kind=FT) Cracks_CalP_Coors(Max_Num_Cr, Max_Num_Cr_CalP, 2) !Coordinates of calculation points
+      ! for each crack
+      ! real(kind=FT) Cracks_CalP_Orient(Max_Num_Cr, Max_Num_Cr_CalP) !Orientation of each crack
+      ! corresponding to its calculation points
+      ! integer Cracks_CalP_Seg(Max_Num_Cr, Max_Num_Cr_CalP) ! The segment number of the crack
+      ! corresponding to each calculation point of the crack
+      ! integer Cracks_CalP_Elem(Max_Num_Cr,Max_Num_Cr_CalP) !Element number where each crack calculation
+      ! point is located
+      ! real(kind=FT) Cracks_HF_Ele_L(Max_Num_Cr, Max_Num_Cr_CalP-1) ! Length of each hydraulic fracture
+      ! element
+      ! integer       Cracks_CalP_Num(Max_Num_Cr)                           !Number of calculation points for each crack
+      ! real(kind=FT) Cracks_CalP_Remo_Strs(Max_Num_Cr, Max_Num_Cr_CalP) ! Calculate far-field stress at
+      ! points for each crack
+      ! real(kind=FT) Cracks_CalP_Contact_Strs(Max_Num_Cr, Max_Num_Cr_CalP, 2)! Calculate the normal and
+      ! tangential contact stress at each crack calculation point
+      !-----------------------------
+      ! integer Cracks_CalP_Type(Max_Num_Cr, Max_Num_Cr_CalP, 2) ! Type of each calculation point of the
+      ! crack and the associated crack number
+                                                                 ! (1) Calculate point type, Cracks_CalP_Type(i_C, i_CalP, 1)
+                                                                 ! 0 --- Normal Calculation Point
+                                                                 ! 1 --- Crack (i_C) crack tip 1 shares a calculation point with the junction of another crack
+                                                                 ! (other_C);
+                                                                 ! 2 --- Crack (i_C) crack tip 2 shares calculation points with the junction of another crack
+                                                                 ! (other_C);
+                                                                 ! 3 --- A calculation point in the middle of crack (i_C) shares a junction with another crack
+                                                                 ! (other_C);
+                                                                 ! 4 --- A calculation point shared at the intersection of a certain point in the middle of crack
+                                                                 ! (i_C) and another crack (other_C);
+                                                                 ! 5 --- Crack (i_C) ordinary calculation point when the crack tip is not connected to other cracks,
+                                                                 ! in this case
+                                                                 ! Constrain the HF pressure boundary to 0, see the subroutine Boundary_Cond_HF for details.
+                                                                 ! (2) Corresponding crack number other_C, Cracks_CalP_Type(i_C, i_CalP, 2)
+                                                                 ! Note: When Cracks_CalP_Type(i_C, i_CalP, 1) = 5, it is not required
+      ! integer Cracks_TipJunCalpNum(Max_Num_Cr,2) !Calculation point number corresponding to the tip
+      ! junction of each crack (calculation point number of the current crack)
+      ! integer Cracks_MidJunCalpNum(Max_Num_Cr, Max_Num_Cr_CalP) ! Calculation point number corresponding
+      ! to each crack's non-tip junction point (calculation point number of the current crack)
+      !--------------------------------------------------------------------------------------------
+      ! integer Cracks_GloNumCalP(Max_Num_Cr, Max_Num_Cr_CalP) ! Global number of each calculation
+      ! point for each crack
+      ! integer Cracks_LocalNumCalP(Max_Num_Cr*Max_Num_Cr_CalP,2) ! Crack number and local
+      ! calculation point number corresponding to global calculation points, 1: crack number; 2:
+      ! local calculation point number
+      !--------------------------------------------------------------------------------------------
+      ! integer Cracks_JunPair(Max_Num_Cr,2) ! Calculation point numbers corresponding to junction point
+      ! pairs (global numbers), 1 corresponds to the secondary crack, 2 corresponds to the main crack
+      ! integer Num_JunPair                                       !Number of junction point pairs
+      !----------
+      ! CalP_num_InjP_Local !Calculation point number corresponding to the injection point of the whole
+      ! model (local number corresponding to the fracture)
       
+c     ============================
+c     Read public variable module
+c     ============================
       use Global_Float_Type                                                                
       use Global_Crack
       use Global_Crack_Common

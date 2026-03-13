@@ -1,4 +1,16 @@
 subroutine Cal_Offseted_Single_Point(C, Line_AB, offset_delta, Offsetted_C_Up, Offsetted_C_Down)
+!=========================================================================
+! Offset the point C along the up and down normal of line_AB by the 
+! increment of offset_delta.
+!
+!              A                  B
+!              ●-----------------●
+!
+!              ○
+!              ●-----------------●
+!              ○
+!=========================================================================
+!2025-12-26.
 use Global_Float_Type
 implicit none
 

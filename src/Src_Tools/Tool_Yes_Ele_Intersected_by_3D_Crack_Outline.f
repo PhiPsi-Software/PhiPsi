@@ -1,10 +1,59 @@
+!     ================================================= !
+!             ____  _       _   ____  _____   _         !
+!            |  _ \| |     |_| |  _ \|  ___| |_|        !
+!            | |_) | |___   _  | |_) | |___   _         !
+!            |  _ /|  _  | | | |  _ /|___  | | |        !
+!            | |   | | | | | | | |    ___| | | |        !
+!            |_|   |_| |_| |_| |_|   |_____| |_|        !
+!     ================================================= !
+!     PhiPsi:     a general-purpose computational       !
+!                 mechanics program written in Fortran. !
+!     Website:    http://phipsi.top                     !
+!     Author:     Shi Fang, Huaiyin Institute of        !
+!                 Technology, Huaian, JiangSu, China    !
+!     Email:      shifang@hyit.edu.cn                   !
+!     ------------------------------------------------- !
+!     Please cite the following papers:                 !
+!     (1)Shi F., Lin C. Modeling fluid-driven           !
+!        propagation of 3D complex crossing fractures   !
+!        with the extended finite element method.       !
+!        Computers and Geotechnics, 2024, 172, 106482.  !
+!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
+!        for 3D hydraulic fracturing simulation         !
+!        considering crack front segmentation. Journal  !
+!        of Petroleum Science and Engineering, 2022,    !
+!        214, 110518.                                   !
+!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
+!        numerical strategy to model three-dimensional  !
+!        fracture propagation regarding crack front     !
+!        segmentation. Theoretical and Applied Fracture !
+!        Mechanics, 2022, 118, 103250.                  !
+!     (4)Shi F., Liu J. A fully coupled hydromechanical !
+!        XFEM model for the simulation of 3D non-planar !
+!        fluid-driven fracture propagation. Computers   !
+!        and Geotechnics, 2021, 132: 103971.            !
+!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
+!        XFEM-based method with reduction technique     !
+!        for modeling hydraulic fracture propagation    !
+!        in formations containing frictional natural    !
+!        fractures. Engineering Fracture Mechanics,     !
+!        2017, 173: 64-90.                              !
+!     ------------------------------------------------- !
  
       subroutine Tool_Yes_Ele_Intersected_by_3D_Crack_Outline(c_E,
      &                          c_C,c_Yes_Inter,
      &                          c_Inter_Point_A,c_Inter_Point_B,
      &                          Vertex_1,Vertex_2,
      &                          num_Inter_Outline,Four_Points)
+C     Determine whether a 3D element is intersected by the outer boundary of a 3D discrete crack, and calculate the coordinates of the intersection points.
+c     Note: It is directly penetrated by an edge line and does not include vertices on the boundaries of discrete cracks.
+c     Firstly written on 2020-01-08.
+c     If there are multiple crossover outlines, then take the longer one (2021-08-21), Ref:\theory_documents\023
+c     The situation and handling of a 3D crack front with a zigzag edge and two intersection lines in an element - 2021-08-22.
 
+      !......................
+      ! Variable Declaration
+      !......................
       use Global_Float_Type
       use Global_Crack_3D
       use Global_Model

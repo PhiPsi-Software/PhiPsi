@@ -1982,7 +1982,7 @@ end if
       !~~~~~~
       ! Leak
       !~~~~~~
-1243  FORMAT(5X,'Leak-off coefficient:     'F9.5,' ms^(1/2)')
+1243  FORMAT(5X,'Leak-off coefficient:     ',F9.5,' ms^(1/2)')
       if (Key_Leakoff==1) then
           print *, '    Leak-off:                  yes'
           ! Leakage coefficient

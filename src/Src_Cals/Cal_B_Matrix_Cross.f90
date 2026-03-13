@@ -1,6 +1,63 @@
+!     ================================================= !
+!             ____  _       _   ____  _____   _         !
+!            |  _ \| |     |_| |  _ \|  ___| |_|        !
+!            | |_) | |___   _  | |_) | |___   _         !
+!            |  _ /|  _  | | | |  _ /|___  | | |        !
+!            | |   | | | | | | | |    ___| | | |        !
+!            |_|   |_| |_| |_| |_|   |_____| |_|        !
+!     ================================================= !
+!     PhiPsi:     a general-purpose computational       !
+!                 mechanics program written in Fortran. !
+!     Website:    http://phipsi.top                     !
+!     Author:     Shi Fang, Huaiyin Institute of        !
+!                 Technology, Huaian, JiangSu, China    !
+!     Email:      shifang@hyit.edu.cn                   !
+!     ------------------------------------------------- !
+!     Please cite the following papers:                 !
+!     (1)Shi F., Lin C. Modeling fluid-driven           !
+!        propagation of 3D complex crossing fractures   !
+!        with the extended finite element method.       !
+!        Computers and Geotechnics, 2024, 172, 106482.  !
+!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
+!        for 3D hydraulic fracturing simulation         !
+!        considering crack front segmentation. Journal  !
+!        of Petroleum Science and Engineering, 2022,    !
+!        214, 110518.                                   !
+!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
+!        numerical strategy to model three-dimensional  !
+!        fracture propagation regarding crack front     !
+!        segmentation. Theoretical and Applied Fracture !
+!        Mechanics, 2022, 118, 103250.                  !
+!     (4)Shi F., Liu J. A fully coupled hydromechanical !
+!        XFEM model for the simulation of 3D non-planar !
+!        fluid-driven fracture propagation. Computers   !
+!        and Geotechnics, 2021, 132: 103971.            !
+!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
+!        XFEM-based method with reduction technique     !
+!        for modeling hydraulic fracture propagation    !
+!        in formations containing frictional natural    !
+!        fractures. Engineering Fracture Mechanics,     !
+!        2017, 173: 64-90.                              !
+!     ------------------------------------------------- !
  
 subroutine Cal_B_Matrix_Cross(kesi,yita,i_Cross,i_E,i_G,c_NN,c_X_NODES,c_Y_NODES,tem_B,num_tem_B)  
 
+! Calculate the B matrix (for cross).
+! References: Belytschko_2001_Arbitrary discontinuities in finite elements_Equation-12
+!..........................................
+! Variables related to cross-shaped cracks
+!..........................................
+! Cross_Point_Cr_num(num_Cross,1:2) !The primary and secondary crack numbers corresponding to each
+! cross intersection point
+! Cross_Point_Ele_num(num_Cross,1:2) !The element numbers corresponding to each cross intersection
+! point
+! Cross_Point_RABCD(num_Cross,1:10,1:2) !Coordinates of intersection and A, B, C, D points
+! corresponding to each cross intersection
+! Where R is the intersection point
+! For details about this variable, see the notes on V5-PhiPsi cross-shaped fracture handling.
+! Elem_Type_Cross(Num_Elem,num_Cross);          ! Element type: 1--cross crack reinforced element
+! Enriched_Node_Type_Cross(Num_Node, num_Cross); ! Type of enriched nodes: 1 -- Cross-shaped crack
+! enriched node
 
 use Global_Float_Type
 use Global_Crack

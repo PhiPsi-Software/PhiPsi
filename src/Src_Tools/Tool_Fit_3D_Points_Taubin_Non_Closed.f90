@@ -1,5 +1,17 @@
 subroutine Tool_Fit_3D_Points_Taubin_Non_Closed(i_C,num_Point,In_Points,Points_Flag_Inside,Out_Points)
+! Taubin smooth treatment of crack front edge for non-closed edge crack. 
+! Logic: Extract the single continuous segment of inside points, smooth only 
+!        the interior points (excluding the two endpoints of the segment).
+!        For edge crack, there should be only ONE continuous inside segment.
+!        If multiple segments detected, report error and abort.
+! Note: Applies only to fractures marked as boundary cracks by the Boundary_Cracks keyword.
+!
+! 2026-02-01. NEWFTU-2026020103.
+!
 
+!......................
+! Variable Declaration
+!......................
 use Global_Float_Type     
 use Global_Model
 use Global_Common

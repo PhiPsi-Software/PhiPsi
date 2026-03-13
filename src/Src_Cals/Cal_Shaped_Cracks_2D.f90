@@ -1,5 +1,22 @@
 subroutine Cal_Shaped_Cracks_2D(isub,c_DISP)
+! Calculate and save shaped cracks for post-processing display. 
+!
+! Save to sccx, sccy and scdx, scdy files.
+!
+! sccx: store the x coodinates of shaped crack points. 
+!       Each line store 1 crack x cooridnate
+! sccy: store the y coodinates of shaped crack points. 
+!       Each line store 1 crack y cooridnate
+! sccx: store the x coodinates of shaped crack points. 
+!       Each line store 1 crack x cooridnate
+! sccy: store the y coodinates of shaped crack points. 
+!       Each line store 1 crack y cooridnate
+!
+! NEWFTU-2025122602. 2025-12-26.
 
+!*****************************
+! Read public variable module
+!*****************************
 use Global_Float_Type
 use Global_Crack
 use Global_Crack_Common

@@ -1,10 +1,87 @@
+!     ================================================= !
+!             ____  _       _   ____  _____   _         !
+!            |  _ \| |     |_| |  _ \|  ___| |_|        !
+!            | |_) | |___   _  | |_) | |___   _         !
+!            |  _ /|  _  | | | |  _ /|___  | | |        !
+!            | |   | | | | | | | |    ___| | | |        !
+!            |_|   |_| |_| |_| |_|   |_____| |_|        !
+!     ================================================= !
+!     PhiPsi:     a general-purpose computational       !
+!                 mechanics program written in Fortran. !
+!     Website:    http://phipsi.top                     !
+!     Author:     Shi Fang, Huaiyin Institute of        !
+!                 Technology, Huaian, JiangSu, China    !
+!     Email:      shifang@hyit.edu.cn                   !
+!     ------------------------------------------------- !
+!     Please cite the following papers:                 !
+!     (1)Shi F., Lin C. Modeling fluid-driven           !
+!        propagation of 3D complex crossing fractures   !
+!        with the extended finite element method.       !
+!        Computers and Geotechnics, 2024, 172, 106482.  !
+!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
+!        for 3D hydraulic fracturing simulation         !
+!        considering crack front segmentation. Journal  !
+!        of Petroleum Science and Engineering, 2022,    !
+!        214, 110518.                                   !
+!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
+!        numerical strategy to model three-dimensional  !
+!        fracture propagation regarding crack front     !
+!        segmentation. Theoretical and Applied Fracture !
+!        Mechanics, 2022, 118, 103250.                  !
+!     (4)Shi F., Liu J. A fully coupled hydromechanical !
+!        XFEM model for the simulation of 3D non-planar !
+!        fluid-driven fracture propagation. Computers   !
+!        and Geotechnics, 2021, 132: 103971.            !
+!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
+!        XFEM-based method with reduction technique     !
+!        for modeling hydraulic fracture propagation    !
+!        in formations containing frictional natural    !
+!        fractures. Engineering Fracture Mechanics,     !
+!        2017, 173: 64-90.                              !
+!     ------------------------------------------------- !
  
 subroutine Tool_Generate_Natural_Fractures_3D
+! Randomly generate natural cracks, only applicable to rectangular models (cube models)
+! Algorithm: Generate them one by one; the midpoint of a newly generated crack should not fall
+! within a sphere of radius r centered on the midpoint of any existing crack.
+!     NEWFTU2022061001.
+!     2022-06-10.
 
 
+! The global variable Crack_Type_Status_3D(i_C,10) is used to indicate the type and status of
+! cracks.
+! Column 1 (Fracture Type): =1, HF fracture; =2, natural fracture; =3, post-fracturing hydraulic
+! fracture
+! Note: Natural fractures and propped hydraulic fractures may potentially turn into HF fractures.
+! Column 2 (Fracture Status): =1, HF fracturing not completed; =2, HF fracturing completed
+! Column 3 (Can the crack continue to propagate): =1, yes; =0, no
+! Column 4 (Whether the fracture has obtained a fluid node): =1, Yes; =0, No
+! Column 5 (Did the crack propagate in the previous step?): =1, Yes; =0, No
+
+! Key_Random_NaCr = 1 !Whether to randomly generate initial fractures (natural fractures)
+! num_Rand_Na_Crack      = 1                      !Number of randomly generated natural cracks
+! Key_NaCr_Type_3D = 1 !Initial natural fracture type: =1, rectangular; =2, circular (not supported
+! currently)
+! Key_NaCr_Cross         = 0                      !Whether to allow initial crack crossing (default is 0, not allowed)
+! NaCr_3D_n_Vector       = [0.0D0,1.0D0,0.0D0]    !Normal direction of the initial crack
+! NaCr_3D_n_Vector_Delta = 5.0D0 !Amplitude of fluctuation in the normal direction (unit: degrees,
+! default is 0)
+! NaCr_3D_Size = 4.5D0 ! Refers to the side length for rectangular cracks, and the radius for
+! circular cracks
+! NaCr_3D_Sz_Delta     = 0.0D0                  ! Fluctuation amplitude of size (default is 0)
+! Key_Fracture_Zone = 0 !Defines the rectangular fracture zone (extension is only allowed within
+! this range). If not defined, it will extend throughout the entire model.
+! Frac_Zone_Minx         = 15.0D0                 !The x-coordinate range of the fracture zone (minimum value)
+! Frac_Zone_Maxx         = 117.0D0-5.0D0          !Maximum x-coordinate range of the fracture zone
+! Frac_Zone_Miny         = 5.0D0                  !Y-coordinate range of the fracture zone (minimum value)
+! Frac_Zone_Maxy         = 117.0D0 5.0D0          !Y-coordinate range of the fracture zone (maximum value)
+! Frac_Zone_Minz         = 5.0D0                  !Z-coordinate range of the fracture zone (minimum value)
+! Frac_Zone_Maxz         = 117.0D0 5.0D0          !Z-coordinate range of the fracture zone (maximum value)
 
 
-
+!***************************
+! Variable Type Declaration
+!***************************
 use Global_Float_Type
 use Global_Common
 use Global_Model

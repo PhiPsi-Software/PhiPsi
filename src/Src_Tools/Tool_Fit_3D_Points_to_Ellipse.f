@@ -1,7 +1,65 @@
+!     ================================================= !
+!             ____  _       _   ____  _____   _         !
+!            |  _ \| |     |_| |  _ \|  ___| |_|        !
+!            | |_) | |___   _  | |_) | |___   _         !
+!            |  _ /|  _  | | | |  _ /|___  | | |        !
+!            | |   | | | | | | | |    ___| | | |        !
+!            |_|   |_| |_| |_| |_|   |_____| |_|        !
+!     ================================================= !
+!     PhiPsi:     a general-purpose computational       !
+!                 mechanics program written in Fortran. !
+!     Website:    http://phipsi.top                     !
+!     Author:     Shi Fang, Huaiyin Institute of        !
+!                 Technology, Huaian, JiangSu, China    !
+!     Email:      shifang@hyit.edu.cn                   !
+!     ------------------------------------------------- !
+!     Please cite the following papers:                 !
+!     (1)Shi F., Lin C. Modeling fluid-driven           !
+!        propagation of 3D complex crossing fractures   !
+!        with the extended finite element method.       !
+!        Computers and Geotechnics, 2024, 172, 106482.  !
+!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
+!        for 3D hydraulic fracturing simulation         !
+!        considering crack front segmentation. Journal  !
+!        of Petroleum Science and Engineering, 2022,    !
+!        214, 110518.                                   !
+!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
+!        numerical strategy to model three-dimensional  !
+!        fracture propagation regarding crack front     !
+!        segmentation. Theoretical and Applied Fracture !
+!        Mechanics, 2022, 118, 103250.                  !
+!     (4)Shi F., Liu J. A fully coupled hydromechanical !
+!        XFEM model for the simulation of 3D non-planar !
+!        fluid-driven fracture propagation. Computers   !
+!        and Geotechnics, 2021, 132: 103971.            !
+!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
+!        XFEM-based method with reduction technique     !
+!        for modeling hydraulic fracture propagation    !
+!        in formations containing frictional natural    !
+!        fractures. Engineering Fracture Mechanics,     !
+!        2017, 173: 64-90.                              !
+!     ------------------------------------------------- !
  
       subroutine Tool_Fit_3D_Points_to_Ellipse(num_Point,
      &                                    In_Points,Out_Points)
+C     Fit 3D spatial points into an ellipse, and then output the points on the fitted ellipse.
+c     Ref: Parametric Equation of a 3D Ellipse: \theory_documents\035 3D Ellipse Parametric Equation-2022-05-17.png
+c     Ref: General equation of a 2D ellipse: \theory_documents\035.1 General equation of a 2D ellipse-2022-05-17.png
+c     Approach: (1) Calculate the average coordinates to find the center coordinates of the ellipse.
+c     (2) Calculate the average distance from the points to the center of the circle, which is the radius.
+c     (3) Calculate the outward normal vector of the plane.
+c     (4) Loop through each point, find the point on the circle closest to each point, and mark it as the new coordinate.
+c     ---------------Reference materials for obtaining out-of-plane normal vectors-----------------
+c     Theory Ref:https://www.freesion.com/article/7157945105/
+c                 or
+c     \theory_documents\026 Optimal Spatial Circle Fitting for 3D Discrete Points and Implementation-2021-10-30.pdf
+c                 
+c     Added on 2022-05-17.
+c     Based on Tool_Fit_3D_Points_to_Circle.f.
 
+      !......................
+      ! Variable Declaration
+      !......................
       use Global_Float_Type     
       
       implicit none

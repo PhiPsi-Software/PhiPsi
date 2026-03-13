@@ -1,6 +1,22 @@
 subroutine Cal_SIFs_DIM_3D(iter,c_DISP,Tab_Num)
+! Displacement interpolation method for calculating stress intensity factors (3D problems).
+! After the calculation is completed, pass it to the public variables KI, KII, KIII.
+! Variable Description:
+! real(kind=FT) Cr_Plane_Line_Center(Max_Num_Cr_3D, 4, 3) ! Midpoints of the four edges of the crack
+! surface, used to calculate the stress intensity factor
+! real(kind=FT) Cr_Plane_Normal_vector(Max_Num_Cr_3D,3) ! Outward normal vector of the fracture
+! plane
 
+! real(kind=FT) Crack3D_Meshed_Vertex_x_Vector(Max_Num_Cr_3D, Max_N_Node_3D,3)! Local x-axis vector
+! of 3D crack boundary points after discretization
+! real(kind=FT) Crack3D_Meshed_Vertex_y_Vector(Max_Num_Cr_3D, Max_N_Node_3D, 3) ! Local y-axis
+! vector of 3D crack boundary points after discretization
+! real(kind=FT) Crack3D_Meshed_Vertex_z_Vector(Max_Num_Cr_3D, Max_N_Node_3D, 3) ! Local z-axis
+! vector of 3D crack boundary points after discretization
 
+!***************
+! Public Module
+!***************
 use Global_Float_Type
 use Global_Crack_Common
 use Global_Crack_3D
