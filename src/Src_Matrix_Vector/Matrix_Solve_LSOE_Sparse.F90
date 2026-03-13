@@ -129,7 +129,6 @@ integer Ai(K_CSR_NNZ)
 
 
 #ifdef gfortran
-#ifndef github
 real(kind=FT),allocatable::K_Value(:)
 integer,allocatable::K_Index(:)
 integer,allocatable::K_Ptr(:)
@@ -137,7 +136,6 @@ real(kind=FT),allocatable::Cond_A(:)
 integer,allocatable::Cond_IRN(:),Cond_JCN(:)
 integer IERR_8
 real(kind=FT) Condition_Num_Norm2
-#endif
 #endif
 
 #ifdef gfortran
@@ -662,8 +660,7 @@ case(7)
 
 case(8)
 #ifdef gfortran
-#ifdef notlinux
-#ifndef github
+#if defined(notlinux) || defined(github)
     ALLOCATE(K_Value(K_CSR_NNZ))
     ALLOCATE(K_Index(K_CSR_NNZ))
     ALLOCATE(K_Ptr(n+1))
@@ -696,7 +693,6 @@ case(8)
     DEALLOCATE(K_Value)
     DEALLOCATE(K_Index)
     DEALLOCATE(K_Ptr)
-#endif
 #endif
 #endif
 

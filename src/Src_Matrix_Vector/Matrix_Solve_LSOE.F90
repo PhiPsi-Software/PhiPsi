@@ -876,8 +876,7 @@ case(7)
 
 case(8)
 #ifdef gfortran
-#ifdef notlinux
-#ifndef github
+#if defined(notlinux) || defined(github)
     NZ_NUM = COUNT(K.ne.ZR)
     ALLOCATE(K_Value(NZ_NUM))
     ALLOCATE(K_Index(NZ_NUM))
@@ -928,7 +927,6 @@ case(8)
     DEALLOCATE(K_Value)
     DEALLOCATE(K_Index)
     DEALLOCATE(K_Ptr)
-#endif
 #endif
 #endif
 
