@@ -127,7 +127,21 @@ cp $mumps_root/$mumps_version/mumps/5.7.3/libseq/* $phipsi_root/include/
 cmake --build build --target clean
 ~~~
 
-### 2.1.5 Compile PhiPsi
+### 2.1.5 Compile lis
+~~~bash
+lis_version=lis-2.1.11
+lis_root=$phipsi_root/lis
+cd $lis_root
+unzip $lis_version.zip
+cd $lis_root/$lis_version
+./configure --enable-fortran --enable-f90 --enable-omp
+make
+make check
+cp $lis_root/$lis_version/src/.libs/*.a $phipsi_root/lib/
+cp $lis_root/$lis_version/include/* $phipsi_root/include/
+~~~
+
+### 2.1.6 Compile PhiPsi
 ~~~bash
 cd $phipsi_root
 rm CMakeCache.txt  
@@ -139,9 +153,9 @@ sudo chmod +x /usr/local/bin/phipsi
 #make clean
 ~~~
 
-### 2.1.6 Run PhiPsi examples
+### 2.1.7 Run PhiPsi examples
 
-#### 2.1.6.1 Example 1: 2d_fem.kpp
+#### 2.1.7.1 Example 1: 2d_fem.kpp
 ~~~bash
 # Step 1: change directory to PhiPsi.
 cd $phipsi_root
@@ -151,7 +165,7 @@ cd $phipsi_root
 ./phipsi -i examples/2d_fem.kpp -n 2
 ~~~
 
-#### 2.1.6.2 Example 2: 2d_xfem.kpp
+#### 2.1.7.2 Example 2: 2d_xfem.kpp
 ~~~bash
 # Step 1: change directory to PhiPsi.
 cd $phipsi_root
@@ -161,7 +175,7 @@ cd $phipsi_root
 ./phipsi -i examples/2d_xfem.kpp -n 2
 ~~~
 
-#### 2.1.6.3 Example 3: 2d_xfem_hydraulic_fracturing.kpp
+#### 2.1.7.3 Example 3: 2d_xfem_hydraulic_fracturing.kpp
 ~~~bash
 # Step 1: change directory to PhiPsi.
 cd $phipsi_root
@@ -171,7 +185,7 @@ cd $phipsi_root
 ./phipsi -i examples/2d_xfem_hydraulic_fracturing.kpp
 ~~~
 
-#### 2.1.6.4 Example 4: 3d_xfem_block_tension.kpp
+#### 2.1.7.4 Example 4: 3d_xfem_block_tension.kpp
 ~~~bash
 # Step 1: change directory to PhiPsi.
 cd $phipsi_root
@@ -181,7 +195,7 @@ cd $phipsi_root
 ./phipsi -i examples/3d_xfem_block_tension.kpp -n 6
 ~~~
 
-#### 2.1.6.5 Example 5: 3d_xfem_hydraulic_fracturing.kpp
+#### 2.1.7.5 Example 5: 3d_xfem_hydraulic_fracturing.kpp
 ~~~bash
 # Step 1: change directory to PhiPsi.
 cd $phipsi_root
@@ -256,7 +270,21 @@ cp $mumps_root/$mumps_version/mumps/5.7.3/libseq/* $phipsi_root/include/
 cmake --build build --target clean
 ~~~
 
-### 2.2.5 Compile PhiPsi
+### 2.2.5 Compile lis
+~~~bash
+lis_version=lis-2.1.11
+lis_root=$phipsi_root/lis
+cd $lis_root
+unzip $lis_version.zip
+cd $lis_root/$lis_version
+./configure --enable-fortran --enable-f90 --enable-omp
+make
+make check
+cp $lis_root/$lis_version/src/.libs/*.a $phipsi_root/lib/
+cp $lis_root/$lis_version/include/* $phipsi_root/include/
+~~~
+
+### 2.2.6 Compile PhiPsi
 ~~~bash
 cd $phipsi_root
 # Remove CMakeCache.txt if necessary. 
@@ -269,9 +297,9 @@ sudo chmod +x /usr/local/bin/phipsi
 #make clean
 ~~~
 
-### 2.2.6 Run PhiPsi examples
+### 2.2.7 Run PhiPsi examples
 
-#### 2.2.6.1 Example 1: 2d_fem.kpp
+#### 2.2.7.1 Example 1: 2d_fem.kpp
 ~~~bash
 # Step 1: change directory to PhiPsi.
 cd $phipsi_root
@@ -281,7 +309,7 @@ cd $phipsi_root
 ./phipsi -i examples/2d_fem.kpp -n 2
 ~~~
 
-#### 2.2.6.2 Example 2: 2d_xfem.kpp
+#### 2.2.7.2 Example 2: 2d_xfem.kpp
 ~~~bash
 # Step 1: change directory to PhiPsi.
 cd $phipsi_root
@@ -291,7 +319,7 @@ cd $phipsi_root
 ./phipsi -i examples/2d_xfem.kpp -n 2
 ~~~
 
-#### 2.2.6.3 Example 3: 2d_xfem_hydraulic_fracturing.kpp
+#### 2.2.7.3 Example 3: 2d_xfem_hydraulic_fracturing.kpp
 ~~~bash
 # Step 1: change directory to PhiPsi.
 cd $phipsi_root
@@ -301,7 +329,7 @@ cd $phipsi_root
 ./phipsi -i examples/2d_xfem_hydraulic_fracturing.kpp
 ~~~
 
-#### 2.2.6.4 Example 4: 3d_xfem_block_tension.kpp
+#### 2.2.7.4 Example 4: 3d_xfem_block_tension.kpp
 ~~~bash
 # Step 1: change directory to PhiPsi.
 cd $phipsi_root
@@ -311,7 +339,7 @@ cd $phipsi_root
 ./phipsi -i examples/3d_xfem_block_tension.kpp -n 6
 ~~~
 
-#### 2.2.6.5 Example 5: 3d_xfem_hydraulic_fracturing.kpp
+#### 2.2.7.5 Example 5: 3d_xfem_hydraulic_fracturing.kpp
 ~~~bash
 # Step 1: change directory to PhiPsi.
 cd $phipsi_root
@@ -385,7 +413,21 @@ cp $mumps_root/$mumps_version/mumps/5.7.3/libseq/* $phipsi_root/include/
 cmake --build build --target clean
 ~~~
 
-### 2.3.5 Compile PhiPsi
+### 2.3.5 Compile lis
+~~~bash
+lis_version=lis-2.1.11
+lis_root=$phipsi_root/lis
+cd $lis_root
+unzip $lis_version.zip
+cd $lis_root/$lis_version
+./configure --enable-fortran --enable-f90 --enable-omp
+make
+make check
+cp $lis_root/$lis_version/src/.libs/*.a $phipsi_root/lib/
+cp $lis_root/$lis_version/include/* $phipsi_root/include/
+~~~
+
+### 2.3.6 Compile PhiPsi
 ~~~bash
 cd $phipsi_root
 rm -rf CMakeCache.txt CMakeFiles/ Makefile *.ninja .ninja_deps .ninja_log
@@ -394,10 +436,9 @@ ninja
 # ninja clean
 ~~~
   
-### 2.3.6 Run PhiPsi examples
+### 2.3.7 Run PhiPsi examples
 
-
-#### 2.3.6.1 Example 1: 2d_fem.kpp
+#### 2.3.7.1 Example 1: 2d_fem.kpp
 ~~~bash
 # Step 1: open Windows Terminal, change directory to phipsi.exe, for example:
 cd 'X:\PhiPsi_Project\GitHub_Prep'
@@ -407,7 +448,7 @@ cd 'X:\PhiPsi_Project\GitHub_Prep'
 ./phipsi.exe -i "X:\PhiPsi_Project\examples\2d_fem.kpp" -n 2
 ~~~
 
-#### 2.3.6.2 Example 2: 2d_xfem.kpp
+#### 2.3.7.2 Example 2: 2d_xfem.kpp
 ~~~bash
 # Step 1: change directory to PhiPsi.
 cd $phipsi_root

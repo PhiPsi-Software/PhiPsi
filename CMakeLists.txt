@@ -57,6 +57,7 @@ target_link_libraries(phipsi libpord.a)
 target_link_libraries(phipsi liblapack.a)
 target_link_libraries(phipsi librefblas.a)
 target_link_libraries(phipsi libmpiseq.a)
+target_link_libraries(phipsi liblis.a)
 
 # Add libraries installed in Linux system
 # target_link_libraries(phipsi -lsuperlu)
