@@ -403,8 +403,8 @@ ninja
 cd 'X:\PhiPsi_Project\GitHub_Prep'
 # Step 2: Modify the keyword "Work Directory" in the keywords file 2d_fem.kpp.
 # 
-# Step 3: Perform the simulation.
-phipsi.exe -i examples\2d_fem.kpp -n 2
+# Step 3: Perform the simulation, for example:
+./phipsi.exe -i "X:\PhiPsi_Project\examples\2d_fem.kpp" -n 2
 ~~~
 
 #### 2.3.6.2 Example 2: 2d_xfem.kpp
@@ -414,7 +414,7 @@ cd $phipsi_root
 # Step 2: Modify the keyword "Work Directory" in the keywords file 2d_xfem.kpp.
 # 
 # Step 3: Perform the simulation.
-phipsi.exe -i examples\2d_xfem.kpp -n 2
+./phipsi.exe -i "X:\PhiPsi_Project\examples\2d_xfem.kpp" -n 2
 ~~~
 
 
