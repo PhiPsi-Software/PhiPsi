@@ -1,0 +1,127 @@
+% Keywords file of PhiPsi.
+% Written by Fang Shi, USTC.
+% Date: october 28,2016
+% Website: phipsi.top
+
+% Working directory.
+*Work_Directory
+/mnt/x/PhiPsi_Project/GitHub_Prep/examples/3d_L_shaped_specimen
+
+% Finename of input files.
+*Filename
+3d_L_shaped_specimen
+
+% Number of CPU cores.
+*Key_Num_Process
+4
+
+% 3-D problem.
+*Key_Dimension
+3
+
+% Number of initial cracks.
+*num_Crack
+1
+
+% Analysis type (Quasi-static).
+*Key_Analysis_Type
+1
+
+% Linear system solver.
+*Key_SLOE
+% 1  % Inverse solver
+% 2  % Gaussian elimination solver
+% 5  % LAPACK solver
+6  % MUMPS solver
+%9  % SuperLU
+% 11 % PCG-EBE
+
+*Key_K_Sparse
+1
+
+% Number of propagation step.
+*Num_Substeps
+10
+
+% Allow the crack to be outside the model.
+*Key_Allow_3D_Outside_Crack
+1
+
+% Allow crack number 1 to propagate.
+*Cracks_Allow_Propa
+1
+
+% Crack propagation criterion (weighted average maximum principal tensile stress criterion).
+*CFCP
+%2 % weighted average maximum principal tensile stress criterion
+3 %Schollmann criterion;
+
+*Key_SIFs_Method
+%1 %DIM
+2 %IIM
+
+% Method to calculate crack aperture.
+*Key_Crack_Aperture_Method
+1  % Equation
+%2  % Offset (default)
+
+*SIFs_DIM_3D_Offset_Delta_Factor
+0.3 
+*SIFs_DIM_3D_r_1_Factor
+0.2
+*SIFs_DIM_3D_r_2_Factor
+0.5
+*SIFs_DIM_3D_r_k_Factor
+0.35
+
+% Tip-enrichmenet.
+*Key_TipEnrich
+1
+
+% Crack propagation factor.
+*Factor_Propagation
+%0.85
+1.5
+
+% Material(1-E,2-v,3-density,4-thick,5-St,6-KIc,7-Sc,8-20(blank))
+*Material_Para_1   
+25.0e9,0.18,2000.0,1.0,0.1e6,0.01e6,100.0e6,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+
+% Define the coordinates of each initial cracks (plane in 3D composed of four points) for 3D problem
+% (input format: x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4)
+*Crack3D_Coor_1
+0.1001,-0.001,-0.001,0.1001,0.02475,0.01442,0,0.02475,0.01442,0,-0.001,-0.001
+
+% Allow crack number 1 to propagate.
+*Cracks_Allow_Propa
+1
+
+% Save vtk file for post-process.
+*Key_Save_vtk
+1
+
+*Key_Warning_Level
+2
+
+% Close the Window when the calculation is finished (default).
+*Key_Close_Window
+1
+
+
+
+
+
+
+
+
+
+
+
+
+*KEY_TYPE_2D
+2
+
+
+
+
+

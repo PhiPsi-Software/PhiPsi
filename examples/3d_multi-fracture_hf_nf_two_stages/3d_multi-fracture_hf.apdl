@@ -1,0 +1,80 @@
+finish
+/clear
+/FILNAME,exa_3D_HF_Nonplanar
+/Titie,exa_3D_HF_Nonplanar
+/PREP7
+/DSCALE,ALL,1.0
+/eshape,1
+/PNUM,KP,1
+/PNUM,LINE,1
+/PNUM,AREA,1
+/PNUM,VOLU,0
+/PNUM,NODE,0
+/PNUM,TABN,0
+/PNUM,SVAL,0
+/PNUM,DOMA,0
+/NUMBER,0
+!---------------------
+L  =  250  !长,x
+W  =  250  !宽,y
+H  =  250  !高,z
+! size_mesh = L/33
+! size_mesh = L/43
+size_mesh = L/53
+! Top_Pressure   = 2.5e6
+! Left_Pressure  = 1.0e6
+! Front_Pressure = 1.0e6
+! Top_Force = Top_Pressure*L*W/((L/size_mesh)*(W/size_mesh))
+! Left_Force = Left_Pressure/(size_mesh*size_mesh)
+! Front_Force = Front_Pressure/(size_mesh*size_mesh)
+!---------------------
+et,1,185
+!---------------------
+/REPLO
+/VIEW,1,,-1
+/ANG,1
+/REP,FAST
+!---------------------
+mp,ex,1,20e9
+mp,nuxy,1,0.3
+!---------------------
+K,1,0,0,0
+k,2,L,0,0
+K,3,L,W,0
+K,4,0,W,0
+K,5,0,0,H
+k,6,L,0,H
+K,7,L,W,H
+K,8,0,W,H
+V,1,2,3,4,5,6,7,8
+!---------------------视角及显示
+/REPLO
+/VIEW,  1,  0.306110853806    , -0.802050055528    ,  0.512846813006
+/ANG,   1,  -34.0367734235
+/REPLO
+/DIST,1,1.08222638492,1
+/REP,FAST
+/PNUM,LINE,0
+/PNUM,AREA,1
+/PNUM,VOLU,0
+APLOT
+!---------------------
+allsel
+lesize,all,size_mesh
+!---------------------
+MSHAPE,0,3D
+MSHKEY,1
+VMESH,all
+!----------约束-----------
+!约束全部面
+allsel
+asel,all
+NSLA,S,1
+D,all,all
+
+!---------------------
+Ansys2PhiPsi_3D,'3d_multi-fracture_hf'
+! /solu
+! solve
+! /post1
+! PLNSOL, S,EQV, 0,1.0

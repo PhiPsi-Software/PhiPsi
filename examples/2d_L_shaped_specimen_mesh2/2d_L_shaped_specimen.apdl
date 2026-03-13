@@ -1,0 +1,130 @@
+finish
+/clear
+/FILNAME,preprocess_for_phipsi
+/Titie,SHI Fang,HYIT
+/PREP7
+/DSCALE,ALL,1.0
+/eshape,1
+!---------------------
+L                 =  250e-3 !长,x
+! T                 =  100e-3  !高,z
+L_Force           =  30e-3   !载荷区域长度
+
+
+num_mesh_T        = 5*2       !厚度方向网格划分数目
+num_mesh_L        = 15*2      !厚度方向网格划分数目
+num_mesh_L_Force  = 4*2       !载荷施加区域网格划分数目
+
+F                 = 10e3     !载荷（总载荷）
+
+!---------------------
+! pressure = F/T/L_Force
+!---------------------
+et,1,42
+!---------------------
+KEYOPT,1,3,2    
+KEYOPT,1,6,0
+keyopt,1,10,0
+!---------------------
+/REPLO
+/VIEW,1,,-1
+/ANG,1
+/REP,FAST
+!---------------------
+mp,ex,1,25e9
+mp,nuxy,1,0.18
+!---------------------
+K,1,0,0,
+k,2,L,0,
+K,3,L,-L,0
+K,4,0,-L,0
+
+K,5,0,L,
+k,6,L,L,
+
+K,7,-L+L_Force,L,
+k,8,-L+L_Force,0,
+
+K,9,-L,L,
+k,10,-L,0,
+
+
+A,1,2,3,4
+A,5,6,2,1
+a,7,5,1,8
+a,9,7,8,10
+
+
+aglue,all
+
+!---------------------视角及显示
+/VIEW,1,,,1 
+/ANG,1  
+/REP,FAST   
+!---------------------
+VPLOT
+
+!---------网格划分------------
+
+!宽度方向网格划分数目
+! allsel
+! lsel,s,length,,T  !根据长度选择线
+! lesize,all,,,num_mesh_T,,,,
+
+!载荷区域方向网格划分数目
+allsel
+lsel,s,length,,L_Force  !根据长度选择线
+lesize,all,,,num_mesh_L_Force,,,,
+
+allsel
+lsel,s,length,,L  !根据长度选择线
+lesize,all,,,num_mesh_L,,,,
+
+allsel
+lsel,s,length,,L-L_Force  !根据长度选择线
+lesize,all,,,num_mesh_L,,,,
+
+!---------------------
+! MSHAPE,0,3D
+MSHKEY,1
+AMESH,all
+!---------------------
+allsel
+NSEL,S,LOC,Y,-L
+D,all,all  !约束模型下表面全部自由度
+!---------------------
+!
+allsel
+lsel,s,,,12
+NSLL,R,1
+cm,nodes_surface,node
+allsel
+cmsel,s,nodes_surface,node
+*get,all_num,NODE,,COUNT,,
+c_force = F/all_num
+
+! *do,i,1,all_num
+    ! *get,c_num,NODE,c_num,NXTH,
+    ! F,c_num,FY,c_force
+! *enddo
+
+*do,i,1,all_num
+	*get,c_num,NODE,c_num,NXTH,
+	*get,c_x,NODE,c_num,LOC,X,
+	*get,c_y,NODE,c_num,LOC,Y,
+	*get,c_z,NODE,c_num,LOC,Z,
+	*if,c_x,eq,-L,then
+	    F,c_num,FY, c_force/2	
+	*else
+	    F,c_num,FY, c_force
+	*endif
+*enddo
+!---------------------
+Ansys2PhiPsi_2D,'2d_L_shaped_specimen'
+/solu
+time,1
+solve
+
+/post1
+set,last
+PLNSOL, S,EQV, 0,1.0

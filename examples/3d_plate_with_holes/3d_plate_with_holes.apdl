@@ -1,0 +1,114 @@
+finish
+/clear
+/FILNAME,edge_crack_3d
+/Titie,edge_crack_3d
+/PREP7
+/DSCALE,ALL,1.0
+/eshape,1
+!---------------------
+Width  =  65.0e-3   !长,x
+Height  =  120.0e-3  !宽,y
+Thichness  =  10.0e-3 !高,z
+R  =  10.0e-3   !圆的半径
+R_small  =  6.5e-3   !圆的半径
+
+
+!Good!
+num_mesh_height     =  85
+num_mesh_width      =  35
+num_mesh_thichness  =  5
+num_mesh_big_circle =  15
+
+! num_mesh_height     =  115
+! num_mesh_width      =  55
+! num_mesh_thichness  =  7
+! num_mesh_big_circle =  21
+
+
+Force_y   = 20.0e3
+!---------------------
+et,1,185
+!---------------------
+/REPLO
+/VIEW,1,,-1
+/ANG,1
+/REP,FAST
+!---------------------
+mp,ex,1,210e9
+mp,nuxy,1,0.3
+!---------------------
+K,1,0,0,0
+k,2,Width,0,0
+K,3,Width,Height,0
+K,4,0,Height,0
+K,5,0,0,Thichness
+k,6,Width,0,Thichness
+K,7,Width,Height,Thichness
+K,8,0,Height,Thichness
+V,1,2,3,4,5,6,7,8
+
+/VIEW,  1,  0.282193850324    ,  0.295636195364    ,  0.912669639481
+/ANG,   1, -0.136482209827  
+/REPLO  
+! wpro,,,-90.000000
+CYL4,36.5e-3,51e-3,R, , , ,Thichness
+VSBV,       1,       2
+VPLOT   
+CYL4,13.0e-3,17e-3,R_small, , , ,Thichness
+VSBV,       3,       1
+VPLOT   
+CYL4,13.0e-3,103e-3,R_small, , , ,Thichness
+VSBV,       2,       1
+VPLOT   
+
+
+! WPCSYS,-1,0
+! CSYS,0
+
+! wpof,,,Thichness/2 - R/4
+! VSBW,       3
+! wpof,,,R/2
+! VSBW,       2
+
+!---------------------
+allsel
+lsel,s,length,,Height  !根据长度选择线
+lesize,all,,,num_mesh_height,
+allsel
+lsel,s,length,,Thichness  !根据长度选择线
+lesize,all,,,num_mesh_thichness,
+allsel
+lsel,s,length,,Width  !根据长度选择线
+lesize,all,,,num_mesh_width,
+allsel
+
+lsel,s,RADIUS,,R  !根据半径选择线
+lesize,all,,,num_mesh_big_circle,
+allsel
+!---------------------
+MSHAPE,0,3D
+MSHKEY,1
+VSWEEP,all
+!---------------------
+
+allsel
+NSEL,S,LOC,X,13e-3   
+NSEL,R,LOC,Y,17e-3-6.5e-3   
+D,all,ux
+D,all,uy
+
+allsel
+KSEL,S, , ,      24
+NSLK,S  
+D,all,all
+
+
+!---------------------
+allsel
+NSEL,S,LOC,X,13e-3  
+NSEL,R,LOC,Y,103e-3+6.5e-3    
+F,all,FY,Force_y/(num_mesh_thichness+1)
+
+allsel
+!---------------------
+Ansys2PhiPsi_3D,'3d_plate_with_holes'

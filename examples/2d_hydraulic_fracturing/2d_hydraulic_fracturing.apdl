@@ -1,0 +1,97 @@
+!     .................................................
+!             ____  _       _   ____  _____   _
+!            |  _ \| |     |_| |  _ \|  ___| |_|
+!            | |_) | |___   _  | |_) | |___   _
+!            |  _ /|  _  | | | |  _ /|___  | | |
+!            | |   | | | | | | | |    ___| | | |
+!            |_|   |_| |_| |_| |_|   |_____| |_|
+!     .................................................
+!     PhiPsi:     a general-purpose computational
+!                 mechanics program written in Fortran.
+!     Website:    http://phipsi.top
+!     Author:     Shi Fang from Huaiyin Institute of
+!                 Technology, HuaiAn, JiangSu, China
+!     Contact me: shifang@hyit.edu.cn
+finish
+/clear
+/FILNAME,PhiPsi_Hydraulic_Fracturing
+/PREP7
+/DSCALE,ALL,1.0
+/eshape,1
+!---------
+!控制参数
+!---------
+H  =  155.5
+W  =  100
+size_mesh = 0.5
+! size_mesh = 1
+Pressure  = 0
+F_W = W*Pressure/(W/size_mesh)
+F_H = H*Pressure/(H/size_mesh)
+!...............
+!  单元及材料
+!...............
+et,1,42
+KEYOPT,1,3,2
+KEYOPT,1,6,0
+keyopt,1,10,0
+mp,ex,1,30e9
+mp,nuxy,1,0.2
+!...........
+!  建模
+!...........
+K,1,0,0
+k,2,W,0
+K,3,0,H/2-5.5
+K,4,W,H/2-5.5
+K,5,0,H/2+5.5
+K,6,W,H/2+5.5
+K,7,0,H
+K,8,W,H
+a,1,2,4,3
+a,3,4,6,5
+a,5,6,8,7
+!...........
+! 划分网格
+!...........
+allsel
+lesize,5,,,11/0.5,
+lesize,7,,,11/0.5,
+lesize,2,,,20,1/10
+lesize,4,,,20,10
+lesize,8,,,20,10
+lesize,10,,,20,1/10
+lesize,all,size_mesh
+MSHAPE,0,2D
+MSHKEY,0
+AMESH,all
+!...............
+! 自由度约束
+!...............
+allsel
+KSEL,S, , ,       1
+NSLK,R
+D,all,uy
+allsel
+NSEL,S,LOC,X,0
+D,all,ux, ,
+!............
+! 施加载荷
+!............
+allsel
+lsel,s,,,1,
+NSLL,R,1
+F,all,FY,F_W
+allsel
+lsel,s,,,3,
+NSLL,R,1
+F,all,FY,-F_W
+allsel
+lsel,s,,,2,
+NSLL,R,1
+F,all,FX,-F_H
+allsel
+!................................
+! 导出PhiPsi运行所需的输入数据
+!...............................
+Ansys2PhiPsi_2D.mac,'2d_hydraulic_fracturing'

@@ -1,0 +1,79 @@
+!     .................................................
+!             ____  _       _   ____  _____   _        
+!            |  _ \| |     |_| |  _ \|  ___| |_|       
+!            | |_) | |___   _  | |_) | |___   _        
+!            |  _ /|  _  | | | |  _ /|___  | | |       
+!            | |   | | | | | | | |    ___| | | |       
+!            |_|   |_| |_| |_| |_|   |_____| |_|       
+!     .................................................
+!     PhiPsi:     a general-purpose computational      
+!                 mechanics program written in Fortran.
+!     Website:    http://phipsi.top                    
+!     Author:     Shi Fang from Huaiyin Institute of   
+!                 Technology, HuaiAn, JiangSu, China   
+!     Contact me: shifang@ustc.edu.cn   
+
+finish
+/clear
+/FILNAME,PhiPsi_Multi_Crack
+/PREP7
+/DSCALE,ALL,1.0
+/eshape,1
+
+H  =  50.0e-3
+W  =  50.0e-3
+size_mesh = 1.0e-3
+ForceY = 1.0e6
+
+et,1,42
+mp,ex,1,10e9
+mp,nuxy,1,0.25
+
+BLC4,0,0,w,h
+/AUTO,1 
+/REP,FAST   
+allsel
+lesize,all,size_mesh
+MSHAPE,0,2D 
+MSHKEY,0
+AMESH,all
+
+allsel
+KSEL,S, , ,       1 
+NSLK,R  
+D,all,all
+allsel
+KSEL,S, , ,       2
+NSLK,R  
+D,all,uy
+
+allsel
+LSEL,S,LOC,Y,H
+NSLl,R,1
+*get,all_num,NODE,,COUNT,,
+c_num = 0
+*do,i,1,all_num
+	*get,c_num,NODE,c_num,NXTH,
+	*get,c_x,NODE,c_num,LOC,X,
+	*if,c_x,EQ,0,or,c_x,EQ,W,then                       !两端减半
+	    F,c_num,FY,ForceY*size_mesh*0.5
+	*else                                                   
+	    F,c_num,FY,ForceY*size_mesh
+	*endif
+*enddo
+allsel
+LSEL,S,LOC,Y,0
+NSLl,R,1
+*get,all_num,NODE,,COUNT,,
+c_num = 0
+*do,i,1,all_num
+	*get,c_num,NODE,c_num,NXTH,
+	*get,c_x,NODE,c_num,LOC,X,
+	*if,c_x,EQ,0,or,c_x,EQ,W,then                   
+	    F,c_num,FY,-ForceY*size_mesh*0.5
+	*else                                                  
+	    F,c_num,FY,-ForceY*size_mesh
+	*endif
+*enddo
+
+Ansys2PhiPsi_2D.mac,'2d_multiple_cracks'

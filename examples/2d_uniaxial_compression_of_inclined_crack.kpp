@@ -1,0 +1,60 @@
+% Working directory.
+*Work_Directory
+/mnt/x/PhiPsi_Project/GitHub_Prep/examples/2d_uniaxial_compression_of_inclined_crack
+
+% Filename of input files.
+*Filename
+2d_uniaxial_compression
+
+% Number of initial cracks.
+*num_Crack
+1
+
+% Analysis type (Quasi-static).
+*Key_Analysis_Type
+1
+
+% Plane strain.
+*Key_Type_2D
+2
+
+% Contact.
+*Key_Contact
+1
+
+*Key_Conta_Intg_Point
+2
+
+% Friction coefficient of the fracture surface.
+*fric_mu_Cont
+0.3
+
+*kn_Cont_Penalty
+1.0e13
+
+*kt_Cont_Penalty
+1.0e13
+
+*Conve_Tol_Penalty
+1.0e-4
+
+% Linear system solver (UMFPACK).
+*Key_SLOE
+7
+
+% Material (1-E,2-v,3-density,4-thick,5-St,6-KIc,7-Sc,8-20(blank)).
+*Material_Para_1   
+20.0e9,0.2,2000.0,1.0,1.0e6,1.0e6,10.0e6,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+
+% Number of propagation step.
+*Num_Substeps
+1
+
+% Define the coordinates of each initial cracks (x_of_P1, y_of_P1, x_of_P2, y_of_P2).
+*CRACK_1
+0.14286,0.21269,0.20713,0.28930
+
+% Output tangential displacement of fracture faces
+*Key_Post_S_TanDisp
+1
+

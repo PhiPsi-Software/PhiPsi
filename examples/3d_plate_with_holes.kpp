@@ -1,0 +1,173 @@
+% Working directory.
+*Work_Directory
+/mnt/x/PhiPsi_Project/GitHub_Prep/examples/3d_plate_with_holes
+
+% Finename of input files.
+*Filename
+3d_plate_with_holes
+
+% 3-D problem.
+*Key_Dimension
+3
+
+% Analysis type (Quasi-static).
+*Key_Analysis_Type
+1
+
+% Number of initial crack.
+*NUM_CRACK
+1
+%0
+
+% Linear system solver.
+*Key_SLOE
+% 1  % Inverse solver
+% 2  % Gaussian elimination solver
+% 5  % LAPACK solver
+6  % MUMPS solver
+%8 %Lis
+%9  % SuperLU
+% 11 % PCG-EBE
+
+% Enable sparse matrix.
+*Key_K_Sparse
+1
+%0
+
+% Factor of propagation length (propagation length = factor * the average element size)
+*Factor_Propagation
+%1.3
+%0.8
+%0.85
+0.95
+
+% Number of propagatin steps.
+*Num_Substeps
+%1
+%5
+%10
+%15
+20
+
+% Active in plane growth.
+*Key_InPlane_Growth
+%1
+0
+
+% Allow the crack to be outside the model.
+*Key_Allow_3D_Outside_Crack
+1
+
+% Allow crack number 1 to propagate.
+*Cracks_Allow_Propa
+1
+
+% Crack propagation criterion (weighted average maximum principal tensile stress criterion).
+*CFCP
+%2 % weighted average maximum principal tensile stress criterion
+3 %Schollmann criterion
+
+*Key_SIFs_Method
+%1 %DIM
+2 %IIM
+
+% Print SIFs to screen.
+*Key_3D_SIFs_Print
+1
+
+% Active smoothing.
+*Key_Smooth_Front
+%0
+1 % Straight Line
+%6 %Taubin
+
+% Set cracks as boundary crack (1 denotes boundary crack).
+*Boundary_Cracks
+1,1
+
+% Method to calculate crack aperture.
+*Key_Crack_Aperture_Method
+1  % Equation
+%2  % Offset (default)
+
+% Tip-enrichmenet.
+*Key_TipEnrich
+1
+
+% Allow crack to emerge.
+*Key_Initiation
+1
+%0
+
+% Initiation rule: Maximum Tensile Stress Criterion. 
+*Key_Ini_Rule
+1
+
+% Shape of 3D Initiation Crack.
+*Key_Ini_Cr_3D_Type
+%1 %Circular
+2 %Square
+
+% Number of max emerged cracks.
+*Key_Max_Num_Initiation_Cracks
+1
+
+%Step Number to Start Initiation Check
+*Step_Number_to_Start_Initiation_Check
+16
+
+*Key_Initiation_Zone
+1
+*Initiation_Zone_X_Min
+46.5e-3
+*Initiation_Zone_X_Max
+60.0e-3
+*Initiation_Zone_Y_Min
+41e-3
+*Initiation_Zone_Y_Max
+52e-3
+*Initiation_Zone_Z_Min
+-5e-3
+*Initiation_Zone_Z_Max
+15e-3
+*Size_Ini_Crack
+11e-3
+
+% Material(1-E,2-v,3-density,4-thick,5-St,6-KIc,7-Sc,8-20(blank))
+*Material_Para_1
+71.7e9,0.33,2000.0,1.0,10.0e6,0.1e6,100.0e6,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+
+% Define the coordinates of each initial cracks (plane in 3D composed of four points) for 3D problem
+% (input format: x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4)
+*Crack3D_Coor_1
+-0.5e-3,67.5e-3,-1.0e-3,13e-3,67.5e-3,-1.0e-3,13e-3,67.5e-3,11.0e-3,-0.5e-3,67.5e-3,11.0e-3
+%4.25033E-2,5.12244E-2,1.0498E-2,5.34853E-2,5.18535E-2,1.050149E-2,5.34853E-2,5.19083E-2,-4.98366E-4,4.25033E-2,5.127921E-2,-5.01497E-4
+
+*MATERIAL_TYPE_1
+1
+
+% Save vtk file for post-process.
+*Key_Save_vtk
+1
+
+% Avoid extremely small negative aperture.
+*Key_Del_Neg_Aperture
+1
+
+% Warning Level.
+*Key_Warning_Level
+2
+
+
+
+
+
+
+
+
+
+
+
+
+
+

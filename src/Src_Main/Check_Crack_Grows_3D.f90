@@ -512,8 +512,7 @@ do i_C =1,num_Crack
                       Ave_Sxx_GP,Ave_Syy_GP,Ave_Szz_GP,Ave_Sxy_GP,Ave_Syz_GP,Ave_Sxz_GP)
           !ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
           ! Do not use weighting; instead, use several points within the sphere and then take the
-          ! average
-          ! (2021-08-24)
+          ! average (2021-08-24).
           ! It doesn't work well and is not recommended for use.
           !ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
           elseif(Key_Ave_Stress == 4)  then

@@ -1,0 +1,142 @@
+!     .................................................
+!             ____  _       _   ____  _____   _        
+!            |  _ \| |     |_| |  _ \|  ___| |_|       
+!            | |_) | |___   _  | |_) | |___   _        
+!            |  _ /|  _  | | | |  _ /|___  | | |       
+!            | |   | | | | | | | |    ___| | | |       
+!            |_|   |_| |_| |_| |_|   |_____| |_|       
+!     .................................................
+!     PhiPsi:     a general-purpose computational      
+!                 mechanics program written in Fortran.
+!     Website:    http://phipsi.top                    
+!     Author:     Shi Fang from Huaiyin Institute of   
+!                 Technology, HuaiAn, JiangSu, China   
+!     Contact me: shifang@hyit.edu.cn      
+            
+
+finish
+/clear
+/PREP7
+/DSCALE,ALL,1.0
+/eshape,on
+
+!.......................
+! Control parameters
+!.......................
+w      =   21e-3
+h      =   31e-3
+a      =   5e-3                    ! half crack length
+angle  =   60                      ! angle between crack and vertical direction
+f      =  -10e6                    ! load (MPa)
+
+theta = angle*3.1415926/180        ! angle between crack and sigma1 direction (radian)
+/DSCALE,ALL,1 
+/PNUM,KP,1  
+/PNUM,LINE,1
+
+!...............
+! Element type
+!...............
+et,1,183
+KEYOPT,1,3,2   ! plane strain
+
+!........................
+!  Material properties
+!........................
+mp,ex,1,20e9    
+mp,prxy,1,0.2
+
+!........................
+!    Geometry modeling
+!........................
+k,1,0,0
+k,2,w,0
+k,3,w,h
+k,4,0,h
+k,5,0,h/2-w/2/tan(theta)
+k,6,w,h/2+w/2/tan(theta)
+k,7,w/2+a*sin(theta),h/2+a*cos(theta)
+k,8,w/2-a*sin(theta),h/2-a*cos(theta)
+k,9,w/2,h/2
+k,19,w/2,h/2
+k,21,w/2,h
+k,22,w/2,0
+! Keypoints 111 and 222 are used to define the path for stress intensity factor (SIF) calculation
+k,111,w/2+a/2*sin(theta),h/2+a/2*cos(theta)
+k,222,w/2+a/2*sin(theta),h/2+a/2*cos(theta)
+a,1,22,19,8,5,1
+a,22,2,6,7,222,19,22
+a,9,111,7,6,3,21,9
+a,5,8,9,21,4,5
+
+!........................
+!    Constraints
+!........................
+dk,1,all,0
+DL,1, ,uy,    
+DL,6, ,uy,
+
+!...............
+!     Loads
+!...............
+allsel,all
+SFL,14,PRES,f,
+SFL,17,PRES,f,
+
+!........................
+!   Define crack tips
+!........................
+lesize,all,w/60
+KSCON,7,a/10,1,10,0.5        ! define crack tip 1
+KSCON,8,a/10,1,10,0.5        ! define crack tip 2
+MSHKEY,0
+AMESH,all      
+
+!........................                            
+!   Solution settings
+!........................
+/solu
+OUTRES,ALL,ALL      ! write all available results for all substeps to *.rst
+time,1
+solve
+finish
+
+!...........................................................
+!  Post-processing: calculate stress intensity factor (SIF)
+!...........................................................
+/post1
+LOCAL,11,0,w/2+a*sin(theta),h/2+a*cos(theta),,90-angle,,,1,1            ! create local coordinate system
+RSYS,11                                                                 ! activate local coordinate system
+SET,LAST
+/DSCALE,1,100   
+! PLNSOL, S,Y, 0,1.0  
+PLNSOL, S,EQV, 0,1.0
+! Get node numbers on the path via keypoints
+allsel
+KSEL,S, , ,7 
+NSLK,R  
+*get,node1,node,0,num,max
+allsel
+KSEL,S, , ,111 
+NSLK,R  
+*get,node2,node,0,num,max
+allsel
+KSEL,S, , ,9 
+NSLK,R  
+*get,node3,node,0,num,max
+allsel
+KSEL,S, , ,222 
+NSLK,R  
+*get,node4,node,0,num,max
+allsel
+KSEL,S, , ,19 
+NSLK,R  
+*get,node5,node,0,num,max
+allsel
+PATH,PathSIF,5,30,20                      ! define path
+PPATH,1,node1                             ! set path point
+PPATH,2,node2                                
+PPATH,3,node3
+PPATH,4,node4
+PPATH,5,node5
+KCALC,0,1,3,0                             ! calculate stress intensity factor (SIF)

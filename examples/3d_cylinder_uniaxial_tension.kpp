@@ -1,0 +1,143 @@
+% Keywords file of PhiPsi.
+% Written by Fang Shi, USTC.
+% Date: october 28,2016
+% Website: phipsi.top
+% 
+% Theoretical solution: 
+% KI = 5.6419,KII = 6.6375,KIII = 4.6463
+%
+%sigma = 100e6
+%a=1e-2
+%alpha=45*pi/180
+%v=0.3
+%KI = 2*sigma*cos(alpha)^2*sqrt(a/pi)/1e6 
+%KII = 4/(2-v)*sigma*sin(alpha)*cos(alpha)*sqrt(a/pi)/1e6 
+%KIII = 4*(1-v)/(2-v)*sigma*sin(alpha)*cos(alpha)*sqrt(a/pi)/1e6 
+
+% IIM: KI = 5.6, KII=6.7, KIII= 4.9
+% DIM: KI = 5.7, KII=6.81 , KIII=  
+
+
+% Working directory.
+*Work_Directory
+/mnt/x/PhiPsi_Project/GitHub_Prep/examples/3d_cylinder_uniaxial_tension
+
+% Finename of input files.
+*Filename
+3d_cylinder_uniaxial_tension
+
+% Parameters.
+
+% Number of CPU cores.
+*Key_Num_Process
+6
+
+% 3-D problem.
+*Key_Dimension
+3
+
+% Number of initial cracks.
+*num_Crack
+%0
+1
+
+% Analysis type (Quasi-static).
+*Key_Analysis_Type
+1
+
+% Linear system solver.
+*Key_SLOE
+% 1  % Inverse solver
+% 2  % Gaussian elimination solver
+% 5  % LAPACK solver
+6  % MUMPS solver
+%9  % SuperLU
+% 11 % PCG-EBE
+
+*Key_K_Sparse
+1
+
+% Number of propagation step.
+*Num_Substeps
+%1
+%5
+10
+%2
+
+% Crack propagation criterion.
+*CFCP
+%2 %Stress
+3
+
+*Key_InPlane_Growth
+0
+
+*Key_SIFs_Method
+%1 %DIM
+2 %IIM
+
+*Key_3D_Sifs_IIM_Enable_XFEM
+1
+%0
+
+*Key_3D_Sifs_IIM_num_Gauss_Points
+512
+
+% Method to calculate crack aperture.
+*Key_Crack_Aperture_Method
+1  % Equation
+%2  % Offset (default)
+
+% Crack propagation factor.
+*Factor_Propagation
+0.85
+
+% Material(1-E,2-v,3-density,4-thick,5-St,6-KIc,7-Sc,8-20(blank))
+*Material_Para_1   
+200.0e9,0.3,2000.0,1.0,0.1e6,1.0e6,100.0e6,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+
+% Save vtk file for post-process.
+*Key_Save_vtk
+1
+
+% Get crack and element permeability.
+*Key_Get_Permeability
+1
+
+% Close the Window when the calculation is finished (default).
+*Key_Close_Window
+1
+
+% Define the coordinates of each initial cracks (plane in 3D composed of four points) for 3D problem
+*CRACK3D_CIR_COOR_1
+%0,0,10e-2,-0.5,0,0.866,1.0e-2
+0,0,10e-2,-1,0,1,1.0e-2 %45 degrees
+
+*Key_3D_SIFs_Print
+1
+
+*Key_Clear_All 
+1
+
+% Applied surface load.
+*Num_Surface_Loads
+1
+
+% Surface load file suffix.
+*File_Surface_Load_1
+surf
+
+% Surface load value.
+*Surface_Pressure_1
+-100.0e6
+
+*MATERIAL_TYPE_1
+1
+
+
+
+
+
+
+
+

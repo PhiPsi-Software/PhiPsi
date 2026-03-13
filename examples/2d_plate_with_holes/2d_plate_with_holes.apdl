@@ -1,0 +1,101 @@
+finish
+/clear
+/FILNAME,temp_file
+/PREP7
+! /DSCALE,ALL,100.0
+/eshape,1
+!---------
+!控制参数
+!---------
+W         = 65.0e-3
+H         = 120.0e-3
+
+! size_mesh = H/101
+! size_mesh = H/81  !good
+size_mesh = H/161  !good
+
+Force_y   = 20.0e3
+
+
+up_circle_location_x = 13e-3
+up_circle_location_y = H - 17e-3
+
+dn_circle_location_x = 13e-3
+dn_circle_location_y = 17e-3
+
+circle_radius = 13e-3/2
+
+!...............
+!  单元及材料
+!...............
+et,1,182
+!KEYOPT,1,3,0    !平面应力
+KEYOPT,1,3,2    !平面应变
+KEYOPT,1,6,0
+keyopt,1,10,0
+mp,ex,1,71.8
+mp,nuxy,1,0.33
+
+
+!...........
+!  建模
+!...........
+
+BLC4,0,0,w,h
+
+wpro,,,90.000000
+wpof,,,up_circle_location_x
+ASBW,    ALL  
+
+
+wpro,,90.000000,
+wpof,,,-(dn_circle_location_y - circle_radius)
+ASBW,  ALL
+
+wpof,,,-(H - (dn_circle_location_y - circle_radius)*2)
+ASBW,  ALL
+
+WPCSYS,-1,0 
+
+AESIZE,ALL,size_mesh
+AMESH,ALL
+
+!...............
+! DOFs.
+!...............
+! DK,8,all
+! DK,11,ux
+
+allsel
+KSEL,S, , ,      8
+NSLK,S  
+D,all,all
+
+
+allsel
+KSEL,S, , ,      11
+NSLK,S  
+D,all,ux
+
+!................................................
+! 载荷,必须施加在节点上,否则无法导出节点载荷信息
+!................................................
+
+allsel
+KSEL,S, , ,      11
+NSLK,S  
+F,all,FY,Force_y
+
+
+
+!................................
+! 导出PhiPsi运行所需的输入数据
+!...............................
+Ansys2PhiPsi_2D.mac,'2d_plate_with_holes'
+!
+/solu
+time,1
+solve
+/POST1
+set,last
+PLNSOL, S,EQV, 0,1.0

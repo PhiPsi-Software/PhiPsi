@@ -1,0 +1,142 @@
+finish
+/clear
+/FILNAME,exa_3D_HF_Nonplanar
+/Titie,exa_3D_HF_Nonplanar
+/PREP7
+/DSCALE,ALL,1.0
+/eshape,1
+/PNUM,KP,1
+/PNUM,LINE,1
+/PNUM,AREA,1
+/PNUM,VOLU,0
+/PNUM,NODE,0
+/PNUM,TABN,0
+/PNUM,SVAL,0
+/PNUM,DOMA,0
+/NUMBER,0
+!---------------------
+L  =  500  !长,x
+W  =  500  !宽,y
+H  =  250  !高,z
+! size_mesh = 11.5
+! size_mesh = 7.5
+size_mesh = 5.5
+! Top_Pressure   = 2.5e6
+! Left_Pressure  = 1.0e6
+! Front_Pressure = 1.0e6
+! Top_Force = Top_Pressure*L*W/((L/size_mesh)*(W/size_mesh))
+! Left_Force = Left_Pressure/(size_mesh*size_mesh)
+! Front_Force = Front_Pressure/(size_mesh*size_mesh)
+!---------------------
+et,1,185
+!---------------------
+/REPLO
+/VIEW,1,,-1
+/ANG,1
+/REP,FAST
+!---------------------
+mp,ex,1,20e9
+mp,nuxy,1,0.3
+!---------------------
+K,1,0,0,0
+k,2,L,0,0
+K,3,L,W,0
+K,4,0,W,0
+K,5,0,0,H
+k,6,L,0,H
+K,7,L,W,H
+K,8,0,W,H
+V,1,2,3,4,5,6,7,8
+!---------------------视角及显示
+/REPLO
+/VIEW,  1,  0.306110853806    , -0.802050055528    ,  0.512846813006
+/ANG,   1,  -34.0367734235
+/REPLO
+/DIST,1,1.08222638492,1
+/REP,FAST
+/PNUM,LINE,0
+/PNUM,AREA,1
+/PNUM,VOLU,0
+APLOT
+!---------------------
+allsel
+lesize,all,size_mesh
+!---------------------
+MSHAPE,0,3D
+MSHKEY,1
+VMESH,all
+!----------约束-----------
+!约束全部面
+allsel
+asel,all
+NSLA,S,1
+D,all,all
+
+!约束前面y自由度
+! allsel
+! asel,s,,,2,,
+! NSLA,S,1
+! D,all,uy
+
+!约束左面x自由度
+! allsel
+! asel,s,,,5,,
+! NSLA,S,1
+! D,all,ux
+! allsel
+!----------载荷-----------
+!载荷(顶部)-z
+! allsel
+! asel,s,,,6,,
+! NSLA,S,0
+! F,all,FZ,-Top_Force
+! allsel
+! lsel,s,,,6,12,2
+! NSLl,R,1
+! F,all,FZ,-Top_Force/2
+! allsel
+! ksel,s,,,5,8,1
+! NSLK,R,1
+! F,all,FZ,-Top_Force/4
+! allsel
+
+
+!载荷(后部)-y
+! allsel
+! asel,s,,,4,,
+! NSLA,S,0
+! F,all,FY,-Front_Force
+! allsel
+! lsel,s,,,3,,
+! lsel,a,,,9,11,1
+! NSLl,R,1
+! F,all,FY,-Front_Force/2
+! allsel
+! ksel,s,,,3,4,1
+! ksel,a,,,7,8,1
+! NSLK,R,1
+! F,all,FY,-Front_Force/4
+! allsel
+
+!载荷(右部)-x
+! allsel
+! asel,s,,,3,,
+! NSLA,S,0
+! F,all,FX,-Left_Force
+! allsel
+! lsel,s,,,2,5,3
+! lsel,a,,,8,9,1
+! NSLl,R,1
+! F,all,FX,-Left_Force/2
+! allsel
+! ksel,s,,,2,3,1
+! ksel,a,,,6,7,1
+! NSLK,R,1
+! F,all,FX,-Left_Force/4
+! allsel
+!---------------------
+Ansys2PhiPsi_3D,'3d_hf_two_wells'
+! /solu
+! solve
+! /post1
+! PLNSOL, S,EQV, 0,1.0

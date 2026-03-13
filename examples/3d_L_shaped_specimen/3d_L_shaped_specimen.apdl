@@ -1,0 +1,152 @@
+finish
+/clear
+/FILNAME,preprocess_for_phipsi
+/Titie,SHI Fang,HYIT
+/PREP7
+/DSCALE,ALL,1.0
+/eshape,1
+!---------------------
+L                 =  250e-3 
+T                 =  100e-3  
+L_Force           =  30e-3   
+
+
+num_mesh_T        = 15       
+num_mesh_L        = 20      
+num_mesh_L_Force  = 8        
+
+F                 = 1e3     !Load
+
+!---------------------
+! pressure = F/T/L_Force
+!---------------------
+et,1,185
+!---------------------
+/REPLO
+/VIEW,1,,-1
+/ANG,1
+/REP,FAST
+!---------------------
+mp,ex,1,25e9
+mp,nuxy,1,0.18
+!---------------------
+K,1,0,0,0
+k,2,0,L,0
+K,3,T,L,0
+K,4,T,0,0
+
+K,5,0,0,-L
+k,6,0,L,-L
+K,7,T,L,-L
+K,8,T,0,-L
+
+V,1,2,3,4,5,6,7,8
+
+K,9, 0,0,L
+k,10,0,L,L
+K,11,T,L,L
+K,12,T,0,L
+
+v,9,10,11,12,1,2,3,4
+
+K,101,0,0-L+L_Force,0
+K,104,T,0-L+L_Force,0
+K,109,0,0-L+L_Force,L
+K,112,T,0-L+L_Force,L
+
+v,9,12,4,1,109,112,104,101
+
+K,201,0,0-L,0
+K,204,T,0-L,0
+K,209,0,0-L,L
+K,212,T,0-L,L
+
+v,209,212,204,201,109,112,104,101
+
+vglue,all
+
+!---------------------
+/REPLO
+/VIEW,  1,  0.671037905791    , -0.730454792108    , -0.127058748927
+/ANG,   1,  -96.1470969688
+/REPLO
+!---------------------
+VPLOT
+
+!---------mesh------------
+
+!宽度方向网格划分数目
+allsel
+lsel,s,length,,T  !根据长度选择线
+lesize,all,,,num_mesh_T,,,,
+
+!载荷区域方向网格划分数目
+allsel
+lsel,s,length,,L_Force  !根据长度选择线
+lesize,all,,,num_mesh_L_Force,,,,
+
+allsel
+lsel,s,length,,L  !根据长度选择线
+lesize,all,,,num_mesh_L,,,,
+
+allsel
+lsel,s,length,,L-L_Force  !根据长度选择线
+lesize,all,,,num_mesh_L,,,,
+
+!---------------------
+MSHAPE,0,3D
+MSHKEY,1
+VMESH,all
+!---------------------
+allsel
+NSEL,S,LOC,Z,-L
+D,all,all  !约束模型下表面全部自由度
+!---------------------
+!
+allsel
+asel,s,,,20
+NSLA,R,1
+cm,nodes_surface,node
+allsel
+cmsel,s,nodes_surface,node
+*get,all_num,NODE,,COUNT,,
+c_force = F/all_num
+
+! *do,i,1,all_num
+    ! *get,c_num,NODE,c_num,NXTH,
+    ! F,c_num,FZ,c_force
+! *enddo
+
+*do,i,1,all_num
+	*get,c_num,NODE,c_num,NXTH,
+	*get,c_x,NODE,c_num,LOC,X,
+	*get,c_y,NODE,c_num,LOC,Y,
+	*get,c_z,NODE,c_num,LOC,Z,
+	*if,c_y,eq,-L,then
+	    F,c_num,FZ, c_force/2
+	*elseif,c_x,eq,0,then
+	    F,c_num,FZ, c_force/2
+	*elseif,c_x,eq,T,then
+	    F,c_num,FZ, c_force/2		
+	*else
+	    F,c_num,FZ, c_force
+	*endif
+	
+	*if,c_y,eq,-L,and,c_x,eq,0,then
+	    F,c_num,FZ, c_force/4
+	*endif
+
+	*if,c_y,eq,-L,and,c_x,eq,T,then
+	    F,c_num,FZ, c_force/4
+	*endif	
+*enddo
+!---------------------
+Ansys2PhiPsi_3D,'3d_L_shaped_specimen'
+/solu
+time,1
+solve
+
+/post1
+SET,LAST
+/EFACET,1   
+PLNSOL, S,EQV, 0,1.0

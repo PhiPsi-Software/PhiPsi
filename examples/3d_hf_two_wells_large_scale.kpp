@@ -1,0 +1,401 @@
+% Keywords file of PhiPsi.
+% Written by Fang Shi, HYIT.
+% Data: 2022-11-09
+% 3D HF verification.
+% Website: http://phipsi.top/
+
+% Working directory.
+*Work_Directory 
+/mnt/x/PhiPsi_Project/GitHub_Prep/examples/3d_hf_two_wells_large_scale
+
+% Finename of input files.
+*Filename
+3d_hf_two_wells
+
+% 3-D problem.
+*Key_Dimension
+3
+
+% Number of initial cracks.
+*num_Crack
+0
+
+% Analysis type (Hydraulic fracturing simulation with slick water).
+*Key_Analysis_Type
+4
+
+% Linear system solver (EBE-PCG).
+*Key_SLOE
+11
+
+% Tolerance of EBE-PCG solver.
+*cg_tol
+%1.0e-9 %default
+1.0e-6
+
+% EBE-PCG Precondition on.
+*Key_EBE_Precondition
+1
+
+% Crack propagation criterion (Schollmann criterion).
+*CFCP
+3
+
+*Key_3D_HF_SlipWater_fk_Type
+%1 %the maximum equivalent stress intensity factor
+2 %the avarage equivalent stress intensity factor
+%3 %the minimum equivalent stress intensity factor
+
+% Contact of crack surface.
+*Key_Contact
+0
+*Max_Contact_Iter
+2
+
+% Crack propagation behavior: propagate for posotive K.
+*Key_CFCP_3_Type
+2
+
+% In-plane growth (off).
+*Key_InPlane_Growth
+0
+
+% Denoise Vertex Value.
+*Key_Denoise_Vertex_Value
+0
+% Smooth Vertex Value (on).
+*Key_Smooth_Vertex_Value
+1
+*Smooth_Vertex_n
+2
+*Key_Smooth_Vertex_Value2
+1
+*Smooth_Vertex_n2
+2
+% Smooth Growth factor.
+*Key_Smooth_GF_Value
+0
+*Smooth_GF_n
+2
+*Key_Smooth_GF_Value2
+1
+*Smooth_GF_n2
+2
+% Smooth crack front: using Tubin scheme.
+*Key_Smooth_Front
+6
+% Crack propagation factor.
+*Factor_Propagation
+1.1
+
+*KEY_TIP_FLUID_ELEMENT_3D
+1
+% Material(1-E,2-v,3-density,4-thick,5-St,6-KIc,7-Sc,8-20(blank))
+*Material_Para_1
+28.8e9,0.229,2828.0,1.0,20.0e6,2.0e6,100.0e6,3.0e-6,0,400.0,400.0,100.0e6,20.0e9,0.0,2.5e3,0.0,0.0,0.0,0.0,0.0,0.0
+
+*Key_CS_Natural_Crack
+0
+
+*Key_TipEnrich
+1
+% Adjust initial cracks.
+*Key_Check_and_Adjust_Cracks_3D
+5
+% Data format.
+*Key_Data_Format
+1
+% Do not allow crack to grows outside the model.
+*Key_Stop_Outside_Crack
+1
+
+% -------------------
+% Insitu stress.
+% -------------------
+*Key_InSitu_Strategy
+4
+*InSitu_S1_3D
+30.0e6
+*InSitu_S2_3D
+30.0e6
+*InSitu_S3_3D
+30.0e6
+*InSitu_S1_nv_3D
+1.0,0.0,0.0
+*InSitu_S2_nv_3D
+0.0,1.0,0.0
+*InSitu_S3_nv_3D
+0.0,0.0,1.0
+% Apply Nonuniform InSitu stress in X direction (changing with Z) 
+*Key_Nonuniform_InSitu_X_with_Z     
+1
+*InSitu_Sx_3D_Seg_Strs_X_with_Z
+30.0e6,25.0e6,30.0e6
+*InSitu_Sx_3D_Seg_Loca_X_with_Z
+0.0,110.0,140.0,250.0      
+
+% -------------------------------
+% Wellbore related parameters.
+% -------------------------------
+% Staged fracturing (on).
+*Key_HF_Multistage_3D    
+1                      
+% Number of wellbores.
+*num_Wellbore            
+2
+% Number of points to define wellbore 1.           
+*num_Points_WB_1       
+3
+% 3 points to define the wellbore 1.                 
+*Wellbore_Coors_1_1
+410.0,150.0,125.0
+*Wellbore_Coors_1_2
+80.0,150.0,125.0
+*Wellbore_Coors_1_3
+80.0,150.0,249.9
+*WELLBORES_START_POINT_1
+400.0,150.0,125.0
+*WELLBORES_END_POINT_1
+100.0,150.0,125.0
+% Number of stages per wellbore.
+*num_Stages_Wellbores_1
+5
+% Number of clusters of stage 1 of wellbore 1.
+*NUM_CRS_STAGES_WELLBORES_1_1              
+4
+% Number of clusters of stage 2 of wellbore 1.
+*NUM_CRS_STAGES_WELLBORES_1_2
+4
+% Shape of initial hydraulic fractures(1: rectangle; 2: circle; 3: polygon).        
+*Key_Gen_Ini_Crack_Wellbores
+2
+% Size of initial hydraulic fractures.    
+*Size_Ini_Crack_Wellbores
+35.0
+% Injection rate of stage 1 of wellbore 1 (m^3/s).
+*INJECTION_Q_STAGES_WELLBORES_1_1
+0.1
+% Injection time of stage 1 of wellbore 1 (s).
+*INJECTION_T_STAGES_WELLBORES_1_1
+200.0
+% Injection rate of stage 2 of wellbore 1 (m^3/s).
+*INJECTION_Q_STAGES_WELLBORES_1_2
+0.1
+% Injection time of stage 2 of wellbore 1 (s).
+*INJECTION_T_STAGES_WELLBORES_1_2
+200.0
+
+% ------------------------
+% Natural cracks
+% ------------------------
+%*KEY_RANDOM_SCHEME
+%2
+%*Seed 
+%1233692
+%% Generate random natural cracks (=1,randomly generate; =2,read from FracMan *.fab file).
+%*Key_Random_NaCr
+%1
+%*num_Rand_Na_Crack     
+%25
+%% Partially enable natural crack when actived by hydraulic cracks (=3).
+%*Key_NaCr_Active_Scheme_3D
+%3
+%% Shape of natural cracks (1: rectangle; 2: circle).                    
+%*Key_NaCr_Type_3D      
+%1
+%% Allow the intersection of natural cracks (off).
+%*Key_NaCr_Cross     
+%1                   
+%% Normal vector of natural cracks.
+%*NaCr_3D_n_Vector     
+%0.0,1.0,0.0
+%% Amplitude of fluctuation of the normal direction (in degrees, default to 0).
+%*NaCr_3D_n_Vector_Delta
+%60.0                  
+%% Size of the natural cracks.
+%*NaCr_3D_Size         
+%35.0
+%% Fluctuation of crack size(default to 0).
+%*NaCr_3D_Sz_Delta      
+%10.0
+
+% Define the fracture zone.
+*Key_Fracture_Zone
+1                      
+*Frac_Zone_Minx      
+50.0                 
+*Frac_Zone_Maxx
+400.0        
+*Frac_Zone_Miny
+50.0
+*Frac_Zone_Maxy         
+400.0
+*Frac_Zone_Minz       
+50.0
+*Frac_Zone_Maxz         
+200.0
+*NaCr_3D_Check_R     
+67.5
+% KIc of natural cracks.
+*KIc_NaCr
+0.5e6
+
+% ------------------------
+% For post-processing.
+% ------------------------
+% Save vtk file for post-process.
+*Key_Save_vtk
+0
+% Simple post.
+*Key_Simple_Post
+0
+% Avoid extremely small negative aperture.
+*Key_Del_Neg_Aperture
+1
+% Calculate the element equivalent permeability.
+*Key_Get_Permeability
+1
+
+
+*NUM_POINTS_WB_2
+3
+
+*WELLBORE_COORS_2_1
+385.0,350.0,125.0
+
+*WELLBORE_COORS_2_2
+60.0,350.0,125.0
+
+*WELLBORE_COORS_2_3
+60.0,350.0,249.0
+
+*WELLBORES_START_POINT_2
+375.0,350.0,125.0
+
+*WELLBORES_END_POINT_2
+75.0,350.0,125.0
+
+*NUM_STAGES_WELLBORES_2
+5
+
+*NUM_CRS_STAGES_WELLBORES_2_1
+4
+
+*NUM_CRS_STAGES_WELLBORES_2_2
+4
+
+*INJECTION_Q_STAGES_WELLBORES_2_1
+0.1
+
+*INJECTION_T_STAGES_WELLBORES_2_1
+200.0
+
+*INJECTION_Q_STAGES_WELLBORES_2_2
+0.1
+
+*INJECTION_T_STAGES_WELLBORES_2_2
+200.0
+
+*KEY_NUM_PROCESS
+4
+
+*KEY_CLOSE_WINDOW
+1
+
+*KEY_SIFS_METHOD
+1
+
+*KEY_CRACK_APERTURE_METHOD
+2
+
+*BOUNDARY_CRACKS
+0
+
+*KEY_K_SPARSE
+0
+
+% Kepp fluid pressure after HF.
+*Key_3D_Slip_HF_Keep_Pressure
+1
+
+*KEY_SAVE_STIFFNESS_MATRIX
+0
+
+*NUM_CRS_STAGES_WELLBORES_2_3
+4
+
+*NUM_CRS_STAGES_WELLBORES_2_4
+4
+
+*NUM_CRS_STAGES_WELLBORES_2_5
+4
+
+*NUM_CRS_STAGES_WELLBORES_2_6
+4
+
+*NUM_CRS_STAGES_WELLBORES_1_3
+4
+
+*NUM_CRS_STAGES_WELLBORES_1_4
+4
+
+*NUM_CRS_STAGES_WELLBORES_1_5
+4
+
+*NUM_CRS_STAGES_WELLBORES_1_6
+4
+
+*INJECTION_Q_STAGES_WELLBORES_1_3
+0.1
+
+*INJECTION_T_STAGES_WELLBORES_1_3
+200.0
+
+*INJECTION_Q_STAGES_WELLBORES_1_4
+0.1
+
+*INJECTION_T_STAGES_WELLBORES_1_4
+200.0
+
+*INJECTION_Q_STAGES_WELLBORES_1_5
+0.1
+
+*INJECTION_T_STAGES_WELLBORES_1_5
+200.0
+
+*INJECTION_Q_STAGES_WELLBORES_1_6
+0.02
+
+*INJECTION_T_STAGES_WELLBORES_1_6
+1000.0
+
+*INJECTION_Q_STAGES_WELLBORES_2_3
+0.1
+
+*INJECTION_T_STAGES_WELLBORES_2_3
+200.0
+
+*INJECTION_Q_STAGES_WELLBORES_2_4
+0.1
+
+*INJECTION_T_STAGES_WELLBORES_2_4
+200.0
+
+*INJECTION_Q_STAGES_WELLBORES_2_5
+0.1
+
+*INJECTION_T_STAGES_WELLBORES_2_5
+200.0
+
+*INJECTION_Q_STAGES_WELLBORES_2_6
+0.02
+
+*INJECTION_T_STAGES_WELLBORES_2_6
+1000.0
+
+*KEY_READ_INITIAL_NODE_STRESS_FILE
+0
+
+
+
+

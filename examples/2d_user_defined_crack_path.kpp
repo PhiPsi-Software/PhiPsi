@@ -1,0 +1,88 @@
+% Keywords file of PhiPsi.
+% Written by Fang Shi.
+% Data: November 17, 2024
+% Website: phipsi.top
+% Keywords manual: http://www.phipsi.top/phipsi_keywords_manual.html
+%
+% Pay attention to keyword *Work_Directory, some modification might be necessary!
+
+% Working directory.
+*Work_Directory
+% X:\PhiPsi Work\XFEM
+% X:\PhiPsi Work\exa_user_defined_crack_path
+/mnt/x/PhiPsi_Project/GitHub_Prep/examples/2d_user_defined_crack_path
+
+% Filename of input files.
+*Filename
+exa_user_defined_crack_path
+
+% Analysis type (Quasi-static).
+*Key_Analysis_Type
+1
+
+% Plane strain.
+*Key_Type_2D
+2
+
+% Linear system solver.
+*Key_SLOE
+% 5 %LAPACK
+8 %Lis
+% 11 %PCG-EBE
+
+% Assemble the K matrix in CSR format.
+*Key_K_Sparse
+1      
+
+% Material(1-E,2-v,3-density,4-thick,5-St,6-KIc,7-Sc,8-20(blank))
+*Material_Para_1   
+210.0e9,0.3,7900.0,1.0,1.0e6,1.0e6,100.0e6,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+
+% Enable User Defined 2D Crack Path
+*Key_User_Defined_2D_Crack_Path
+1
+
+% User Defined 2D Crack Path 1
+*User_Defined_2D_Crack_Path_1
+0.154856,0.291413,0.154856,0.480089,0.154856,0.693
+
+% User Defined 2D Crack Path 2
+*User_Defined_2D_Crack_Path_2
+0.154856,0.693,0.253281,0.693,0.330709,0.665475,0.350331,0.581574,0.333333,0.506059,0.251969,0.484332,0.154856,0.48
+
+% User Defined 2D Crack Path 3
+*User_Defined_2D_Crack_Path_3
+0.471129,0.290705,0.472441,0.465909,0.473753,0.721977
+
+% User Defined 2D Crack Path 4
+*User_Defined_2D_Crack_Path_4
+0.472441,0.465909,0.527559,0.532058,0.594488,0.555105,0.650105,0.516154,0.650105,0.292437
+
+% User Defined 2D Crack Path 5
+*User_Defined_2D_Crack_Path_5
+0.879265,0.570505,0.879265,0.29288
+
+% User Defined 2D Crack Path 6
+*User_Defined_2D_Crack_Path_6
+0.879265,0.721449,0.879265,0.655411
+
+% User Defined 2D Crack Path 7
+*User_Defined_2D_Crack_Path_7
+1.10367,0.291983,1.10367,0.480662,1.10367,0.697638
+
+% User Defined 2D Crack Path 8
+*User_Defined_2D_Crack_Path_8
+1.10367,0.697638,1.21522,0.696521,1.2979,0.640085,1.2979,0.553831,1.22572,0.488995,1.10367,0.480662
+
+% User Defined 2D Crack Path 9
+*User_Defined_2D_Crack_Path_9
+1.5944,0.4978,1.5748,0.5395,1.52887,0.5583,1.479,0.5555,1.4357,0.5244,1.4291,0.48132,1.46194,0.4463,1.51706,0.4356,1.5643,0.4195,1.59711,0.39,1.59843,0.3536,1.5787,0.3212,1.5459,0.3117,1.5039,0.3089,1.4606,0.3183,1.43045,0.3411,1.419,0.3802
+
+% User Defined 2D Crack Path 10
+*User_Defined_2D_Crack_Path_10
+1.82677,0.575116,1.82677,0.292095
+
+% User Defined 2D Crack Path 11
+*User_Defined_2D_Crack_Path_11
+1.82677,0.720666,1.82677,0.655979
+

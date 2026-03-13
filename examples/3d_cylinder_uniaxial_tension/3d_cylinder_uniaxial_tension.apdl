@@ -1,0 +1,153 @@
+finish
+/clear
+/FILNAME,file
+/Titie,Fang Shi, HYIT
+/PREP7
+/DSCALE,ALL,1.1
+/eshape,1
+!---------------------
+R               = 7.5e-2  !外径（半径）
+H               = 20e-2 !高
+Fine_H          = 3e-2  !Height of the fine zone.
+
+num_mesh_Fine_H = 35    !加密区域高度方向的网格划分份数（必须为奇数）
+num_mesh_Cir    = 140   !周长方向的网格划分份数（必须为4的倍数，如40、56、60、64、68、72、76、80、84、88、92、96、100、120、140、160、200等）
+
+stress = 100e6
+
+size_cut_block  = 8e-2  !内部用于划分网格的切割平面的对角线长度
+
+
+!---------------------
+et,1,185
+!---------------------
+/REPLO
+/VIEW,1,,-1
+/ANG,1
+/REP,FAST
+!---------------------
+mp,ex,1,3.32e9
+mp,nuxy,1,0.38
+!---------------------
+CYL4,0,0,0, ,R, ,H
+
+!生成切割面
+k,101,size_cut_block/2,0,0
+k,201,size_cut_block/2,0,H
+
+k,102,0,size_cut_block/2,0
+k,202,0,size_cut_block/2,H
+
+k,103,-size_cut_block/2,0,0
+k,203,-size_cut_block/2,0,H
+
+k,104,0,-size_cut_block/2,0
+k,204,0,-size_cut_block/2,H
+
+a,201,202,102,101
+a,202,203,103,102
+a,203,204,104,103
+a,201,204,104,101
+a,201,5,2,101
+a,204,8,1,104
+a,203,7,3,103
+a,202,6,4,102
+
+asel,s,,,5,12
+VSBA,       1,all
+
+wpoff,0,0,H/2-Fine_H/2
+VSBW,all
+wpoff,0,0,Fine_H
+VSBW,all
+WPCSYS,-1,0 !恢复工作平面
+
+
+LPLOT
+/PNUM,KP,0
+/PNUM,LINE,1
+/PNUM,AREA,0
+/PNUM,VOLU,0
+/PNUM,NODE,0
+/PNUM,TABN,0
+/PNUM,SVAL,0
+/PNUM,DOMA,0
+/NUMBER,0
+
+
+
+
+!---------------------视角及显示
+/REPLO
+/VIEW,  1,  0.306110853806    , -0.802050055528    ,  0.512846813006
+/ANG,   1,  -34.0367734235
+/REPLO
+/DIST,1,1.08222638492,1
+/REP,FAST
+/PNUM,LINE,0
+/PNUM,AREA,1
+/PNUM,VOLU,0
+APLOT
+!---------------------
+allsel
+lsel,s,length,,Fine_H  !根据长度选择线
+lesize,all,,,num_mesh_Fine_H,,  
+
+allsel
+lsel,s,length,,(H-Fine_H)/2.0  !根据长度选择线
+lesize,all,,,9,, 
+
+allsel
+lsel,s,radius,,R  !根据半径选择线
+lesize,all,,,num_mesh_Cir/4 
+allsel
+
+allsel
+lsel,s,length,,(R*2-size_cut_block)/2  !根据长度选择线
+lesize,all,,,5,,  
+
+!---------------------
+!映射网格划分
+MSHAPE,0,3D 
+MSHKEY,1
+vmesh,all
+
+allsel
+NSEL,s,LOC,Z,0
+D,all,uz  !约束底部圆周全部自由度
+
+allsel
+KSEL,S, , ,       1 
+NSLK,S  
+D,all,all
+
+allsel
+KSEL,S, , ,       1 
+NSLK,S  
+D,all,all
+
+allsel
+KSEL,S, , ,       4 
+NSLK,S  
+D,all,ux
+
+! 提取顶部表面单元及节点号，转换成等效节点力的积分计算在PhiPsi中执行.
+allsel
+Surcae_1 = 13
+Surcae_2 = 17
+Surcae_3 = 20
+Surcae_4 = 23
+Surcae_5 = 26
+Mat_Number    = 1
+File_name     = '3d_cylinder_uniaxial_tension'
+File_Suffix   = 'surf'
+Ansys2PhiPsi_3D_Surface_Pre,Surcae_1,Surcae_2,Surcae_3,Surcae_4,Surcae_5,Mat_Number,File_name,File_Suffix
+
+Ansys2PhiPsi_3D,'3d_cylinder_uniaxial_tension'
+finish
+/solu
+time,1
+solve
+finish
+/POST1
+! PLNSOL, S,EQV, 0,1.0

@@ -1,0 +1,106 @@
+% Working directory.
+*Work_Directory
+/mnt/x/PhiPsi_Project/GitHub_Prep/examples/2d_multiple_cracks
+
+% Filename of input files.
+*Filename
+2d_multiple_cracks
+
+% Data format (binary).
+*Key_Data_Format
+1
+
+% Analysis type (Quasi-static).
+*Key_Analysis_Type
+1
+
+% Plane stress.
+*Key_Type_2D
+1
+
+% Contact checking (off).
+*Key_Contact
+0
+
+% Linear system solver (MUMPS).
+*Key_SLOE
+6
+
+% Factor of propagation length (propagation length = factor * the average element size)
+*Factor_Propagation
+1.5
+
+% Number of propagatin steps.
+*Num_Substeps
+75
+
+% Crack propagation criterion.
+*CFCP
+1
+
+% Method to calculate SIFs.
+*Key_SIFs_Method
+2
+
+% Force control (only one crack propagates during one time step)
+*Key_Force_Control
+5
+
+% Material(1-E,2-v,3-density,4-thick,5-St,6-KIc,7-Sc,8-20(blank))
+*Material_Para_1   
+35.0e9,0.2,2900.0,1.0,20.0e6,3.0e6,100.0e6,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+
+% Number of initial cracks.
+*num_Crack
+9
+
+% Coordinates of 9 initial cracks.
+*CRACK_1
+0.0217,0.0229,0.0253,0.0247
+*CRACK_2
+0.0083,0.0193,0.0123,0.0283
+*CRACK_3
+0.0383,0.0283,0.0423,0.0193
+*CRACK_4
+0.0217,0.0397,0.0253,0.0379
+*CRACK_5
+0.0083,0.0343,0.0123,0.0433
+*CRACK_6
+0.0383,0.0433,0.0423,0.0343
+*CRACK_7
+0.0217,0.0097,0.0253,0.0079
+*CRACK_8
+0.0083,0.0043,0.0123,0.0133
+*CRACK_9
+0.0383,0.0133,0.0423,0.0043
+
+% Allow crack 1 and crack 9 to propagate.
+*Cracks_Allow_Propa
+1,1,1,1,1,1,1,1,1
+
+% --------------------------------------------------
+% Define propagation zone. The cracks are allowed  
+% to propagate just inside the propagartion zone.
+% --------------------------------------------------
+*Key_Fracture_Zone
+1       
+% Range x (min value) of the fracture zone.                   
+*Frac_Zone_MinX
+4.0e-3          
+% Range x (max value) of the fracture zone.              
+*Frac_Zone_MaxX
+46.0e-3         
+% Range y (min value) of the fracture zone.               
+*Frac_Zone_MinY
+4.0e-3        
+% Range y (max value) of the fracture zone.                
+*Frac_Zone_MaxY
+46.0e-3                 
+
+% Do not close the DOS Window when the calculation is finished (default).
+*Key_Close_Window
+0
+
+% Clear results file before starting (default).
+*Key_Clear_All
+1
