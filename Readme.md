@@ -905,7 +905,7 @@ The keyword manual of PhiPsi can be found here: http://phipsi.top/phipsi_keyword
 
 ## Author Information
 **Name:** Fang Shi  
-**Affiliation:** Faculty of Mechanical & Material Engineering, Huaiyin Institute of Technology, China  
+**Affiliation:** Faculty of Mechanical & Material Engineering, Huai'an University, China  
 **Website:** http://phipsi.top  
 **Email:** shifang@hyit.edu.cn  
 
