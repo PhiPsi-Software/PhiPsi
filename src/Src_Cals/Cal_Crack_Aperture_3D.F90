@@ -48,6 +48,7 @@ logical alive
 delta_L_Factor = 0.02D0
 Cracks_Volume(1:Max_Num_Cr_3D) = ZR
 
+if(Key_Cal_HF_Crack_Points_Info_3D==0) goto 555 
 
 
 !$OMP PARALLEL do DEFAULT(SHARED) PRIVATE(i_C,i_FluidEle,Flu_Ele_Area,  &
@@ -181,6 +182,7 @@ endif
 write(301, '(I10,F18.5,5X,F18.5)') isub,sum(Cracks_Volume(1:num_Crack)),&
                                         sum(Cracks_Volume(1:num_Crack),mask=(Cracks_Volume>ZR))
 close(301)    
+
 555 continue
 
 !$OMP PARALLEL do DEFAULT(SHARED) PRIVATE(i_C,i_Node,ori_n,c_Node_Coor,&

@@ -119,10 +119,11 @@ c     Assemble the stiffness matrix.
             endif
           endif  
           
-          ! Damage unit processing: weakening D matrix (elastic modulus), 2020-02-28
+          ! Damage element processing: weakening D matrix (elastic modulus), 2020-02-28
           if(Key_Element_Break==1 .and. Elem_Break(i_E))then
               !c_D= c_D*EKILL_Weaken_Factor
-              c_D= c_D*1.0D-3
+              !c_D= c_D*1.0D-3
+              c_D= c_D*Tol_6
           endif   
           
           c_NN    = G_NN(:,i_E)

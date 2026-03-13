@@ -12,14 +12,12 @@
       logical,intent(out):: Yes_PER_in,Yes_PER_on
       real(kind=FT) P1P2(3),P1P3(3),P1P0(3),Np(3),cosa,P0P01(3)
       real(kind=FT) abs_P1P0,abs_Np,abs_P0P01,P01(3)
-      real(kind=FT) Distance_Sign
       real(kind=FT) B_i(3),C_i(3),X_i(3)
-      real(kind=FT) c_DET
-      integer c_Orient
       real(kind=FT) v0(3),v1(3),v2(3)
       real(kind=FT) dot00,dot01,dot02,dot11,dot12,inverDeno
       real(kind=FT) u,v
       logical c_Yes_on
+      real(kind=FT) :: s
       
       Yes_PER_in = .False.
       Yes_PER_on = .False.
@@ -35,10 +33,18 @@
       
       abs_P1P0 = sqrt(P1P0(1)**2 + P1P0(2)**2 + P1P0(3)**2)
       
-      if(abs_P1P0<=Tol_10) abs_P1P0=Tol_10
+      if(abs_P1P0<=Tol_15) abs_P1P0=Tol_15
       
       
       abs_Np   = sqrt(Np(1)**2   + Np(2)**2   + Np(3)**2)
+      
+      if (abs_Np <= Tol_15) then
+          Distance = ZR
+          PER = Point     
+          Yes_PER_in = .False.
+          Yes_PER_on = .False.
+          return
+      endif
       
       cosa     = dot_product(P1P0,Np)/abs_P1P0/abs_Np 
       
@@ -57,27 +63,23 @@
       
       
       
-      c_DET = 
-     &      B_i(1)*C_i(2)*X_i(3) +
-     &      B_i(2)*C_i(3)*X_i(1) +
-     &      C_i(1)*X_i(2)*B_i(3) -
-     &      B_i(1)*C_i(3)*X_i(2) -
-     &      B_i(2)*C_i(1)*X_i(3) -
-     &      B_i(3)*C_i(2)*X_i(1)
 
      
      
-      if(c_DET>ZR)then
-          c_Orient =  1
-      elseif(c_DET<ZR)then
-          c_Orient = -1
+      
+      
+      
+      
+      s = dot_product(P1P0, Np)
+      if (s >= 0) then
+          Distance = +abs(abs_P0P01)
       else
-          c_Orient =  0
+          Distance = -abs(abs_P0P01)
       endif
       
-      Distance_Sign = dble(c_Orient)
       
-      Distance = Distance_Sign*abs(abs_P0P01)
+      
+
       
 #ifndef Silverfrost
       if (isnan(Distance)) then
@@ -102,7 +104,7 @@
       u = (dot11 * dot02 - dot01 * dot12) * inverDeno
       v = (dot00 * dot12 - dot01 * dot02) * inverDeno
       
-      if((u >= ZR) .and. (v >= ZR) .and. (u + v <= ONE))then
+      if((u>=-Tol_15).and.(v>=-Tol_15).and.((u+v) <=ONE+Tol_15))then                               
           Yes_PER_in = .True.
           return
       endif

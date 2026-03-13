@@ -59,6 +59,8 @@ real(kind=FT),ALLOCATABLE::u_thread(:,:)
 
 real(kind=FT),ALLOCATABLE::localK_FEM_or_XFEM(:,:)
 real(kind=FT) tem_value
+real(kind=FT) current_residual_norm,initial_residual_norm
+
 
 Total_Num_G_P = 0
 print *, "    >>>> Start of element by element PCG solver <<<<"
@@ -301,7 +303,12 @@ p=pcg_d
 x=ZR
 cg_iters=0
 
+
 print *, "    Step 4: pcg equation solution..."
+
+initial_residual_norm = SQRT(DOT_PRODUCT(loads(1:num_FreeD), loads(1:num_FreeD)))
+if (initial_residual_norm<Tol_20) initial_residual_norm = Tol_20
+
 do i_PCG =1,max_num_PCG
   cg_iters=cg_iters+1
   u=ZR
@@ -327,14 +334,16 @@ do i_PCG =1,max_num_PCG
   alpha=up/DOT_PRODUCT(p,u)
   xnew=x+p*alpha
   loads=loads-u*alpha
+  
+  current_residual_norm = SQRT(DOT_PRODUCT(loads(1:num_FreeD), loads(1:num_FreeD)))
+  Tol = current_residual_norm / initial_residual_norm
+  
+  
   pcg_d=diag_precon*loads
   beta=DOT_PRODUCT(loads,pcg_d)/up
   p=pcg_d+p*beta
 
 
-  tem_value = MAXVAL(ABS(x(0:num_FreeD)))
-  if(tem_value==ZR) tem_value = Tol_20
-  Tol = MAXVAL(ABS(x(0:num_FreeD)-xnew(0:num_FreeD)))/tem_value
 
   x=xnew
   if(Tol<c_cg_tol.OR.cg_iters==max_num_PCG)then

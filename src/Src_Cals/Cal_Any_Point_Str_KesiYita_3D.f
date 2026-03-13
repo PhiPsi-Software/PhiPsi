@@ -88,7 +88,9 @@
       U(1:num_Loc_ESM) = c_DISP(Location_ESM(1:num_Loc_ESM))
 
 
-      EleGaus_yes_FEM_asemd(1:Num_Elem,1:Num_Gau_Points_3D)= .False.
+      
+      EleGaus_yes_FEM_asemd(c_Elem,1:Num_Gau_Points_3D)= .False.
+      
       B(1:6,1:MDOF_3D) = ZR
       num_B = 0 
       if(num_Crack/=0)then

@@ -1206,5 +1206,23 @@ if(Key_Cpp_Call_Fortran_Lib==1) then
     ALLOCATE(XA_Ele_Stress(Num_Elem,6))
 endif
 
+!---------------------
+!Element Destruction.
+!NEWFTU-2026020201.
+!---------------------
+if(Key_Element_Break==1  .or. Key_Post_CS_G_Strs==1) then
+    IF(ALLOCATED(Elem_Break)) DEALLOCATE(Elem_Break)
+    ALLOCATE(Elem_Break(Num_Elem))
+    IF(ALLOCATED(Elem_Ave_Gauss_Stress)) then
+    DEALLOCATE(Elem_Ave_Gauss_Stress)
+    endif
+    ALLOCATE(Elem_Ave_Gauss_Stress(Num_Elem,6))
+    IF(ALLOCATED(Elem_Ave_Gauss_S1)) DEALLOCATE(Elem_Ave_Gauss_S1)
+    ALLOCATE(Elem_Ave_Gauss_S1(Num_Elem))
+    Elem_Ave_Gauss_Stress(1:Num_Elem,1:6) = ZR 
+    Elem_Ave_Gauss_S1(1:Num_Elem) = ZR
+    Elem_Break(1:Num_Elem) = .False.
+endif
+
 RETURN
 END SUBROUTINE Read_Geo_3D

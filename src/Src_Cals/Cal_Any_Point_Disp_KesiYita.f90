@@ -346,10 +346,17 @@ if(Num_Crack /=0)then
                         end if
                     end if
               end if
-        if (Yes_Gauss_in_BCD.eqv..False.) then
-                  xp_Gauss= MATMUL(Trans_Matrix,Point-Coor_Tip)
-                  r_Gauss     =  sqrt(xp_Gauss(1)**2+xp_Gauss(2)**2)
-                  theta_Gauss = atan2(xp_Gauss(2),xp_Gauss(1))
+              if (Yes_Gauss_in_BCD.eqv..False.) then
+                  xp_Gauss = MATMUL(Trans_Matrix,Point-Coor_Tip)
+                  r_Gauss  = sqrt(xp_Gauss(1)**2+xp_Gauss(2)**2)
+                  
+                  if (abs(xp_Gauss(1)) < 1.0D-12 .and. abs(xp_Gauss(2)) < 1.0D-12) then
+                      theta_Gauss = 0.0D0
+                      r_Gauss = 1.0D-12
+                  else
+                      theta_Gauss = atan2(xp_Gauss(2), xp_Gauss(1))
+                  end if
+                  
               else
                   r_Gauss     = sqrt(Global_coor_Gauss_Doc(1)**2 + Global_coor_Gauss_Doc(2)**2)
                   theta_Gauss = atan2(Global_coor_Gauss_Doc(2),Global_coor_Gauss_Doc(1))

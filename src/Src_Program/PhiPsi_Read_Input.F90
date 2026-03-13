@@ -115,6 +115,8 @@ integer i_data_segment,DataSeg_start_index,DataSeg_end_index
 character(len=256) CURRENT_Instructions,Temp_Instruction
 integer result_index_start,result_index_end
 integer i_Read
+integer, allocatable :: temp_boundary_cracks(:)
+integer, allocatable :: temp_Cracks_InPlane_Growth(:)
 
 !2024-02-28.
 integer i_arg
@@ -712,81 +714,81 @@ DO I_INFO=1,Num_Instruction_line
       ! WORK_DIRECTORY = Instructions(I_INFO 1)         !2023-07-24. Linux is case-sensitive. IMPROV2023072401.
       WORK_DIRECTORY = Instructions_before_Upper(I_INFO+1)
   ELSEIF (Instructions(I_INFO)(1:10)=='*NUM_CRACK' .and. Instructions(I_INFO)(11:11)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_CRACK
+      READ(Instructions(I_INFO+1), * ) NUM_CRACK
 !  ELSEIF (Instructions(I_INFO)(1:9) =='*NUM_HOLE' .and. Instructions(I_INFO)(10:10)==' ')THEN
-!      READ(Instructions(I_INFO+1) , * ) NUM_HOLE
+!      READ(Instructions(I_INFO+1), * ) NUM_HOLE
   ELSEIF (Instructions(I_INFO)(1:14) =='*NUM_CIRC_HOLE' .and. Instructions(I_INFO)(15:15)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) num_Circ_Hole
+      READ(Instructions(I_INFO+1), * ) num_Circ_Hole
   ELSEIF (Instructions(I_INFO)(1:14)=='*NUM_CIRC_INCL' .and. Instructions(I_INFO)(15:15)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_CIRC_INCL
+      READ(Instructions(I_INFO+1), * ) NUM_CIRC_INCL
   ELSEIF (Instructions(I_INFO)(1:13)=='*NUM_NA_CRACK' .and. Instructions(I_INFO)(14:14)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_NA_CRACK
+      READ(Instructions(I_INFO+1), * ) NUM_NA_CRACK
   ELSEIF (Instructions(I_INFO)(1:14)=='*KEY_DIMENSION' .and. Instructions(I_INFO)(15:15)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_DIMENSION
+      READ(Instructions(I_INFO+1), * ) KEY_DIMENSION
   ELSEIF (Instructions(I_INFO)(1:18)=='*KEY_ANALYSIS_TYPE' .and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_ANALYSIS_TYPE
+      READ(Instructions(I_INFO+1), * ) KEY_ANALYSIS_TYPE
   ELSEIF (Instructions(I_INFO)(1:12)=='*KEY_TYPE_2D' .and. Instructions(I_INFO)(13:13)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_TYPE_2D
+      READ(Instructions(I_INFO+1), * ) KEY_TYPE_2D
   ELSEIF (Instructions(I_INFO)(1:16)=='*KEY_DATA_FORMAT' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_DATA_FORMAT
+      READ(Instructions(I_INFO+1), * ) KEY_DATA_FORMAT
   ENDIF
   !.................
   ! Related contact
   !.................
   IF (Instructions(I_INFO)(1:12)=='*KEY_CONTACT' .and. Instructions(I_INFO)(13:13)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_CONTACT
+      READ(Instructions(I_INFO+1), * ) KEY_CONTACT
   ELSEIF (Instructions(I_INFO)(1:13)=='*FRIC_MU_CONT' .and. Instructions(I_INFO)(14:14)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) FRIC_MU_CONT
+      READ(Instructions(I_INFO+1), * ) FRIC_MU_CONT
   ELSEIF (Instructions(I_INFO)(1:16)=='*KN_CONT_PENALTY' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KN_CONT_PENALTY
+      READ(Instructions(I_INFO+1), * ) KN_CONT_PENALTY
   ELSEIF (Instructions(I_INFO)(1:16)=='*KT_CONT_PENALTY' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KT_CONT_PENALTY
+      READ(Instructions(I_INFO+1), * ) KT_CONT_PENALTY
   ELSEIF (Instructions(I_INFO)(1:18)=='*CONVE_TOL_PENALTY' .and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CONVE_TOL_PENALTY
+      READ(Instructions(I_INFO+1), * ) CONVE_TOL_PENALTY
   ELSEIF (Instructions(I_INFO)(1:14)=='*KEY_TIPENRICH' .and. Instructions(I_INFO)(15:15)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_TIPENRICH
+      READ(Instructions(I_INFO+1), * ) KEY_TIPENRICH
   ELSEIF (Instructions(I_INFO)(1:16)=='*KEY_SIFS_METHOD' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_SIFS_METHOD
+      READ(Instructions(I_INFO+1), * ) KEY_SIFS_METHOD
   ELSEIF (Instructions(I_INFO)(1:9)=='*KEY_SLOE' .and. Instructions(I_INFO)(10:10)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_SLOE
+      READ(Instructions(I_INFO+1), * ) KEY_SLOE
   ELSEIF (Instructions(I_INFO)(1:15)=='*KEY_INITIATION' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_INITIATION
+      READ(Instructions(I_INFO+1), * ) KEY_INITIATION
   ELSEIF (Instructions(I_INFO)(1:16)=='*KEY_PROPAGATION' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_PROPAGATION
+      READ(Instructions(I_INFO+1), * ) KEY_PROPAGATION
   ELSEIF (Instructions(I_INFO)(1:19)=='*FACTOR_PROPAGATION' .and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) FACTOR_PROPAGATION
+      READ(Instructions(I_INFO+1), * ) FACTOR_PROPAGATION
   ELSEIF (Instructions(I_INFO)(1:18)=='*KEY_FORCE_CONTROL' .and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_FORCE_CONTROL
+      READ(Instructions(I_INFO+1), * ) KEY_FORCE_CONTROL
   ELSEIF (Instructions(I_INFO)(1:12)=='*KEY_GRAVITY' .and. Instructions(I_INFO)(13:13)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_GRAVITY
+      READ(Instructions(I_INFO+1), * ) KEY_GRAVITY
   ELSEIF (Instructions(I_INFO)(1:8)=='*G_X_Y_Z' .and. Instructions(I_INFO)(9:9)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) G_X_Y_Z(1:3)
+      READ(Instructions(I_INFO+1), * ) G_X_Y_Z(1:3)
   ELSEIF (Instructions(I_INFO)(1:13)=='*NUM_SUBSTEPS' .and. Instructions(I_INFO)(14:14)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_SUBSTEPS
+      READ(Instructions(I_INFO+1), * ) NUM_SUBSTEPS
   ELSEIF (Instructions(I_INFO)(1:5)=='*CFCP' .and. Instructions(I_INFO)(6:6)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CFCP
+      READ(Instructions(I_INFO+1), * ) CFCP
   ELSEIF (Instructions(I_INFO)(1:9)=='*NUM_FRAC' .and. Instructions(I_INFO)(10:10)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_FRAC
+      READ(Instructions(I_INFO+1), * ) NUM_FRAC
   ELSEIF (Instructions(I_INFO)(1:13)=='*KEY_PROPPANT' .and. Instructions(I_INFO)(14:14)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_PROPPANT
+      READ(Instructions(I_INFO+1), * ) KEY_PROPPANT
   ELSEIF (Instructions(I_INFO)(1:19)=='*KEY_HF_CONT_SCHEME' .and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_HF_CONT_SCHEME
+      READ(Instructions(I_INFO+1), * ) KEY_HF_CONT_SCHEME
   ELSEIF (Instructions(I_INFO)(1:16)=='*KEY_PROPP_TRANS' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_PROPP_TRANS
+      READ(Instructions(I_INFO+1), * ) KEY_PROPP_TRANS
   ELSEIF (Instructions(I_INFO)(1:12)=='*KEY_SYMM_HF' .and. Instructions(I_INFO)(13:13)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_SYMM_HF
+      READ(Instructions(I_INFO+1), * ) KEY_SYMM_HF
   ELSEIF (Instructions(I_INFO)(1:10)=='*VISCOSITY' .and. Instructions(I_INFO)(11:11)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) VISCOSITY
+      READ(Instructions(I_INFO+1), * ) VISCOSITY
   ELSEIF (Instructions(I_INFO)(1:13)=='*KEY_K_SPARSE' .and. Instructions(I_INFO)(14:14)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_K_SPARSE
+      READ(Instructions(I_INFO+1), * ) KEY_K_SPARSE
   ELSEIF (Instructions(I_INFO)(1:13)=='*SPARSE_RATIO' .and. Instructions(I_INFO)(14:14)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) SPARSE_RATIO
+      READ(Instructions(I_INFO+1), * ) SPARSE_RATIO
   ELSEIF (Instructions(I_INFO)(1:20)=='*SPARSE_STORE_METHOD' .and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) SPARSE_STORE_METHOD
+      READ(Instructions(I_INFO+1), * ) SPARSE_STORE_METHOD
   ELSEIF (Instructions(I_INFO)(1:10)=='*KEY_EKILL' .and. Instructions(I_INFO)(11:11)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_EKILL
+      READ(Instructions(I_INFO+1), * ) KEY_EKILL
   ELSEIF (Instructions(I_INFO)(1:20)=='*EKILL_WEAKEN_FACTOR' .and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) EKILL_WEAKEN_FACTOR
+      READ(Instructions(I_INFO+1), * ) EKILL_WEAKEN_FACTOR
   ENDIF
   !..............................................
   ! Killed unit numbers (for each payload step).
@@ -919,37 +921,37 @@ DO I_INFO=1,Num_Instruction_line
   ! Load-displacement curve related
   !.................................
   IF (Instructions(I_INFO)(1:19)=='*KEY_SAVE_F_D_CURVE'.and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_SAVE_F_D_CURVE
+      READ(Instructions(I_INFO+1), * ) KEY_SAVE_F_D_CURVE
   ELSEIF (Instructions(I_INFO)(1:19)=='*F_D_CURVE_NODE_NUM'.and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) F_D_CURVE_NODE_NUM
+      READ(Instructions(I_INFO+1), * ) F_D_CURVE_NODE_NUM
   ENDIF
   !........................
   ! Load COD Curve Related
   !........................
   IF (Instructions(I_INFO)(1:21)=='*KEY_SAVE_F_COD_CURVE'.and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Save_f_COD_Curve
+      READ(Instructions(I_INFO+1), * ) Key_Save_f_COD_Curve
   ELSEIF (Instructions(I_INFO)(1:22)=='*F_COD_CURVE_CRACK_NUM'.and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) f_COD_Curve_Crack_Num
+      READ(Instructions(I_INFO+1), * ) f_COD_Curve_Crack_Num
   ENDIF
   !.........................
   ! Cohesive cracks related
   !.........................
   IF(Instructions(I_INFO)(1:22)=='*COH_CONSTITUTIVE_TYPE'.and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) COH_CONSTITUTIVE_TYPE
+      READ(Instructions(I_INFO+1), * ) COH_CONSTITUTIVE_TYPE
   ELSEIF(Instructions(I_INFO)(1:20)=='*COH_WIDTH_CRITICAL1'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) COH_WIDTH_CRITICAL1
+      READ(Instructions(I_INFO+1), * ) COH_WIDTH_CRITICAL1
   ELSEIF(Instructions(I_INFO)(1:20)=='*COH_WIDTH_CRITICAL2'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) COH_WIDTH_CRITICAL2
+      READ(Instructions(I_INFO+1), * ) COH_WIDTH_CRITICAL2
   ELSEIF(Instructions(I_INFO)(1:15)=='*COH_F_ULTIMATE'.and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) COH_F_ULTIMATE
+      READ(Instructions(I_INFO+1), * ) COH_F_ULTIMATE
   ELSEIF(Instructions(I_INFO)(1:19)=='*COH_TANGENTIAL_KEY'.and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) COH_TANGENTIAL_KEY
+      READ(Instructions(I_INFO+1), * ) COH_TANGENTIAL_KEY
   ELSEIF(Instructions(I_INFO)(1:22)=='*COH_WIDTH_CRITICAL1_T'.and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) COH_WIDTH_CRITICAL1_T
+      READ(Instructions(I_INFO+1), * ) COH_WIDTH_CRITICAL1_T
   ELSEIF(Instructions(I_INFO)(1:22)=='*COH_WIDTH_CRITICAL2_T'.and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) COH_WIDTH_CRITICAL2_T
+      READ(Instructions(I_INFO+1), * ) COH_WIDTH_CRITICAL2_T
   ELSEIF(Instructions(I_INFO)(1:17)=='*COH_F_ULTIMATE_T'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) COH_F_ULTIMATE_T
+      READ(Instructions(I_INFO+1), * ) COH_F_ULTIMATE_T
   ENDIF
   !.....................................................................................
   ! Material types for each material number: up to 70 types of materials are supported.
@@ -1491,18 +1493,18 @@ DO I_INFO=1,Num_Instruction_line
   ! Nonlinear Analysis Control Parameters
   !.......................................
   IF (Instructions(I_INFO)(1:8)=='*NL_ITRA'.and. Instructions(I_INFO)(9:9)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NL_ITRA
+      READ(Instructions(I_INFO+1), * ) NL_ITRA
   ELSEIF (Instructions(I_INFO)(1:8)=='*NL_ATOL'.and. Instructions(I_INFO)(9:9)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NL_ATOL
+      READ(Instructions(I_INFO+1), * ) NL_ATOL
   ELSEIF (Instructions(I_INFO)(1:8)=='*NL_NTOL'.and. Instructions(I_INFO)(9:9)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NL_NTOL
+      READ(Instructions(I_INFO+1), * ) NL_NTOL
   ELSEIF (Instructions(I_INFO)(1:7)=='*NL_TOL'.and. Instructions(I_INFO)(8:8)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NL_TOL
+      READ(Instructions(I_INFO+1), * ) NL_TOL
   ENDIF
   !.....................................................................................
   ! Read the initial crack coordinates (each crack can have multiple coordinate points)
   !.....................................................................................
-  IF ((Instructions(I_INFO)(1:8)=='*CRACK_1') .AND. (Instructions(I_INFO)(9:9)==''))THEN
+  IF ((Instructions(I_INFO)(1:8)=='*CRACK_1') .AND. (Instructions(I_INFO)(9:9)==' '))THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
           WRITE(*,1002)
@@ -1514,7 +1516,7 @@ DO I_INFO=1,Num_Instruction_line
         CRACK_COOR(1,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
       EACH_CR_POI_NUM(1)  = NUM_DATA/2
-  ELSEIF ((Instructions(I_INFO)(1:8)=='*CRACK_2') .AND. (Instructions(I_INFO)(9:9)==''))THEN
+  ELSEIF ((Instructions(I_INFO)(1:8)=='*CRACK_2') .AND. (Instructions(I_INFO)(9:9)==' '))THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
           WRITE(*,1002)
@@ -1526,7 +1528,7 @@ DO I_INFO=1,Num_Instruction_line
         CRACK_COOR(2,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
       EACH_CR_POI_NUM(2)  = NUM_DATA/2
-  ELSEIF ((Instructions(I_INFO)(1:8)=='*CRACK_3').AND. (Instructions(I_INFO)(9:9)==''))THEN
+  ELSEIF ((Instructions(I_INFO)(1:8)=='*CRACK_3').AND. (Instructions(I_INFO)(9:9)==' '))THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1), 256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
           WRITE(*,1002)
@@ -1538,7 +1540,7 @@ DO I_INFO=1,Num_Instruction_line
         CRACK_COOR(3,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
       EACH_CR_POI_NUM(3)  = NUM_DATA/2
-  ELSEIF ((Instructions(I_INFO)(1:8)=='*CRACK_4').AND. (Instructions(I_INFO)(9:9)==''))THEN
+  ELSEIF ((Instructions(I_INFO)(1:8)=='*CRACK_4').AND. (Instructions(I_INFO)(9:9)==' '))THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
           WRITE(*,1002)
@@ -1550,7 +1552,7 @@ DO I_INFO=1,Num_Instruction_line
         CRACK_COOR(4,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
       EACH_CR_POI_NUM(4)  = NUM_DATA/2
-  ELSEIF ((Instructions(I_INFO)(1:8)=='*CRACK_5') .AND. (Instructions(I_INFO)(9:9)==''))THEN
+  ELSEIF ((Instructions(I_INFO)(1:8)=='*CRACK_5') .AND. (Instructions(I_INFO)(9:9)==' '))THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
           WRITE(*,1002)
@@ -1562,7 +1564,7 @@ DO I_INFO=1,Num_Instruction_line
         CRACK_COOR(5,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
       EACH_CR_POI_NUM(5)  = NUM_DATA/2
-  ELSEIF ((Instructions(I_INFO)(1:8)=='*CRACK_6').AND. (Instructions(I_INFO)(9:9)==''))THEN
+  ELSEIF ((Instructions(I_INFO)(1:8)=='*CRACK_6').AND. (Instructions(I_INFO)(9:9)==' '))THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1), 256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
           WRITE(*,1002)
@@ -1574,7 +1576,7 @@ DO I_INFO=1,Num_Instruction_line
         CRACK_COOR(6,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
       EACH_CR_POI_NUM(6)  = NUM_DATA/2
-  ELSEIF ((Instructions(I_INFO)(1:8)=='*CRACK_7').AND. (Instructions(I_INFO)(9:9)==''))THEN
+  ELSEIF ((Instructions(I_INFO)(1:8)=='*CRACK_7').AND. (Instructions(I_INFO)(9:9)==' '))THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
           WRITE(*,1002)
@@ -1586,7 +1588,7 @@ DO I_INFO=1,Num_Instruction_line
         CRACK_COOR(7,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
       EACH_CR_POI_NUM(7)  = NUM_DATA/2
-  ELSEIF ((Instructions(I_INFO)(1:8)=='*CRACK_8').AND. (Instructions(I_INFO)(9:9)==''))THEN
+  ELSEIF ((Instructions(I_INFO)(1:8)=='*CRACK_8').AND. (Instructions(I_INFO)(9:9)==' '))THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
           WRITE(*,1002)
@@ -1598,7 +1600,7 @@ DO I_INFO=1,Num_Instruction_line
         CRACK_COOR(8,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
       EACH_CR_POI_NUM(8)  = NUM_DATA/2
-  ELSEIF ((Instructions(I_INFO)(1:8)=='*CRACK_9') .AND. (Instructions(I_INFO)(9:9)==''))THEN
+  ELSEIF ((Instructions(I_INFO)(1:8)=='*CRACK_9') .AND. (Instructions(I_INFO)(9:9)==' '))THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
           WRITE(*,1002)
@@ -1610,7 +1612,7 @@ DO I_INFO=1,Num_Instruction_line
         CRACK_COOR(9,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
       EACH_CR_POI_NUM(9)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_10'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_10'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
           WRITE(*,1002)
@@ -1622,7 +1624,7 @@ DO I_INFO=1,Num_Instruction_line
         CRACK_COOR(10,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
       EACH_CR_POI_NUM(10)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_11'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_11'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1), 256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
           WRITE(*,1002)
@@ -1634,7 +1636,7 @@ DO I_INFO=1,Num_Instruction_line
         CRACK_COOR(11,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
       EACH_CR_POI_NUM(11)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_12'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_12'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1), 256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
           WRITE(*,1002)
@@ -1646,7 +1648,7 @@ DO I_INFO=1,Num_Instruction_line
         CRACK_COOR(12,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
       EACH_CR_POI_NUM(12)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_13'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_13'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1), 256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
           WRITE(*,1002)
@@ -1658,7 +1660,7 @@ DO I_INFO=1,Num_Instruction_line
         CRACK_COOR(13,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
       EACH_CR_POI_NUM(13)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_14'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_14'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1), 256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
           WRITE(*,1002)
@@ -1670,7 +1672,7 @@ DO I_INFO=1,Num_Instruction_line
         CRACK_COOR(14,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
       EACH_CR_POI_NUM(14)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_15'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_15'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1), 256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
           WRITE(*,1002)
@@ -1682,7 +1684,7 @@ DO I_INFO=1,Num_Instruction_line
         CRACK_COOR(15,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
       EACH_CR_POI_NUM(15)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_16'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_16'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
           WRITE(*,1002)
@@ -1694,7 +1696,7 @@ DO I_INFO=1,Num_Instruction_line
         CRACK_COOR(16,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
       EACH_CR_POI_NUM(16)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_17'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_17'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
           WRITE(*,1002)
@@ -1706,7 +1708,7 @@ DO I_INFO=1,Num_Instruction_line
         CRACK_COOR(17,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
       EACH_CR_POI_NUM(17)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_18'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_18'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
           WRITE(*,1002)
@@ -1718,7 +1720,7 @@ DO I_INFO=1,Num_Instruction_line
         CRACK_COOR(18,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
       EACH_CR_POI_NUM(18)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_19'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_19'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
           WRITE(*,1002)
@@ -1730,7 +1732,7 @@ DO I_INFO=1,Num_Instruction_line
         CRACK_COOR(19,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
       EACH_CR_POI_NUM(19)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_20'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_20'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
           WRITE(*,1002)
@@ -1742,7 +1744,7 @@ DO I_INFO=1,Num_Instruction_line
         CRACK_COOR(20,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
       EACH_CR_POI_NUM(20)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_21'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_21'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -1753,8 +1755,8 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(21,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        CRACK_COOR(21,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
-     EACH_CR_POI_NUM(11)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_22'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+     EACH_CR_POI_NUM(21)  = NUM_DATA/2
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_22'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -1765,8 +1767,8 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(22,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        CRACK_COOR(22,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
-     EACH_CR_POI_NUM(12)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_23'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+     EACH_CR_POI_NUM(22)  = NUM_DATA/2
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_23'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -1778,7 +1780,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(23,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(23)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_24'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_24'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -1790,7 +1792,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(24,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(24)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_25'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_25'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -1802,7 +1804,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(25,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(25)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_26'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_26'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -1814,7 +1816,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(26,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(26)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_27'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_27'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -1826,7 +1828,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(27,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(27)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_28'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_28'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -1838,7 +1840,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(28,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(28)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_29'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_29'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -1850,7 +1852,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(29,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(29)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_30'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_30'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -1862,7 +1864,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(30,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(30)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_31'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_31'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -1874,7 +1876,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(31,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(31)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_32'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_32'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -1886,7 +1888,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(32,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(32)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_33'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_33'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -1898,7 +1900,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(33,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(33)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_34'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_34'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -1910,7 +1912,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(34,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(34)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_35'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_35'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -1922,7 +1924,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(35,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(35)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_36'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_36'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -1934,7 +1936,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(36,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(36)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_37'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_37'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -1946,7 +1948,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(37,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(37)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_38'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_38'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -1958,7 +1960,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(38,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(38)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_39'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_39'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -1970,7 +1972,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(39,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(39)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_40'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_40'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -1982,7 +1984,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(40,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(40)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_41'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_41'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -1994,7 +1996,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(41,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(41)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_42'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_42'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -2006,7 +2008,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(42,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(42)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_43'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_43'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -2018,7 +2020,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(43,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(43)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_44'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_44'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -2030,7 +2032,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(44,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(44)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_45'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_45'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -2042,7 +2044,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(45,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(45)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_46'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_46'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -2054,7 +2056,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(46,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(46)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_47'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_47'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -2066,7 +2068,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(47,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(47)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_48'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_48'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -2078,7 +2080,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(48,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(48)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_49'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_49'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -2090,7 +2092,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(49,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(49)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_50'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_50'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
      IF(YES_EVEN.EQV..FALSE.) THEN
          WRITE(*,1002)
@@ -2102,7 +2104,7 @@ DO I_INFO=1,Num_Instruction_line
        CRACK_COOR(50,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
      ENDDO
      EACH_CR_POI_NUM(50)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_51'.AND. (Instructions(I_INFO)(10:10)==''))THEN
+  ELSEIF (Instructions(I_INFO)(1:9)=='*CRACK_51'.AND. (Instructions(I_INFO)(10:10)==' '))THEN
       print *, '    Error :: kpp file does not support *CRACK_51 or higher!'
       call Warning_Message('S',Keywords_Blank)
   ENDIF
@@ -2111,13 +2113,13 @@ DO I_INFO=1,Num_Instruction_line
   ! Hydraulic Fracturing Analysis Related
   !.......................................
   IF (Instructions(I_INFO)(1:18)=='*KEY_NA_CRACK_TYPE')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_NA_CRACK_TYPE
+      READ(Instructions(I_INFO+1), * ) KEY_NA_CRACK_TYPE
   ELSEIF (Instructions(I_INFO)(1:8)=='*MNR_TOL')THEN
-      READ(Instructions(I_INFO+1) , * ) MNR_TOL
+      READ(Instructions(I_INFO+1), * ) MNR_TOL
   ELSEIF (Instructions(I_INFO)(1:18)=='*KEY_HF_CONV_CRITE')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_HF_CONV_CRITE
+      READ(Instructions(I_INFO+1), * ) KEY_HF_CONV_CRITE
   ELSEIF (Instructions(I_INFO)(1:18)=='*KEY_HF_LINESEARCH')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_HF_LINESEARCH
+      READ(Instructions(I_INFO+1), * ) KEY_HF_LINESEARCH
   ENDIF
 
   !...........................................................................................
@@ -2219,7 +2221,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(8,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(8,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(8)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:11)=='*NA_CRACK_9'.and. Instructions(I_INFO)(12:12)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2231,7 +2233,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(9,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(9,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(9)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_10'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2243,7 +2245,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(10,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(10,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(10)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_11'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2255,7 +2257,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(11,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(11,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(11)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_12'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2267,7 +2269,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(12,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(12,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(12)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_13'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2279,7 +2281,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(13,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(13,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(13)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_14'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2291,7 +2293,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(14,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(14,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(14)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_15'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2303,7 +2305,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(15,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(15,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(15)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_16'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2315,7 +2317,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(16,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(16,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(16)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_17'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2327,7 +2329,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(17,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(17,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(17)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_18'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2339,7 +2341,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(18,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(18,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(18)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_19'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2351,7 +2353,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(19,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(19,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(19)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_20'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2363,7 +2365,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(20,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(20,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(20)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_21'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2375,7 +2377,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(21,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(21,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(21)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_22'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2387,7 +2389,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(22,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(22,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(22)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_23'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2399,7 +2401,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(23,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(23,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(23)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_24'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2411,7 +2413,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(24,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(24,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(24)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_25'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2423,7 +2425,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(25,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(25,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(25)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_26'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2435,7 +2437,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(26,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(26,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(26)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_27'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2447,7 +2449,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(27,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(27,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(27)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_28'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2459,7 +2461,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(28,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(28,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(28)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_29'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2471,7 +2473,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(29,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(29,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(29)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_30'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2483,7 +2485,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(30,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(30,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(30)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_31'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2495,7 +2497,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(31,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(31,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(31)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_32'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2507,7 +2509,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(32,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(32,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(32)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_33'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2519,7 +2521,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(33,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(33,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(33)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_34'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2531,7 +2533,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(34,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(34,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(34)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_35'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2543,7 +2545,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(35,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(35,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(35)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_36'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2555,7 +2557,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(36,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(36,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(36)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_37'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2567,7 +2569,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(37,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(37,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(37)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_38'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2579,7 +2581,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(38,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(38,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(38)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_39'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2591,7 +2593,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(39,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(39,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(39)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_40'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2603,7 +2605,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(40,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(40,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(40)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_41'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2615,7 +2617,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(41,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(41,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(41)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_42'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2627,7 +2629,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(42,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(42,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(42)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_43'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2639,7 +2641,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(43,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(43,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(43)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_44'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2651,7 +2653,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(44,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(44,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(44)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_45'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2663,7 +2665,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(45,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(45,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(45)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_46'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2675,7 +2677,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(46,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(46,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(46)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_47'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2687,7 +2689,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(47,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(47,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(47)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_48'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2699,7 +2701,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(48,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(48,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(48)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_49'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2711,7 +2713,7 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(49,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(49,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
+      EACH_NA_CR_POI_NUM(49)  = NUM_DATA/2
   ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_50'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(YES_EVEN.EQV..FALSE.) THEN
@@ -2723,8 +2725,8 @@ DO I_INFO=1,Num_Instruction_line
        NA_CRACK_COOR(50,I,1:2)=T_CRACK_COORS(2*I-1:2*I)
        NA_CRACK_COOR(50,I+1,1:2)=T_CRACK_COORS(2*(I+1)-1:2*(I+1))
       ENDDO
-      EACH_NA_CR_POI_NUM(7)  = NUM_DATA/2
-  ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_31')THEN
+      EACH_NA_CR_POI_NUM(50)  = NUM_DATA/2
+  ELSEIF (Instructions(I_INFO)(1:12)=='*NA_CRACK_51')THEN
       print *, '    Error :: kpp file does not support *NA_CRACK_51 or higher!'
       call Warning_Message('S',Keywords_Blank)
   ENDIF
@@ -2740,7 +2742,8 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      !DO I = 1,4  ! Crack Fragment Loop
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(1,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(1)  = NUM_DATA/3
@@ -2751,7 +2754,8 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      !DO I = 1,4  ! Crack Fragment Loop
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(2,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(2)  = NUM_DATA/3
@@ -2762,7 +2766,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(3,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(3)  = NUM_DATA/3
@@ -2773,7 +2777,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(4,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(4)  = NUM_DATA/3
@@ -2784,7 +2788,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(5,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(5)  = NUM_DATA/3
@@ -2795,7 +2799,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(6,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(6)  = NUM_DATA/3
@@ -2806,7 +2810,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(7,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(7)  = NUM_DATA/3
@@ -2817,7 +2821,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(8,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(8)  = NUM_DATA/3
@@ -2828,7 +2832,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(9,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(9)  = NUM_DATA/3
@@ -2839,7 +2843,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(10,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(10)  = NUM_DATA/3
@@ -2850,7 +2854,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(11,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(11)  = NUM_DATA/3
@@ -2861,7 +2865,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(12,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(12)  = NUM_DATA/3
@@ -2872,7 +2876,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(13,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(13)  = NUM_DATA/3
@@ -2883,7 +2887,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(14,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(14)  = NUM_DATA/3
@@ -2894,7 +2898,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(15,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(15)  = NUM_DATA/3
@@ -2905,7 +2909,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(16,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(16)  = NUM_DATA/3
@@ -2916,7 +2920,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(17,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(17)  = NUM_DATA/3
@@ -2927,7 +2931,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(18,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(18)  = NUM_DATA/3
@@ -2938,7 +2942,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(19,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(19)  = NUM_DATA/3
@@ -2949,7 +2953,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(20,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(20)  = NUM_DATA/3
@@ -2960,7 +2964,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(21,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(21)  = NUM_DATA/3
@@ -2971,7 +2975,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(22,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(22)  = NUM_DATA/3
@@ -2982,7 +2986,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(23,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(23)  = NUM_DATA/3
@@ -2993,7 +2997,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(24,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(24)  = NUM_DATA/3
@@ -3004,7 +3008,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(25,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(25)  = NUM_DATA/3
@@ -3015,7 +3019,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(26,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(26)  = NUM_DATA/3
@@ -3026,7 +3030,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(27,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(27)  = NUM_DATA/3
@@ -3037,7 +3041,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(28,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(28)  = NUM_DATA/3
@@ -3048,7 +3052,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(29,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(29)  = NUM_DATA/3
@@ -3059,7 +3063,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(30,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(30)  = NUM_DATA/3
@@ -3070,7 +3074,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(31,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(31)  = NUM_DATA/3
@@ -3081,7 +3085,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(32,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(32)  = NUM_DATA/3
@@ -3092,7 +3096,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(33,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(33)  = NUM_DATA/3
@@ -3103,7 +3107,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(34,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(34)  = NUM_DATA/3
@@ -3114,7 +3118,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(35,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(35)  = NUM_DATA/3
@@ -3125,7 +3129,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(36,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(36)  = NUM_DATA/3
@@ -3136,7 +3140,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(37,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(37)  = NUM_DATA/3
@@ -3147,7 +3151,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(38,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(38)  = NUM_DATA/3
@@ -3158,7 +3162,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(39,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(39)  = NUM_DATA/3
@@ -3169,7 +3173,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(40,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(40)  = NUM_DATA/3
@@ -3180,7 +3184,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(41,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(41)  = NUM_DATA/3
@@ -3191,7 +3195,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(42,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(42)  = NUM_DATA/3
@@ -3202,7 +3206,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(43,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(43)  = NUM_DATA/3
@@ -3213,7 +3217,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(44,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(44)  = NUM_DATA/3
@@ -3224,7 +3228,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(45,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(45)  = NUM_DATA/3
@@ -3235,7 +3239,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(46,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(46)  = NUM_DATA/3
@@ -3246,7 +3250,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(47,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(47)  = NUM_DATA/3
@@ -3257,7 +3261,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(48,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(48)  = NUM_DATA/3
@@ -3268,7 +3272,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(49,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(49)  = NUM_DATA/3
@@ -3279,7 +3283,7 @@ DO I_INFO=1,Num_Instruction_line
           CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_CRACK_COORS(1:NUM_DATA)
-      DO I = 1,4
+      DO I = 1,NUM_DATA/3
         CRACK3D_COOR(50,I,1:3)= T_CRACK_COORS(3*I-2:3*I)
       ENDDO
       EACH_CR_POI_NUM(50)  = NUM_DATA/3
@@ -3494,7 +3498,7 @@ DO I_INFO=1,Num_Instruction_line
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       READ(Instructions(I_INFO+1),*) INJECT_Q_VAL(1:NUM_DATA)
   ELSEIF (Instructions(I_INFO)(1:17)=='*INJECT_CRACK_NUM'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) INJECT_CRACK_NUM
+      READ(Instructions(I_INFO+1), * ) INJECT_CRACK_NUM
   ELSEIF (Instructions(I_INFO)(1:19)=='*CRACKS_ALLOW_PROPA'.and. Instructions(I_INFO)(20:20)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       IF(NUM_DATA < NUM_CRACK)THEN
@@ -4050,7 +4054,7 @@ DO I_INFO=1,Num_Instruction_line
       ENDIF
       READ(Instructions(I_INFO+1) ,*) T_HOLE_COORS(1:NUM_DATA)
       DO I = 1,NUM_DATA
-        CIRC_INCLU_COOR(10,I) =  T_HOLE_COORS(I)
+        CIRC_INCLU_COOR(23,I) =  T_HOLE_COORS(I)
       ENDDO
   ELSEIF (Instructions(I_INFO)(1:19)=='*CIRC_INCLU_COOR_24'.and. Instructions(I_INFO)(20:20)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
@@ -4131,65 +4135,65 @@ DO I_INFO=1,Num_Instruction_line
   ! Related to the initial circular INCLUSION material number.
   !............................................................
   IF (Instructions(I_INFO)(1:17)=='*CIRC_INCLU_MAT_1' .and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(1)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(1)
   ELSEIF (Instructions(I_INFO)(1:17)=='*CIRC_INCLU_MAT_2'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(2)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(2)
   ELSEIF (Instructions(I_INFO)(1:17)=='*CIRC_INCLU_MAT_3'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(3)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(3)
   ELSEIF (Instructions(I_INFO)(1:17)=='*CIRC_INCLU_MAT_4'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(4)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(4)
   ELSEIF (Instructions(I_INFO)(1:17)=='*CIRC_INCLU_MAT_5'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(5)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(5)
   ELSEIF (Instructions(I_INFO)(1:17)=='*CIRC_INCLU_MAT_6'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(6)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(6)
   ELSEIF (Instructions(I_INFO)(1:17)=='*CIRC_INCLU_MAT_7'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(7)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(7)
   ELSEIF (Instructions(I_INFO)(1:17)=='*CIRC_INCLU_MAT_8'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(8)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(8)
   ELSEIF (Instructions(I_INFO)(1:17)=='*CIRC_INCLU_MAT_9'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(9)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(9)
   ELSEIF (Instructions(I_INFO)(1:18)=='*CIRC_INCLU_MAT_10'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(10)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(10)
   ELSEIF (Instructions(I_INFO)(1:18)=='*CIRC_INCLU_MAT_11'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(11)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(11)
   ELSEIF (Instructions(I_INFO)(1:18)=='*CIRC_INCLU_MAT_12'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(12)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(12)
   ELSEIF (Instructions(I_INFO)(1:18)=='*CIRC_INCLU_MAT_13'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(13)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(13)
   ELSEIF (Instructions(I_INFO)(1:18)=='*CIRC_INCLU_MAT_14'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(14)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(14)
   ELSEIF (Instructions(I_INFO)(1:18)=='*CIRC_INCLU_MAT_15'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(15)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(15)
   ELSEIF (Instructions(I_INFO)(1:18)=='*CIRC_INCLU_MAT_16'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(16)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(16)
   ELSEIF (Instructions(I_INFO)(1:18)=='*CIRC_INCLU_MAT_17'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(17)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(17)
   ELSEIF (Instructions(I_INFO)(1:18)=='*CIRC_INCLU_MAT_18'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(18)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(18)
   ELSEIF (Instructions(I_INFO)(1:18)=='*CIRC_INCLU_MAT_19'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(19)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(19)
   ELSEIF (Instructions(I_INFO)(1:18)=='*CIRC_INCLU_MAT_20'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(20)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(20)
   ELSEIF (Instructions(I_INFO)(1:18)=='*CIRC_INCLU_MAT_21'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(21)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(21)
   ELSEIF (Instructions(I_INFO)(1:18)=='*CIRC_INCLU_MAT_22'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(22)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(22)
   ELSEIF (Instructions(I_INFO)(1:18)=='*CIRC_INCLU_MAT_23'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(23)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(23)
   ELSEIF (Instructions(I_INFO)(1:18)=='*CIRC_INCLU_MAT_24'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(24)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(24)
   ELSEIF (Instructions(I_INFO)(1:18)=='*CIRC_INCLU_MAT_25'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(25)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(25)
   ELSEIF (Instructions(I_INFO)(1:18)=='*CIRC_INCLU_MAT_26'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(26)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(26)
   ELSEIF (Instructions(I_INFO)(1:18)=='*CIRC_INCLU_MAT_27'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(27)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(27)
   ELSEIF (Instructions(I_INFO)(1:18)=='*CIRC_INCLU_MAT_28'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(28)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(28)
   ELSEIF (Instructions(I_INFO)(1:18)=='*CIRC_INCLU_MAT_29'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(29)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(29)
   ELSEIF (Instructions(I_INFO)(1:18)=='*CIRC_INCLU_MAT_30'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CIRC_INCLU_MAT_NUM(30)
+      READ(Instructions(I_INFO+1), * ) CIRC_INCLU_MAT_NUM(30)
   ELSEIF (Instructions(I_INFO)(1:18)=='*CIRC_INCLU_MAT_31'.and. Instructions(I_INFO)(19:19)==' ')THEN
       print *, '    Error :: kpp file does not support *CIRC_INCLU_MAT_31 or higher!'
       call Warning_Message('S',Keywords_Blank)
@@ -4198,72 +4202,72 @@ DO I_INFO=1,Num_Instruction_line
   ! Post-processing related
   !.........................
   IF (Instructions(I_INFO)(1:19)=='*KEY_POST_CS_N_STRS'.and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_POST_CS_N_STRS
+      READ(Instructions(I_INFO+1), * ) KEY_POST_CS_N_STRS
   ENDIF
   !.................................
   ! Randomly generate crack-related
   !.................................
   IF (Instructions(I_INFO)(1:16)=='*KEY_RANDOM_NACR'.and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_RANDOM_NACR
+      READ(Instructions(I_INFO+1), * ) KEY_RANDOM_NACR
   ELSEIF (Instructions(I_INFO)(1:18)=='*KEY_RANDOM_SCHEME'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_RANDOM
+      READ(Instructions(I_INFO+1), * ) KEY_RANDOM
   ELSEIF (Instructions(I_INFO)(1:5)=='*SEED'.and. Instructions(I_INFO)(6:6)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) SEED
+      READ(Instructions(I_INFO+1), * ) SEED
   ELSEIF (Instructions(I_INFO)(1:18)=='*NUM_RAND_NA_CRACK'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_RAND_NA_CRACK
+      READ(Instructions(I_INFO+1), * ) NUM_RAND_NA_CRACK
       ! Important procedure line, generated cracks, defining that each randomly generated crack has two
       ! coordinate points
       EACH_CR_POI_NUM(NUM_CRACK+1:NUM_CRACK+NUM_RAND_NA_CRACK) = 2
   ELSEIF(Instructions(I_INFO)(1:17)=='*NACR_ORIENTATION'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NACR_ORIENTATION
+      READ(Instructions(I_INFO+1), * ) NACR_ORIENTATION
   ELSEIF (Instructions(I_INFO)(1:15)=='*NACR_ORI_DELTA'.and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NACR_ORI_DELTA
+      READ(Instructions(I_INFO+1), * ) NACR_ORI_DELTA
   ELSEIF (Instructions(I_INFO)(1:12)=='*NACR_LENGTH'.and. Instructions(I_INFO)(13:13)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NACR_LENGTH
+      READ(Instructions(I_INFO+1), * ) NACR_LENGTH
   ELSEIF (Instructions(I_INFO)(1:15)=='*NACR_LEN_DELTA'.and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NACR_LEN_DELTA
+      READ(Instructions(I_INFO+1), * ) NACR_LEN_DELTA
   ENDIF
   !............................................
   ! Randomly generated with relevance mixed in
   !............................................
   IF (Instructions(I_INFO)(1:19)=='*KEY_RAND_CIRC_INCL'.and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_RAND_CIRC_INCL
+      READ(Instructions(I_INFO+1), * ) KEY_RAND_CIRC_INCL
   ELSEIF (Instructions(I_INFO)(1:19)=='*NUM_RAND_CIRC_INCL'.and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_RAND_CIRC_INCL
+      READ(Instructions(I_INFO+1), * ) NUM_RAND_CIRC_INCL
   ELSEIF (Instructions(I_INFO)(1:17)=='*RAND_CIRC_INCL_R'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) RAND_CIRC_INCL_R
+      READ(Instructions(I_INFO+1), * ) RAND_CIRC_INCL_R
   ELSEIF(Instructions(I_INFO)(1:22)=='*RAND_CIRC_INC_R_DELTA'.and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) RAND_CIRC_INC_R_DELTA
+      READ(Instructions(I_INFO+1), * ) RAND_CIRC_INC_R_DELTA
   ELSEIF (Instructions(I_INFO)(1:19)=='*KEY_RAND_POLY_INCL'.and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_RAND_POLY_INCL
+      READ(Instructions(I_INFO+1), * ) KEY_RAND_POLY_INCL
   ELSEIF (Instructions(I_INFO)(1:19)=='*NUM_RAND_POLY_INCL'.and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_RAND_POLY_INCL
+      READ(Instructions(I_INFO+1), * ) NUM_RAND_POLY_INCL
   ELSEIF (Instructions(I_INFO)(1:19)=='*NUM_VERT_POLY_INCL'.and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_VERT_POLY_INCL
+      READ(Instructions(I_INFO+1), * ) NUM_VERT_POLY_INCL
   ELSEIF(Instructions(I_INFO)(1:17)=='*RAND_POLY_INCL_R'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) RAND_POLY_INCL_R
+      READ(Instructions(I_INFO+1), * ) RAND_POLY_INCL_R
   ELSEIF(Instructions(I_INFO)(1:22)=='*RAND_POLY_INC_DELTA_R'.and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) RAND_POLY_INC_R_DELTA
+      READ(Instructions(I_INFO+1), * ) RAND_POLY_INC_R_DELTA
   ENDIF
   !..................................
   ! Randomly generated holes related
   !..................................
   IF (Instructions(I_INFO)(1:16)=='*KEY_RANDOM_HOLE'.and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_RANDOM_HOLE
+      READ(Instructions(I_INFO+1), * ) KEY_RANDOM_HOLE
   ELSEIF (Instructions(I_INFO)(1:14)=='*NUM_RAND_HOLE'.and. Instructions(I_INFO)(15:15)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_RAND_HOLE
+      READ(Instructions(I_INFO+1), * ) NUM_RAND_HOLE
   ELSEIF (Instructions(I_INFO)(1:12)=='*RAND_HOLE_R'.and. Instructions(I_INFO)(13:13)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) RAND_HOLE_R
+      READ(Instructions(I_INFO+1), * ) RAND_HOLE_R
   ELSEIF (Instructions(I_INFO)(1:18)=='*RAND_HOLE_DELTA_R'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) RAND_HOLE_R_DELTA
+      READ(Instructions(I_INFO+1), * ) RAND_HOLE_R_DELTA
   ENDIF
   !.............................................
   ! Node degree of freedom coupling correlation
   !.............................................
   IF(Instructions(I_INFO)(1:15)=='*NUM_CP_X_NODES'.and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_CP_X_NODES
+      READ(Instructions(I_INFO+1), * ) NUM_CP_X_NODES
   ELSEIF(Instructions(I_INFO)(1:15)=='*NUM_CP_Y_NODES'.and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_CP_Y_NODES
+      READ(Instructions(I_INFO+1), * ) NUM_CP_Y_NODES
   ELSEIF(Instructions(I_INFO)(1:11)=='*CP_X_NODES'.and. Instructions(I_INFO)(12:12)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       READ(Instructions(I_INFO+1) ,*) CP_X_NODES(1:NUM_DATA)
@@ -4275,36 +4279,36 @@ DO I_INFO=1,Num_Instruction_line
   ! Related to dynamic analysis
   !.............................
   IF(Instructions(I_INFO)(1:15)=='*IDY_NUM_ITERAS'.and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) IDY_NUM_ITERAS
+      READ(Instructions(I_INFO+1), * ) IDY_NUM_ITERAS
   ELSEIF(Instructions(I_INFO)(1:18)=='*IDY_NUM_FORCE_ITR'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) IDY_NUM_FORCE_ITR
+      READ(Instructions(I_INFO+1), * ) IDY_NUM_FORCE_ITR
   ELSEIF(Instructions(I_INFO)(1:15)=='*FACTOR_PROP_DY'.and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) FACTOR_PROP_DY
+      READ(Instructions(I_INFO+1), * ) FACTOR_PROP_DY
   ELSEIF(Instructions(I_INFO)(1:18)=='*DELT_TIME_NEWMARK'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) DELT_TIME_NEWMARK
+      READ(Instructions(I_INFO+1), * ) DELT_TIME_NEWMARK
   ENDIF
   ! Seismic Acceleration Data Reading
   IF(Instructions(I_INFO)(1:7)=='*KEY_EQ'.and. Instructions(I_INFO)(8:8)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_EQ
+      READ(Instructions(I_INFO+1), * ) KEY_EQ
   ELSEIF(Instructions(I_INFO)(1:15)=='*EQ_AC_TIME_GAP'.and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) EQ_AC_TIME_GAP
+      READ(Instructions(I_INFO+1), * ) EQ_AC_TIME_GAP
   ELSEIF(Instructions(I_INFO)(1:16)=='*NUM_EQ_AC_NODES'.and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_EQ_AC_NODES
+      READ(Instructions(I_INFO+1), * ) NUM_EQ_AC_NODES
   ELSEIF(Instructions(I_INFO)(1:12)=='*EQ_AC_NODES'.and. Instructions(I_INFO)(13:13)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       READ(Instructions(I_INFO+1) ,*) EQ_AC_NODES(1:NUM_DATA)
   ENDIF
   ! Reading Data Related to Sine Acceleration Excitation
   IF(Instructions(I_INFO)(1:14)=='*KEY_SIN_ACCEL'.and. Instructions(I_INFO)(15:15)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_SIN_ACCEL
+      READ(Instructions(I_INFO+1), * ) KEY_SIN_ACCEL
   ELSEIF(Instructions(I_INFO)(1:15)=='*SIN_ACCEL_DIRE'.and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) SIN_ACCEL_DIRE
+      READ(Instructions(I_INFO+1), * ) SIN_ACCEL_DIRE
   ELSEIF(Instructions(I_INFO)(1:12)=='*SIN_ACCEL_A'.and. Instructions(I_INFO)(13:13)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) SIN_ACCEL_A
+      READ(Instructions(I_INFO+1), * ) SIN_ACCEL_A
   ELSEIF(Instructions(I_INFO)(1:12)=='*SIN_ACCEL_T'.and. Instructions(I_INFO)(13:13)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) SIN_ACCEL_T
+      READ(Instructions(I_INFO+1), * ) SIN_ACCEL_T
   ELSEIF(Instructions(I_INFO)(1:20)=='*SIN_ACCEL_NUM_NODES'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) SIN_ACCEL_NUM_NODES
+      READ(Instructions(I_INFO+1), * ) SIN_ACCEL_NUM_NODES
   ELSEIF(Instructions(I_INFO)(1:16)=='*SIN_ACCEL_NODES'.and. Instructions(I_INFO)(17:17)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
       READ(Instructions(I_INFO+1) ,*) SIN_ACCEL_NODES(1:NUM_DATA)
@@ -4313,146 +4317,146 @@ DO I_INFO=1,Num_Instruction_line
   ! Others
   !........
   IF(Instructions(I_INFO)(1:17)=='*KEY_CLOSE_WINDOW'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_CLOSE_WINDOW
+      READ(Instructions(I_INFO+1), * ) KEY_CLOSE_WINDOW
   ELSEIF(Instructions(I_INFO)(1:16)=='*KEY_NUM_PROCESS'.and. Instructions(I_INFO)(17:17)==' ')THEN
-      !READ(Instructions(I_INFO+1) , * ) KEY_NUM_PROCESS
+      !READ(Instructions(I_INFO+1), * ) KEY_NUM_PROCESS
       if(Yes_n .eqv. .false.) then
-          READ(Instructions(I_INFO+1) , * ) KEY_NUM_PROCESS
+          READ(Instructions(I_INFO+1), * ) KEY_NUM_PROCESS
       endif
   ELSEIF(Instructions(I_INFO)(1:15)=='*KEY_WINDOW_LOG'.and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_WINDOW_LOG
+      READ(Instructions(I_INFO+1), * ) KEY_WINDOW_LOG
   ELSEIF(Instructions(I_INFO)(1:14)=='*KEY_CLEAR_ALL'.and. Instructions(I_INFO)(15:15)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_CLEAR_ALL
+      READ(Instructions(I_INFO+1), * ) KEY_CLEAR_ALL
   ELSEIF(Instructions(I_INFO)(1:21)=='*KEY_VISIT_PHIPSI_TOP'.and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_VISIT_PHIPSI_TOP
+      READ(Instructions(I_INFO+1), * ) KEY_VISIT_PHIPSI_TOP
   ELSEIF(Instructions(I_INFO)(1:19)=='*KEY_POST_S_TANDISP'.and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_POST_S_TANDISP
+      READ(Instructions(I_INFO+1), * ) KEY_POST_S_TANDISP
   ELSEIF(Instructions(I_INFO)(1:21)=='*KEY_CONTA_INTG_POINT'.and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CONTA_INTEG_POINT
+      READ(Instructions(I_INFO+1), * ) CONTA_INTEG_POINT
   ELSEIF(Instructions(I_INFO)(1:24)=='*KEY_HOLE_CRACK_GENERATE'.and. Instructions(I_INFO)(25:25)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_HOLE_CRACK_GENERATE
+      READ(Instructions(I_INFO+1), * ) KEY_HOLE_CRACK_GENERATE
   ELSEIF(Instructions(I_INFO)(1:26)=='*KEY_NUM_CR_HOLE_GENERATED'.and. Instructions(I_INFO)(27:27)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_CRACK_HOLE_GENERATED
+      READ(Instructions(I_INFO+1), * ) NUM_CRACK_HOLE_GENERATED
   ELSEIF(Instructions(I_INFO)(1:16)=='*KEY_PLAY_SOUNDS'.and. Instructions(I_INFO)(17:17)==' ') THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_PLAY_SOUNDS
+      READ(Instructions(I_INFO+1), * ) KEY_PLAY_SOUNDS
   ELSEIF(Instructions(I_INFO)(1:17)=='*KEY_FD_TIPENRICH'.and. Instructions(I_INFO)(18:18)==' ') THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_FD_TIPENRICH
+      READ(Instructions(I_INFO+1), * ) KEY_FD_TIPENRICH
   ELSEIF(Instructions(I_INFO)(1:19)=='*KEY_FD_BODY_SOURCE'.and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_FD_BODY_SOURCE
+      READ(Instructions(I_INFO+1), * ) KEY_FD_BODY_SOURCE
   ELSEIF(Instructions(I_INFO)(1:15)=='*WATER_PRESSURE'.and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) WATER_PRESSURE
+      READ(Instructions(I_INFO+1), * ) WATER_PRESSURE
   ELSEIF(Instructions(I_INFO)(1:20)=='*TYPE_WATER_PRESSURE'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) TYPE_WATER_PRESSURE
+      READ(Instructions(I_INFO+1), * ) TYPE_WATER_PRESSURE
   ELSEIF(Instructions(I_INFO)(1:20)=='*KEY_INSITU_STRATEGY'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_INSITU_STRATEGY
+      READ(Instructions(I_INFO+1), * ) KEY_INSITU_STRATEGY
   ENDIF
 
   ! Sewing internal water pressure control keyword, ADDED ON 2021-11-06
   IF (Instructions(I_INFO)(1:25)=='*KEY_CRACK_INNER_PRESSURE'.and. Instructions(I_INFO)(26:26)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_CRACK_INNER_PRESSURE
+      READ(Instructions(I_INFO+1), * ) KEY_CRACK_INNER_PRESSURE
   ENDIF
 
   ! Seam water pressure
   IF (Instructions(I_INFO)(1:21)=='*INI_CRACK_PRESSURE_1' .and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(1)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(1)
   ELSEIF(Instructions(I_INFO)(1:21)=='*INI_CRACK_PRESSURE_2' .and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(2)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(2)
   ELSEIF(Instructions(I_INFO)(1:21)=='*INI_CRACK_PRESSURE_3' .and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(3)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(3)
   ELSEIF(Instructions(I_INFO)(1:21)=='*INI_CRACK_PRESSURE_4' .and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(4)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(4)
   ELSEIF(Instructions(I_INFO)(1:21)=='*INI_CRACK_PRESSURE_5' .and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(5)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(5)
   ELSEIF(Instructions(I_INFO)(1:21)=='*INI_CRACK_PRESSURE_6' .and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(6)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(6)
   ELSEIF(Instructions(I_INFO)(1:21)=='*INI_CRACK_PRESSURE_7' .and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(7)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(7)
   ELSEIF(Instructions(I_INFO)(1:21)=='*INI_CRACK_PRESSURE_8' .and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(8)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(8)
   ELSEIF(Instructions(I_INFO)(1:21)=='*INI_CRACK_PRESSURE_9' .and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(9)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(9)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_10' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(10)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(10)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_11' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(11)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(11)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_12' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(12)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(12)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_13' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(13)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(13)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_14' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(14)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(14)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_15' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(15)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(15)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_16' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(16)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(16)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_17' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(17)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(17)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_18' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(18)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(18)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_19' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(19)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(19)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_20' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(20)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(20)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_21' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(21)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(21)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_22' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(22)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(22)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_23' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(23)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(23)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_24' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(24)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(24)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_25' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(25)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(25)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_26' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(26)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(26)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_27' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(27)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(27)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_28' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(28)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(28)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_29' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(29)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(29)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_30' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(30)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(30)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_31' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(31)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(31)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_32' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(32)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(32)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_33' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(33)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(33)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_34' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(34)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(34)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_35' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(35)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(35)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_36' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(36)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(36)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_37' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(37)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(37)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_38' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(38)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(38)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_39' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(39)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(39)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_40' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(40)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(40)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_41' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(41)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(41)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_42' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(42)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(42)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_43' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(43)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(43)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_44' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(44)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(44)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_45' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(45)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(45)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_46' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(46)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(46)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_47' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(47)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(47)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_48' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(48)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(48)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_49' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(49)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(49)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_50' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) CRACK_PRESSURE(50)
+      READ(Instructions(I_INFO+1), * ) CRACK_PRESSURE(50)
   ELSEIF(Instructions(I_INFO)(1:22)=='*INI_CRACK_PRESSURE_51' .and. Instructions(I_INFO)(23:23)==' ')THEN
       print *, '    Error :: kpp file does not support *INI_CRACK_PRESSURE_51 or higher!'
       call Warning_Message('S',Keywords_Blank)
@@ -4460,161 +4464,169 @@ DO I_INFO=1,Num_Instruction_line
   
   !2024-04-10.
   IF(Instructions(I_INFO)(1:19)=='*INI_CRACK_PRESSURE' .and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Temp_Value
+      READ(Instructions(I_INFO+1), * ) Temp_Value
       CRACK_PRESSURE = Temp_Value
   ENDIF
 
   IF (Instructions(I_INFO)(1:19)=='*PROPAGATION_LENGTH'.and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) PROPAGATION_LENGTH
+      READ(Instructions(I_INFO+1), * ) PROPAGATION_LENGTH
   ENDIF
   IF (Instructions(I_INFO)(1:17)=='*KEY_SMOOTH_FRONT'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_SMOOTH_FRONT
+      READ(Instructions(I_INFO+1), * ) KEY_SMOOTH_FRONT
   ENDIF
   !IF (Instructions(I_INFO)(1:26)=='*KEY_SMOOTH_PRESSURE_CURVE')THEN
-  !    READ(Instructions(I_INFO+1) , * ) KEY_SMOOTH_PRESSURE_CURVE
+  !    READ(Instructions(I_INFO+1), * ) KEY_SMOOTH_PRESSURE_CURVE
   !ENDIF
   IF (Instructions(I_INFO)(1:23)=='*KEY_SMOOTH_FRONT_TWICE'.and. Instructions(I_INFO)(24:24)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_SMOOTH_FRONT_TWICE
+      READ(Instructions(I_INFO+1), * ) KEY_SMOOTH_FRONT_TWICE
   ENDIF
   IF (Instructions(I_INFO)(1:19)=='*KEY_POST_CS_N_STRA'.and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_POST_CS_N_STRA
+      READ(Instructions(I_INFO+1), * ) KEY_POST_CS_N_STRA
   ENDIF
   IF (Instructions(I_INFO)(1:22)=='*KEY_LOCAL_MESH_REFINE'.and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_LOCAL_MESH_REFINE
+      READ(Instructions(I_INFO+1), * ) KEY_LOCAL_MESH_REFINE
   ENDIF
   IF (Instructions(I_INFO)(1:13)=='*KEY_INI_RULE'.and. Instructions(I_INFO)(14:14)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_INI_RULE
+      READ(Instructions(I_INFO+1), * ) KEY_INI_RULE
   ENDIF
   IF (Instructions(I_INFO)(1:19)=='*KEY_INI_CR_3D_TYPE'.and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_INI_CR_3D_TYPE
+      READ(Instructions(I_INFO+1), * ) KEY_INI_CR_3D_TYPE
   ENDIF
   IF (Instructions(I_INFO)(1:19)=='*KEY_THERMAL_STRESS'.and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_THERMAL_STRESS
+      READ(Instructions(I_INFO+1), * ) KEY_THERMAL_STRESS
   ENDIF
   IF (Instructions(I_INFO)(1:21)=='*KEY_INSTRESS_FOR_MAT'.and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_INSTRESS_FOR_MAT
+      READ(Instructions(I_INFO+1), * ) KEY_INSTRESS_FOR_MAT
   ENDIF
 
   !NEWFTU2022100901. 2022-10-09.
   IF (Instructions(I_INFO)(1:16)=='*KEY_CFCP_3_TYPE'.and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_CFCP_3_TYPE
+      READ(Instructions(I_INFO+1), * ) KEY_CFCP_3_TYPE
   ENDIF
   IF (Instructions(I_INFO)(1:24)=='*KEY_3D_CR_UPDATE_SCHEME'.and. Instructions(I_INFO)(25:25)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_3D_CR_UPDATE_SCHEME
+      READ(Instructions(I_INFO+1), * ) KEY_3D_CR_UPDATE_SCHEME
   ENDIF
   IF (Instructions(I_INFO)(1:19)=='*KEY_INPLANE_GROWTH'.and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_INPLANE_GROWTH
+      READ(Instructions(I_INFO+1), * ) KEY_INPLANE_GROWTH
   ENDIF
   IF (Instructions(I_INFO)(1:24)=='*KEY_SMOOTH_VERTEX_VALUE'.and. Instructions(I_INFO)(25:25)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_SMOOTH_VERTEX_VALUE
+      READ(Instructions(I_INFO+1), * ) KEY_SMOOTH_VERTEX_VALUE
   ENDIF
   IF (Instructions(I_INFO)(1:16)=='*SMOOTH_VERTEX_N'.and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) SMOOTH_VERTEX_N
+      READ(Instructions(I_INFO+1), * ) SMOOTH_VERTEX_N
   ENDIF
   IF (Instructions(I_INFO)(1:25)=='*KEY_SMOOTH_VERTEX_VALUE2'.and. Instructions(I_INFO)(26:26)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_SMOOTH_VERTEX_VALUE2
+      READ(Instructions(I_INFO+1), * ) KEY_SMOOTH_VERTEX_VALUE2
   ENDIF
   IF (Instructions(I_INFO)(1:17)=='*SMOOTH_VERTEX_N2'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) SMOOTH_VERTEX_N2
+      READ(Instructions(I_INFO+1), * ) SMOOTH_VERTEX_N2
   ENDIF
   IF (Instructions(I_INFO)(1:20)=='*KEY_SMOOTH_GF_VALUE'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_SMOOTH_GF_VALUE
+      READ(Instructions(I_INFO+1), * ) KEY_SMOOTH_GF_VALUE
   ENDIF
   IF (Instructions(I_INFO)(1:12)=='*SMOOTH_GF_N'.and. Instructions(I_INFO)(13:13)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) SMOOTH_GF_N
+      READ(Instructions(I_INFO+1), * ) SMOOTH_GF_N
   ENDIF
   IF (Instructions(I_INFO)(1:21)=='*KEY_SMOOTH_GF_VALUE2'.and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_SMOOTH_GF_VALUE2
+      READ(Instructions(I_INFO+1), * ) KEY_SMOOTH_GF_VALUE2
   ENDIF
   IF (Instructions(I_INFO)(1:13)=='*SMOOTH_GF_N2'.and. Instructions(I_INFO)(14:14)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) SMOOTH_GF_N2
+      READ(Instructions(I_INFO+1), * ) SMOOTH_GF_N2
   ENDIF
   IF (Instructions(I_INFO)(1:21)=='*KEY_EBE_PRECONDITION'.and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_EBE_PRECONDITION
+      READ(Instructions(I_INFO+1), * ) KEY_EBE_PRECONDITION
   ENDIF
   IF (Instructions(I_INFO)(1:17)=='*KEY_SAVE_NOTHING'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_SAVE_NOTHING
+      READ(Instructions(I_INFO+1), * ) KEY_SAVE_NOTHING
   ENDIF
   !2022-10-09.
   IF (Instructions(I_INFO)(1:16)=='*KEY_SIMPLE_POST'.and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_SIMPLE_POST
+      READ(Instructions(I_INFO+1), * ) KEY_SIMPLE_POST
   ENDIF
   IF (Instructions(I_INFO)(1:19)=='*KEY_POST_CS_N_STRS'.and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_POST_CS_N_STRS
+      READ(Instructions(I_INFO+1), * ) KEY_POST_CS_N_STRS
   ENDIF
   IF (Instructions(I_INFO)(1:19)=='*KEY_POST_CS_G_COOR'.and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_POST_CS_G_COOR
+      READ(Instructions(I_INFO+1), * ) KEY_POST_CS_G_COOR
   ENDIF
   IF (Instructions(I_INFO)(1:19)=='*KEY_POST_CS_G_DISP'.and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_POST_CS_G_DISP
+      READ(Instructions(I_INFO+1), * ) KEY_POST_CS_G_DISP
   ENDIF
   IF (Instructions(I_INFO)(1:19)=='*KEY_POST_CS_G_STRS'.and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_POST_CS_G_STRS
+      READ(Instructions(I_INFO+1), * ) KEY_POST_CS_G_STRS
   ENDIF
   IF (Instructions(I_INFO)(1:17)=='*KEY_POST_S_DOF_F'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_POST_S_DOF_F
+      READ(Instructions(I_INFO+1), * ) KEY_POST_S_DOF_F
   ENDIF
   IF (Instructions(I_INFO)(1:21)=='*KEY_POST_CRACKED_ELE'.and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_POST_CRACKED_ELE
+      READ(Instructions(I_INFO+1), * ) KEY_POST_CRACKED_ELE
   ENDIF
   IF (Instructions(I_INFO)(1:15)=='*KEY_NODE_VALUE'.and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_NODE_VALUE
+      READ(Instructions(I_INFO+1), * ) KEY_NODE_VALUE
   ENDIF
   IF (Instructions(I_INFO)(1:13)=='*KEY_SAVE_VTK'.and. Instructions(I_INFO)(14:14)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_SAVE_VTK
+      READ(Instructions(I_INFO+1), * ) KEY_SAVE_VTK
   ENDIF
   !2022-10-09.
   IF (Instructions(I_INFO)(1:21)=='*KEY_HF_MULTISTAGE_3D'.and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_HF_MULTISTAGE_3D
+      READ(Instructions(I_INFO+1), * ) KEY_HF_MULTISTAGE_3D
   ENDIF
   IF (Instructions(I_INFO)(1:13)=='*NUM_WELLBORE'.and. Instructions(I_INFO)(14:14)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_WELLBORE
+      READ(Instructions(I_INFO+1), * ) NUM_WELLBORE
   ENDIF
+  
+  !2026-01-07.
+  IF (Instructions(I_INFO)(1:15)=='*KEY_AVE_STRESS'.and. Instructions(I_INFO)(16:16)==' ')THEN
+      READ(Instructions(I_INFO+1), * ) KEY_AVE_STRESS
+  ENDIF
+  
   !2022-10-09.
   IF (Instructions(I_INFO)(1:16)=='*NUM_POINTS_WB_1' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_POINTS_WB(1)
+      READ(Instructions(I_INFO+1), * ) NUM_POINTS_WB(1)
   ELSEIF(Instructions(I_INFO)(1:16)=='*NUM_POINTS_WB_2'.and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_POINTS_WB(2)
+      READ(Instructions(I_INFO+1), * ) NUM_POINTS_WB(2)
   ELSEIF(Instructions(I_INFO)(1:16)=='*NUM_POINTS_WB_3'.and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_POINTS_WB(3)
+      READ(Instructions(I_INFO+1), * ) NUM_POINTS_WB(3)
   ELSEIF(Instructions(I_INFO)(1:16)=='*NUM_POINTS_WB_4'.and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_POINTS_WB(4)
+      READ(Instructions(I_INFO+1), * ) NUM_POINTS_WB(4)
   ELSEIF(Instructions(I_INFO)(1:16)=='*NUM_POINTS_WB_5'.and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_POINTS_WB(5)
+      READ(Instructions(I_INFO+1), * ) NUM_POINTS_WB(5)
   ELSEIF(Instructions(I_INFO)(1:16)=='*NUM_POINTS_WB_6'.and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_POINTS_WB(6)
+      READ(Instructions(I_INFO+1), * ) NUM_POINTS_WB(6)
   ELSEIF(Instructions(I_INFO)(1:16)=='*NUM_POINTS_WB_7'.and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_POINTS_WB(7)
+      READ(Instructions(I_INFO+1), * ) NUM_POINTS_WB(7)
   ELSEIF(Instructions(I_INFO)(1:16)=='*NUM_POINTS_WB_8'.and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_POINTS_WB(8)
+      READ(Instructions(I_INFO+1), * ) NUM_POINTS_WB(8)
   ELSEIF(Instructions(I_INFO)(1:16)=='*NUM_POINTS_WB_9'.and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_POINTS_WB(9)
+      READ(Instructions(I_INFO+1), * ) NUM_POINTS_WB(9)
   ELSEIF(Instructions(I_INFO)(1:17)=='*NUM_POINTS_WB_10'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_POINTS_WB(10)
+      READ(Instructions(I_INFO+1), * ) NUM_POINTS_WB(10)
   ELSEIF(Instructions(I_INFO)(1:17)=='*NUM_POINTS_WB_11'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_POINTS_WB(11)
+      READ(Instructions(I_INFO+1), * ) NUM_POINTS_WB(11)
   ELSEIF(Instructions(I_INFO)(1:17)=='*NUM_POINTS_WB_12'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_POINTS_WB(12)
+      READ(Instructions(I_INFO+1), * ) NUM_POINTS_WB(12)
   ELSEIF(Instructions(I_INFO)(1:17)=='*NUM_POINTS_WB_13'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_POINTS_WB(13)
+      READ(Instructions(I_INFO+1), * ) NUM_POINTS_WB(13)
   ELSEIF(Instructions(I_INFO)(1:17)=='*NUM_POINTS_WB_14'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_POINTS_WB(14)
+      READ(Instructions(I_INFO+1), * ) NUM_POINTS_WB(14)
   ELSEIF(Instructions(I_INFO)(1:17)=='*NUM_POINTS_WB_15'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_POINTS_WB(15)
+      READ(Instructions(I_INFO+1), * ) NUM_POINTS_WB(15)
   ELSEIF(Instructions(I_INFO)(1:17)=='*NUM_POINTS_WB_16'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_POINTS_WB(16)
+      READ(Instructions(I_INFO+1), * ) NUM_POINTS_WB(16)
   ELSEIF(Instructions(I_INFO)(1:17)=='*NUM_POINTS_WB_17'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_POINTS_WB(17)
+      READ(Instructions(I_INFO+1), * ) NUM_POINTS_WB(17)
   ELSEIF(Instructions(I_INFO)(1:17)=='*NUM_POINTS_WB_18'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_POINTS_WB(18)
+      READ(Instructions(I_INFO+1), * ) NUM_POINTS_WB(18)
   ELSEIF(Instructions(I_INFO)(1:17)=='*NUM_POINTS_WB_19'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_POINTS_WB(19)
+      READ(Instructions(I_INFO+1), * ) NUM_POINTS_WB(19)
   ELSEIF(Instructions(I_INFO)(1:17)=='*NUM_POINTS_WB_20'.and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) NUM_POINTS_WB(20)
+      READ(Instructions(I_INFO+1), * ) NUM_POINTS_WB(20)
   ELSEIF(Instructions(I_INFO)(1:17)=='*NUM_POINTS_WB_21'.and. Instructions(I_INFO)(18:18)==' ')THEN
       print *, '    Error :: kpp file does not support *NUM_POINTS_WB_21 or higher!'
       call Warning_Message('S',Keywords_Blank)
   ENDIF
+  
+  
   !2022-10-09.
   IF(Instructions(I_INFO)(1:19)=='*WELLBORE_COORS_1_1'.and. Instructions(I_INFO)(20:20)==' ')THEN
     CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
@@ -4632,7 +4644,16 @@ DO I_INFO=1,Num_Instruction_line
     CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
     READ(Instructions(I_INFO+1),*) WELLBORE_COORS(1,5,1:NUM_DATA)
   ELSEIF(Instructions(I_INFO)(1:19)=='*WELLBORE_COORS_1_6'.and. Instructions(I_INFO)(20:20)==' ')THEN
-    print *, '    Error :: kpp file does not support *WELLBORE_COORS_1_6 or higher!'
+    CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
+    READ(Instructions(I_INFO+1),*) WELLBORE_COORS(1,6,1:NUM_DATA)
+  ELSEIF(Instructions(I_INFO)(1:19)=='*WELLBORE_COORS_1_7'.and. Instructions(I_INFO)(20:20)==' ')THEN
+    CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
+    READ(Instructions(I_INFO+1),*) WELLBORE_COORS(1,7,1:NUM_DATA)
+  ELSEIF(Instructions(I_INFO)(1:19)=='*WELLBORE_COORS_1_8'.and. Instructions(I_INFO)(20:20)==' ')THEN
+    CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
+    READ(Instructions(I_INFO+1),*) WELLBORE_COORS(1,8,1:NUM_DATA)
+  ELSEIF(Instructions(I_INFO)(1:19)=='*WELLBORE_COORS_1_9'.and. Instructions(I_INFO)(20:20)==' ')THEN
+    print *, '    Error :: kpp file does not support *WELLBORE_COORS_1_9 or higher!'
     call Warning_Message('S',Keywords_Blank)
   ENDIF
   !2022-10-09.
@@ -4652,7 +4673,16 @@ DO I_INFO=1,Num_Instruction_line
     CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
     READ(Instructions(I_INFO+1),*) WELLBORE_COORS(2,5,1:NUM_DATA)
   ELSEIF(Instructions(I_INFO)(1:19)=='*WELLBORE_COORS_2_6'.and. Instructions(I_INFO)(20:20)==' ')THEN
-    print *, '    Error :: kpp file does not support *WELLBORE_COORS_2_6 or higher!'
+    CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
+    READ(Instructions(I_INFO+1),*) WELLBORE_COORS(2,6,1:NUM_DATA)
+  ELSEIF(Instructions(I_INFO)(1:19)=='*WELLBORE_COORS_2_7'.and. Instructions(I_INFO)(20:20)==' ')THEN
+    CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
+    READ(Instructions(I_INFO+1),*) WELLBORE_COORS(2,7,1:NUM_DATA)
+  ELSEIF(Instructions(I_INFO)(1:19)=='*WELLBORE_COORS_2_8'.and. Instructions(I_INFO)(20:20)==' ')THEN
+    CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
+    READ(Instructions(I_INFO+1),*) WELLBORE_COORS(2,8,1:NUM_DATA)
+  ELSEIF(Instructions(I_INFO)(1:19)=='*WELLBORE_COORS_2_9'.and. Instructions(I_INFO)(20:20)==' ')THEN
+    print *, '    Error :: kpp file does not support *WELLBORE_COORS_2_9 or higher!'
     call Warning_Message('S',Keywords_Blank)
   ENDIF
   !2022-10-09.
@@ -4672,7 +4702,16 @@ DO I_INFO=1,Num_Instruction_line
     CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
     READ(Instructions(I_INFO+1),*) WELLBORE_COORS(3,5,1:NUM_DATA)
   ELSEIF(Instructions(I_INFO)(1:19)=='*WELLBORE_COORS_3_6'.and. Instructions(I_INFO)(20:20)==' ')THEN
-    print *, '    Error :: kpp file does not support *WELLBORE_COORS_3_6 or higher!'
+    CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
+    READ(Instructions(I_INFO+1),*) WELLBORE_COORS(3,6,1:NUM_DATA)
+  ELSEIF(Instructions(I_INFO)(1:19)=='*WELLBORE_COORS_3_7'.and. Instructions(I_INFO)(20:20)==' ')THEN
+    CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
+    READ(Instructions(I_INFO+1),*) WELLBORE_COORS(3,7,1:NUM_DATA)
+  ELSEIF(Instructions(I_INFO)(1:19)=='*WELLBORE_COORS_3_8'.and. Instructions(I_INFO)(20:20)==' ')THEN
+    CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
+    READ(Instructions(I_INFO+1),*) WELLBORE_COORS(3,8,1:NUM_DATA)
+  ELSEIF(Instructions(I_INFO)(1:19)=='*WELLBORE_COORS_3_9'.and. Instructions(I_INFO)(20:20)==' ')THEN
+    print *, '    Error :: kpp file does not support *WELLBORE_COORS_3_9 or higher!'
     call Warning_Message('S',Keywords_Blank)
   ENDIF
   !2022-10-09.
@@ -4692,7 +4731,16 @@ DO I_INFO=1,Num_Instruction_line
     CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
     READ(Instructions(I_INFO+1),*) WELLBORE_COORS(4,5,1:NUM_DATA)
   ELSEIF(Instructions(I_INFO)(1:19)=='*WELLBORE_COORS_4_6'.and. Instructions(I_INFO)(20:20)==' ')THEN
-    print *, '    Error :: kpp file does not support *WELLBORE_COORS_4_6 or higher!'
+    CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
+    READ(Instructions(I_INFO+1),*) WELLBORE_COORS(4,6,1:NUM_DATA)
+  ELSEIF(Instructions(I_INFO)(1:19)=='*WELLBORE_COORS_4_7'.and. Instructions(I_INFO)(20:20)==' ')THEN
+    CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
+    READ(Instructions(I_INFO+1),*) WELLBORE_COORS(4,7,1:NUM_DATA)
+  ELSEIF(Instructions(I_INFO)(1:19)=='*WELLBORE_COORS_4_8'.and. Instructions(I_INFO)(20:20)==' ')THEN
+    CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
+    READ(Instructions(I_INFO+1),*) WELLBORE_COORS(4,8,1:NUM_DATA)
+  ELSEIF(Instructions(I_INFO)(1:19)=='*WELLBORE_COORS_4_9'.and. Instructions(I_INFO)(20:20)==' ')THEN
+    print *, '    Error :: kpp file does not support *WELLBORE_COORS_4_9 or higher!'
     call Warning_Message('S',Keywords_Blank)
   ENDIF
   !2022-10-09.
@@ -4706,15 +4754,26 @@ DO I_INFO=1,Num_Instruction_line
     CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
     READ(Instructions(I_INFO+1),*) WELLBORE_COORS(5,3,1:NUM_DATA)
   ELSEIF(Instructions(I_INFO)(1:19)=='*WELLBORE_COORS_5_4'.and. Instructions(I_INFO)(20:20)==' ')THEN
-    CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1), 256,NUM_DATA,YES_EVEN)
+    CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
     READ(Instructions(I_INFO+1),*) WELLBORE_COORS(5,4,1:NUM_DATA)
   ELSEIF(Instructions(I_INFO)(1:19)=='*WELLBORE_COORS_5_5'.and. Instructions(I_INFO)(20:20)==' ')THEN
     CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
     READ(Instructions(I_INFO+1),*) WELLBORE_COORS(5,5,1:NUM_DATA)
   ELSEIF(Instructions(I_INFO)(1:19)=='*WELLBORE_COORS_5_6'.and. Instructions(I_INFO)(20:20)==' ')THEN
-    print *, '    Error :: kpp file does not support *WELLBORE_COORS_5_6 or higher!'
+    CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
+    READ(Instructions(I_INFO+1),*) WELLBORE_COORS(5,6,1:NUM_DATA)
+  ELSEIF(Instructions(I_INFO)(1:19)=='*WELLBORE_COORS_5_7'.and. Instructions(I_INFO)(20:20)==' ')THEN
+    CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
+    READ(Instructions(I_INFO+1),*) WELLBORE_COORS(5,7,1:NUM_DATA)
+  ELSEIF(Instructions(I_INFO)(1:19)=='*WELLBORE_COORS_5_8'.and. Instructions(I_INFO)(20:20)==' ')THEN
+    CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
+    READ(Instructions(I_INFO+1),*) WELLBORE_COORS(5,8,1:NUM_DATA)
+  ELSEIF(Instructions(I_INFO)(1:19)=='*WELLBORE_COORS_5_9'.and. Instructions(I_INFO)(20:20)==' ')THEN
+    print *, '    Error :: kpp file does not support *WELLBORE_COORS_5_9 or higher!'
     call Warning_Message('S',Keywords_Blank)
   ENDIF
+  
+  
   !2022-10-09.
   IF(Instructions(I_INFO)(1:24)=='*WELLBORES_START_POINT_1'.and. Instructions(I_INFO)(25:25)==' ')THEN
     CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
@@ -4743,10 +4802,10 @@ DO I_INFO=1,Num_Instruction_line
   ELSEIF(Instructions(I_INFO)(1:24)=='*WELLBORES_START_POINT_9'.and. Instructions(I_INFO)(25:25)==' ')THEN
     CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
     READ(Instructions(I_INFO+1),*) WELLBORES_START_POINT(9,1:NUM_DATA)
-  ELSEIF(Instructions(I_INFO)(1:25)=='*WELLBORES_START_POINT_10'.and. Instructions(I_INFO)(25:25)==' ')THEN
+  ELSEIF(Instructions(I_INFO)(1:25)=='*WELLBORES_START_POINT_10'.and. Instructions(I_INFO)(26:26)==' ')THEN
     CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
     READ(Instructions(I_INFO+1),*) WELLBORES_START_POINT(10,1:NUM_DATA)
-  ELSEIF(Instructions(I_INFO)(1:25)=='*WELLBORES_START_POINT_11'.and. Instructions(I_INFO)(25:25)==' ')THEN
+  ELSEIF(Instructions(I_INFO)(1:25)=='*WELLBORES_START_POINT_11'.and. Instructions(I_INFO)(26:26)==' ')THEN
     print *, '    Error :: kpp file does not support *WELLBORES_START_POINT_11 or higher!'
     call Warning_Message('S',Keywords_Blank)
   ENDIF
@@ -4809,6 +4868,7 @@ DO I_INFO=1,Num_Instruction_line
     print *, '    Error :: kpp file does not support *NUM_STAGES_WELLBORES_11 or higher!'
     call Warning_Message('S',Keywords_Blank)
   ENDIF
+
   !2022-10-09.
   IF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_1_1'.and. Instructions(I_INFO)(33:33)==' ')THEN
     READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(1,1)
@@ -4820,6 +4880,12 @@ DO I_INFO=1,Num_Instruction_line
     READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(1,4)
   ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_1_5'.and. Instructions(I_INFO)(33:33)==' ')THEN
     READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(1,5)
+  ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_1_6'.and. Instructions(I_INFO)(33:33)==' ')THEN
+    READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(1,6)
+  ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_1_7'.and. Instructions(I_INFO)(33:33)==' ')THEN
+    READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(1,7)
+  ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_1_8'.and. Instructions(I_INFO)(33:33)==' ')THEN
+    READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(1,8)
   ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_2_1'.and. Instructions(I_INFO)(33:33)==' ')THEN
     READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(2,1)
   ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_2_2'.and. Instructions(I_INFO)(33:33)==' ')THEN
@@ -4830,6 +4896,12 @@ DO I_INFO=1,Num_Instruction_line
     READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(2,4)
   ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_2_5'.and. Instructions(I_INFO)(33:33)==' ')THEN
     READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(2,5)
+  ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_2_6'.and. Instructions(I_INFO)(33:33)==' ')THEN
+    READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(2,6)
+  ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_2_7'.and. Instructions(I_INFO)(33:33)==' ')THEN
+    READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(2,7)
+  ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_2_8'.and. Instructions(I_INFO)(33:33)==' ')THEN
+    READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(2,8)
   ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_3_1'.and. Instructions(I_INFO)(33:33)==' ')THEN
     READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(3,1)
   ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_3_2'.and. Instructions(I_INFO)(33:33)==' ')THEN
@@ -4840,6 +4912,12 @@ DO I_INFO=1,Num_Instruction_line
     READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(3,4)
   ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_3_5'.and. Instructions(I_INFO)(33:33)==' ')THEN
     READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(3,5)
+  ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_3_6'.and. Instructions(I_INFO)(33:33)==' ')THEN
+    READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(3,6)
+  ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_3_7'.and. Instructions(I_INFO)(33:33)==' ')THEN
+    READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(3,7)
+  ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_3_8'.and. Instructions(I_INFO)(33:33)==' ')THEN
+    READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(3,8)
   ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_4_1'.and. Instructions(I_INFO)(33:33)==' ')THEN
     READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(4,1)
   ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_4_2'.and. Instructions(I_INFO)(33:33)==' ')THEN
@@ -4850,6 +4928,12 @@ DO I_INFO=1,Num_Instruction_line
     READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(4,4)
   ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_4_5'.and. Instructions(I_INFO)(33:33)==' ')THEN
     READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(4,5)
+  ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_4_6'.and. Instructions(I_INFO)(33:33)==' ')THEN
+    READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(4,6)
+  ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_4_7'.and. Instructions(I_INFO)(33:33)==' ')THEN
+    READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(4,7)
+  ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_4_8'.and. Instructions(I_INFO)(33:33)==' ')THEN
+    READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(4,8)
   ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_5_1'.and. Instructions(I_INFO)(33:33)==' ')THEN
     READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(5,1)
   ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_5_2'.and. Instructions(I_INFO)(33:33)==' ')THEN
@@ -4860,7 +4944,14 @@ DO I_INFO=1,Num_Instruction_line
     READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(5,4)
   ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_5_5'.and. Instructions(I_INFO)(33:33)==' ')THEN
     READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(5,5)
+  ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_5_6'.and. Instructions(I_INFO)(33:33)==' ')THEN
+    READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(5,6)
+  ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_5_7'.and. Instructions(I_INFO)(33:33)==' ')THEN
+    READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(5,7)
+  ELSEIF(Instructions(I_INFO)(1:32)=='*NUM_CRS_STAGES_WELLBORES_5_8'.and. Instructions(I_INFO)(33:33)==' ')THEN
+    READ(Instructions(I_INFO+1),*) NUM_CRS_STAGES_WELLBORES(5,8)
   ENDIF
+  
   IF(Instructions(I_INFO)(1:28)=='*KEY_GEN_INI_CRACK_WELLBORES'.and. Instructions(I_INFO)(29:29)==' ')THEN
     READ(Instructions(I_INFO+1),*) KEY_GEN_INI_CRACK_WELLBORES
   ENDIF
@@ -4890,7 +4981,13 @@ DO I_INFO=1,Num_Instruction_line
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_1_5'.and. Instructions(I_INFO)(34:34)==' ')THEN
     READ(Instructions(I_INFO+1),*) INJECTION_Q_STAGES_WELLBORES(1,5)
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_1_6'.and. Instructions(I_INFO)(34:34)==' ')THEN
-    print *, '    Error :: kpp file does not support *INJECTION_Q_STAGES_WELLBORES_1_6 or higher!'
+    READ(Instructions(I_INFO+1),*) INJECTION_Q_STAGES_WELLBORES(1,6)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_1_7'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    READ(Instructions(I_INFO+1),*) INJECTION_Q_STAGES_WELLBORES(1,7)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_1_8'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    READ(Instructions(I_INFO+1),*) INJECTION_Q_STAGES_WELLBORES(1,8)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_1_9'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    print *, '    Error :: kpp file does not support *INJECTION_Q_STAGES_WELLBORES_1_9 or higher!'
     call Warning_Message('S',Keywords_Blank)
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_2_1'.and. Instructions(I_INFO)(34:34)==' ')THEN
     READ(Instructions(I_INFO+1),*) INJECTION_Q_STAGES_WELLBORES(2,1)
@@ -4903,7 +5000,13 @@ DO I_INFO=1,Num_Instruction_line
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_2_5'.and. Instructions(I_INFO)(34:34)==' ')THEN
     READ(Instructions(I_INFO+1),*) INJECTION_Q_STAGES_WELLBORES(2,5)
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_2_6'.and. Instructions(I_INFO)(34:34)==' ')THEN
-    print *, '    Error :: kpp file does not support *INJECTION_Q_STAGES_WELLBORES_2_6 or higher!'
+    READ(Instructions(I_INFO+1),*) INJECTION_Q_STAGES_WELLBORES(2,6)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_2_7'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    READ(Instructions(I_INFO+1),*) INJECTION_Q_STAGES_WELLBORES(2,7)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_2_8'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    READ(Instructions(I_INFO+1),*) INJECTION_Q_STAGES_WELLBORES(2,8)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_2_9'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    print *, '    Error :: kpp file does not support *INJECTION_Q_STAGES_WELLBORES_2_9 or higher!'
     call Warning_Message('S',Keywords_Blank)
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_3_1'.and. Instructions(I_INFO)(34:34)==' ')THEN
     READ(Instructions(I_INFO+1),*) INJECTION_Q_STAGES_WELLBORES(3,1)
@@ -4916,7 +5019,13 @@ DO I_INFO=1,Num_Instruction_line
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_3_5'.and. Instructions(I_INFO)(34:34)==' ')THEN
     READ(Instructions(I_INFO+1),*) INJECTION_Q_STAGES_WELLBORES(3,5)
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_3_6'.and. Instructions(I_INFO)(34:34)==' ')THEN
-    print *, '    Error :: kpp file does not support *INJECTION_Q_STAGES_WELLBORES_3_6 or higher!'
+    READ(Instructions(I_INFO+1),*) INJECTION_Q_STAGES_WELLBORES(3,6)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_3_7'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    READ(Instructions(I_INFO+1),*) INJECTION_Q_STAGES_WELLBORES(3,7)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_3_8'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    READ(Instructions(I_INFO+1),*) INJECTION_Q_STAGES_WELLBORES(3,8)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_3_9'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    print *, '    Error :: kpp file does not support *INJECTION_Q_STAGES_WELLBORES_3_9 or higher!'
     call Warning_Message('S',Keywords_Blank)
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_4_1'.and. Instructions(I_INFO)(34:34)==' ')THEN
     READ(Instructions(I_INFO+1),*) INJECTION_Q_STAGES_WELLBORES(4,1)
@@ -4929,7 +5038,13 @@ DO I_INFO=1,Num_Instruction_line
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_4_5'.and. Instructions(I_INFO)(34:34)==' ')THEN
     READ(Instructions(I_INFO+1),*) INJECTION_Q_STAGES_WELLBORES(4,5)
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_4_6'.and. Instructions(I_INFO)(34:34)==' ')THEN
-    print *, '    Error :: kpp file does not support *INJECTION_Q_STAGES_WELLBORES_4_6 or higher!'
+    READ(Instructions(I_INFO+1),*) INJECTION_Q_STAGES_WELLBORES(4,6)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_4_7'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    READ(Instructions(I_INFO+1),*) INJECTION_Q_STAGES_WELLBORES(4,7)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_4_8'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    READ(Instructions(I_INFO+1),*) INJECTION_Q_STAGES_WELLBORES(4,8)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_4_9'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    print *, '    Error :: kpp file does not support *INJECTION_Q_STAGES_WELLBORES_4_9 or higher!'
     call Warning_Message('S',Keywords_Blank)
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_5_1'.and. Instructions(I_INFO)(34:34)==' ')THEN
     READ(Instructions(I_INFO+1),*) INJECTION_Q_STAGES_WELLBORES(5,1)
@@ -4942,9 +5057,18 @@ DO I_INFO=1,Num_Instruction_line
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_5_5'.and. Instructions(I_INFO)(34:34)==' ')THEN
     READ(Instructions(I_INFO+1),*) INJECTION_Q_STAGES_WELLBORES(5,5)
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_5_6'.and. Instructions(I_INFO)(34:34)==' ')THEN
-    print *, '    Error :: kpp file does not support *INJECTION_Q_STAGES_WELLBORES_5_6 or higher!'
+    READ(Instructions(I_INFO+1),*) INJECTION_Q_STAGES_WELLBORES(5,6)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_5_7'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    READ(Instructions(I_INFO+1),*) INJECTION_Q_STAGES_WELLBORES(5,7)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_5_8'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    READ(Instructions(I_INFO+1),*) INJECTION_Q_STAGES_WELLBORES(5,8)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_Q_STAGES_WELLBORES_5_9'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    print *, '    Error :: kpp file does not support *INJECTION_Q_STAGES_WELLBORES_5_9 or higher!'
     call Warning_Message('S',Keywords_Blank)
   ENDIF
+  
+  
+  
   !2022-10-09.
   IF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_1_1'.and. Instructions(I_INFO)(34:34)==' ')THEN
     READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(1,1)
@@ -4957,7 +5081,13 @@ DO I_INFO=1,Num_Instruction_line
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_1_5'.and. Instructions(I_INFO)(34:34)==' ')THEN
     READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(1,5)
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_1_6'.and. Instructions(I_INFO)(34:34)==' ')THEN
-    print *, '    Error :: kpp file does not support *INJECTION_T_STAGES_WELLBORES_1_6 or higher!'
+    READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(1,6)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_1_7'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(1,7)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_1_8'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(1,8)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_1_9'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    print *, '    Error :: kpp file does not support *INJECTION_T_STAGES_WELLBORES_1_9 or higher!'
     call Warning_Message('S',Keywords_Blank)
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_2_1'.and. Instructions(I_INFO)(34:34)==' ')THEN
     READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(2,1)
@@ -4970,7 +5100,13 @@ DO I_INFO=1,Num_Instruction_line
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_2_5'.and. Instructions(I_INFO)(34:34)==' ')THEN
     READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(2,5)
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_2_6'.and. Instructions(I_INFO)(34:34)==' ')THEN
-    print *, '    Error :: kpp file does not support *INJECTION_T_STAGES_WELLBORES_2_6 or higher!'
+    READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(2,6)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_2_7'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(2,7)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_2_8'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(2,8)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_2_9'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    print *, '    Error :: kpp file does not support *INJECTION_T_STAGES_WELLBORES_2_9 or higher!'
     call Warning_Message('S',Keywords_Blank)
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_3_1'.and. Instructions(I_INFO)(34:34)==' ')THEN
     READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(3,1)
@@ -4983,7 +5119,13 @@ DO I_INFO=1,Num_Instruction_line
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_3_5'.and. Instructions(I_INFO)(34:34)==' ')THEN
     READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(3,5)
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_3_6'.and. Instructions(I_INFO)(34:34)==' ')THEN
-    print *, '    Error :: kpp file does not support *INJECTION_T_STAGES_WELLBORES_3_6 or higher!'
+    READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(3,6)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_3_7'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(3,7)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_3_8'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(3,8)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_3_9'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    print *, '    Error :: kpp file does not support *INJECTION_T_STAGES_WELLBORES_3_9 or higher!'
     call Warning_Message('S',Keywords_Blank)
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_4_1'.and. Instructions(I_INFO)(34:34)==' ')THEN
     READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(4,1)
@@ -4996,7 +5138,13 @@ DO I_INFO=1,Num_Instruction_line
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_4_5'.and. Instructions(I_INFO)(34:34)==' ')THEN
     READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(4,5)
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_4_6'.and. Instructions(I_INFO)(34:34)==' ')THEN
-    print *, '    Error :: kpp file does not support *INJECTION_T_STAGES_WELLBORES_4_6 or higher!'
+    READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(4,6)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_4_7'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(4,7)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_4_8'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(4,8)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_4_9'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    print *, '    Error :: kpp file does not support *INJECTION_T_STAGES_WELLBORES_4_9 or higher!'
     call Warning_Message('S',Keywords_Blank)
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_5_1'.and. Instructions(I_INFO)(34:34)==' ')THEN
     READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(5,1)
@@ -5009,9 +5157,18 @@ DO I_INFO=1,Num_Instruction_line
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_5_5'.and. Instructions(I_INFO)(34:34)==' ')THEN
     READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(5,5)
   ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_5_6'.and. Instructions(I_INFO)(34:34)==' ')THEN
-    print *, '    Error :: kpp file does not support *INJECTION_T_STAGES_WELLBORES_5_6 or higher!'
+    READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(5,6)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_5_7'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(5,7)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_5_8'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    READ(Instructions(I_INFO+1),*) INJECTION_T_STAGES_WELLBORES(5,8)
+  ELSEIF(Instructions(I_INFO)(1:33)=='*INJECTION_T_STAGES_WELLBORES_5_9'.and. Instructions(I_INFO)(34:34)==' ')THEN
+    print *, '    Error :: kpp file does not support *INJECTION_T_STAGES_WELLBORES_5_9 or higher!'
     call Warning_Message('S',Keywords_Blank)
   ENDIF
+  
+  
+  
   !2022-10-10.
   IF(Instructions(I_INFO)(1:13)=='*INSITU_S1_3D'.and. Instructions(I_INFO)(14:14)==' ')THEN
     READ(Instructions(I_INFO+1),*) INSITU_S1_3D
@@ -5082,116 +5239,116 @@ DO I_INFO=1,Num_Instruction_line
   ! Related to the rupture area. Revised on 2022-10-10.
   !.....................................................
   IF(Instructions(I_INFO)(1:18)=='*KEY_FRACTURE_ZONE'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_FRACTURE_ZONE
+      READ(Instructions(I_INFO+1), * ) KEY_FRACTURE_ZONE
   ENDIF
   IF(Instructions(I_INFO)(1:15)=='*FRAC_ZONE_MINX'.and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) FRAC_ZONE_MINX
+      READ(Instructions(I_INFO+1), * ) FRAC_ZONE_MINX
   ENDIF
   IF(Instructions(I_INFO)(1:15)=='*FRAC_ZONE_MAXX'.and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) FRAC_ZONE_MAXX
+      READ(Instructions(I_INFO+1), * ) FRAC_ZONE_MAXX
   ENDIF
 
   IF(Instructions(I_INFO)(1:15)=='*FRAC_ZONE_MINY'.and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) FRAC_ZONE_MINY
+      READ(Instructions(I_INFO+1), * ) FRAC_ZONE_MINY
   ENDIF
   IF(Instructions(I_INFO)(1:15)=='*FRAC_ZONE_MAXY'.and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) FRAC_ZONE_MAXY
+      READ(Instructions(I_INFO+1), * ) FRAC_ZONE_MAXY
   ENDIF
   IF(Instructions(I_INFO)(1:15)=='*FRAC_ZONE_MINZ'.and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) FRAC_ZONE_MINZ
+      READ(Instructions(I_INFO+1), * ) FRAC_ZONE_MINZ
   ENDIF
   IF(Instructions(I_INFO)(1:15)=='*FRAC_ZONE_MAXZ'.and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) FRAC_ZONE_MAXZ
+      READ(Instructions(I_INFO+1), * ) FRAC_ZONE_MAXZ
   ENDIF
   !......................................................................
   ! Related to the initial crack generation area. Revised on 2022-10-10.
   !......................................................................
   IF(Instructions(I_INFO)(1:19)=='*KEY_INI_CRACK_ZONE'.and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Ini_Crack_Zone
+      READ(Instructions(I_INFO+1), * ) Key_Ini_Crack_Zone
   ENDIF
   IF(Instructions(I_INFO)(1:20)=='*INI_CRACK_ZONE_MINX'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Ini_Crack_Zone_MinX
+      READ(Instructions(I_INFO+1), * ) Ini_Crack_Zone_MinX
   ENDIF
   IF(Instructions(I_INFO)(1:20)=='*INI_CRACK_ZONE_MAXX'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Ini_Crack_Zone_MaxX
+      READ(Instructions(I_INFO+1), * ) Ini_Crack_Zone_MaxX
   ENDIF
   IF(Instructions(I_INFO)(1:20)=='*INI_CRACK_ZONE_MINY'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Ini_Crack_Zone_MinY
+      READ(Instructions(I_INFO+1), * ) Ini_Crack_Zone_MinY
   ENDIF
   IF(Instructions(I_INFO)(1:20)=='*INI_CRACK_ZONE_MAXY'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Ini_Crack_Zone_MaxY
+      READ(Instructions(I_INFO+1), * ) Ini_Crack_Zone_MaxY
   ENDIF
   IF(Instructions(I_INFO)(1:20)=='*INI_CRACK_ZONE_MINZ'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Ini_Crack_Zone_MinZ
+      READ(Instructions(I_INFO+1), * ) Ini_Crack_Zone_MinZ
   ENDIF
   IF(Instructions(I_INFO)(1:20)=='*INI_CRACK_ZONE_MAXZ'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Ini_Crack_Zone_MaxZ
+      READ(Instructions(I_INFO+1), * ) Ini_Crack_Zone_MaxZ
   ENDIF  
   !2022-10-10.
   IF(Instructions(I_INFO)(1:7)=='*KEY_XA'.and. Instructions(I_INFO)(8:8)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_XA
+      READ(Instructions(I_INFO+1), * ) KEY_XA
   ENDIF
   IF(Instructions(I_INFO)(1:31)=='*KEY_CHECK_AND_ADJUST_CRACKS_3D'.and. Instructions(I_INFO)(32:32)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Check_and_Adjust_Cracks_3D
+      READ(Instructions(I_INFO+1), * ) Key_Check_and_Adjust_Cracks_3D
   ENDIF
   IF(Instructions(I_INFO)(1:25)=='*KEY_TIP_FLUID_ELEMENT_3D'.and. Instructions(I_INFO)(26:26)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_TIP_FLUID_ELEMENT_3D
+      READ(Instructions(I_INFO+1), * ) KEY_TIP_FLUID_ELEMENT_3D
   ENDIF
   IF(Instructions(I_INFO)(1:23)=='*KEY_STOP_OUTSIDE_CRACK'.and. Instructions(I_INFO)(24:24)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Stop_Outside_Crack
+      READ(Instructions(I_INFO+1), * ) Key_Stop_Outside_Crack
   ENDIF
   !2022-11-09.
   IF(Instructions(I_INFO)(1:25)=='*KEY_DENOISE_VERTEX_VALUE'.and. Instructions(I_INFO)(26:26)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Denoise_Vertex_Value
+      READ(Instructions(I_INFO+1), * ) Key_Denoise_Vertex_Value
   ENDIF
 
   IF(Instructions(I_INFO)(1:22)=='*KEY_CS_NATURAL_CRACK'.and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_CS_Natural_Crack
+      READ(Instructions(I_INFO+1), * ) Key_CS_Natural_Crack
   ENDIF
 
   !2022-11-10.
   IF(Instructions(I_INFO)(1:22)=='*KEY_EBE_SYM_STORAGE_K'.and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_EBE_Sym_Storage_K
+      READ(Instructions(I_INFO+1), * ) Key_EBE_Sym_Storage_K
   ENDIF
   !2022-11-14.
   IF(Instructions(I_INFO)(1:18)=='*MAX_CONTACT_ITER'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Max_Contact_Iter
+      READ(Instructions(I_INFO+1), * ) Max_Contact_Iter
   ENDIF
   !2022-11-26.
   IF(Instructions(I_INFO)(1:21)=='*KEY_GET_PERMEABILITY'.and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Get_Permeability
+      READ(Instructions(I_INFO+1), * ) Key_Get_Permeability
   ENDIF
   !2022-12-21.
   IF(Instructions(I_INFO)(1:34)=='*KEY_READ_INITIAL_NODE_STRESS_FILE'.and. Instructions(I_INFO)(35:35)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Read_Initial_Node_Stress_File
+      READ(Instructions(I_INFO+1), * ) Key_Read_Initial_Node_Stress_File
   ENDIF
   !2023-01-07.
   IF(Instructions(I_INFO)(1:26)=='*KEY_NACR_ACTIVE_SCHEME_3D'.and. Instructions(I_INFO)(27:27)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_NaCr_Active_Scheme_3D
+      READ(Instructions(I_INFO+1), * ) Key_NaCr_Active_Scheme_3D
   ENDIF
   !2023-02-12.
   IF(Instructions(I_INFO)(1:12)=='*DESIRED_KIC'.and. Instructions(I_INFO)(13:13)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Desired_KIc
+      READ(Instructions(I_INFO+1), * ) Desired_KIc
   ENDIF
   !2023-02-12.
   IF(Instructions(I_INFO)(1:26)=='*KEY_SCHEME_THERMAL_STRESS'.and. Instructions(I_INFO)(27:27)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Scheme_Thermal_Stress
+      READ(Instructions(I_INFO+1), * ) Key_Scheme_Thermal_Stress
   ENDIF
   IF(Instructions(I_INFO)(1:24)=='*KEY_INITIAL_TEMPERATURE'.and. Instructions(I_INFO)(25:25)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Initial_Temperature
+      READ(Instructions(I_INFO+1), * ) Key_Initial_Temperature
   ENDIF
   !2023-05-07.
   IF(Instructions(I_INFO)(1:27)=='*KEY_ALLOW_3D_OUTSIDE_CRACK'.and. Instructions(I_INFO)(28:28)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Allow_3D_Outside_Crack
+      READ(Instructions(I_INFO+1), * ) Key_Allow_3D_Outside_Crack
   ENDIF
   !2023-05-16.
   IF(Instructions(I_INFO)(1:9)=='*KIC_NACR' .and. Instructions(I_INFO)(10:10)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) c_Temp_Double
+      READ(Instructions(I_INFO+1), * ) c_Temp_Double
       KIc_NaCr = c_Temp_Double
   ENDIF
   !2023-05-17.
   IF(Instructions(I_INFO)(1:31)=='*KEY_NONUNIFORM_INSITU_X_WITH_Z'.and. Instructions(I_INFO)(32:32)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_NONUNIFORM_INSITU_X_WITH_Z
+      READ(Instructions(I_INFO+1), * ) KEY_NONUNIFORM_INSITU_X_WITH_Z
   ENDIF
   IF(Instructions(I_INFO)(1:31)=='*INSITU_SX_3D_SEG_STRS_X_WITH_Z'.and. Instructions(I_INFO)(32:32)==' ')THEN
     CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
@@ -5202,7 +5359,7 @@ DO I_INFO=1,Num_Instruction_line
     READ(Instructions(I_INFO+1),*) InSitu_Sx_3D_Seg_Loca_X_with_Z(1:NUM_DATA)
   ENDIF
   IF(Instructions(I_INFO)(1:31)=='*KEY_NONUNIFORM_INSITU_X_WITH_Y'.and. Instructions(I_INFO)(32:32)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_NONUNIFORM_INSITU_X_WITH_Y
+      READ(Instructions(I_INFO+1), * ) KEY_NONUNIFORM_INSITU_X_WITH_Y
   ENDIF
   IF(Instructions(I_INFO)(1:31)=='*INSITU_SX_3D_SEG_STRS_X_WITH_Y'.and. Instructions(I_INFO)(32:32)==' ')THEN
     CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
@@ -5213,7 +5370,7 @@ DO I_INFO=1,Num_Instruction_line
     READ(Instructions(I_INFO+1),*) InSitu_Sx_3D_Seg_Loca_X_with_Y(1:NUM_DATA)
   ENDIF
   IF(Instructions(I_INFO)(1:31)=='*KEY_NONUNIFORM_INSITU_Y_WITH_Z'.and. Instructions(I_INFO)(32:32)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_NONUNIFORM_INSITU_Y_WITH_Z
+      READ(Instructions(I_INFO+1), * ) KEY_NONUNIFORM_INSITU_Y_WITH_Z
   ENDIF
   IF(Instructions(I_INFO)(1:31)=='*INSITU_SY_3D_SEG_STRS_Y_WITH_Z'.and. Instructions(I_INFO)(32:32)==' ')THEN
     CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
@@ -5224,7 +5381,7 @@ DO I_INFO=1,Num_Instruction_line
     READ(Instructions(I_INFO+1),*) InSitu_SY_3D_Seg_Loca_Y_with_Z(1:NUM_DATA)
   ENDIF
   IF(Instructions(I_INFO)(1:31)=='*KEY_NONUNIFORM_INSITU_Y_WITH_X'.and. Instructions(I_INFO)(32:32)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_NONUNIFORM_INSITU_Y_WITH_X
+      READ(Instructions(I_INFO+1), * ) KEY_NONUNIFORM_INSITU_Y_WITH_X
   ENDIF
   IF(Instructions(I_INFO)(1:31)=='*INSITU_SY_3D_SEG_STRS_Y_WITH_X'.and. Instructions(I_INFO)(32:32)==' ')THEN
     CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
@@ -5235,7 +5392,7 @@ DO I_INFO=1,Num_Instruction_line
     READ(Instructions(I_INFO+1),*) InSitu_SY_3D_Seg_Loca_Y_with_X(1:NUM_DATA)
   ENDIF
   IF(Instructions(I_INFO)(1:31)=='*KEY_NONUNIFORM_INSITU_Z_WITH_X'.and. Instructions(I_INFO)(32:32)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_NONUNIFORM_INSITU_Z_WITH_X
+      READ(Instructions(I_INFO+1), * ) KEY_NONUNIFORM_INSITU_Z_WITH_X
   ENDIF
   IF(Instructions(I_INFO)(1:31)=='*INSITU_SZ_3D_SEG_STRS_Z_WITH_X'.and. Instructions(I_INFO)(32:32)==' ')THEN
     CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
@@ -5246,7 +5403,7 @@ DO I_INFO=1,Num_Instruction_line
     READ(Instructions(I_INFO+1),*) InSitu_Sz_3D_Seg_Loca_Z_with_X(1:NUM_DATA)
   ENDIF
   IF(Instructions(I_INFO)(1:31)=='*KEY_NONUNIFORM_INSITU_Z_WITH_Y'.and. Instructions(I_INFO)(32:32)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_NONUNIFORM_INSITU_Z_WITH_Y
+      READ(Instructions(I_INFO+1), * ) KEY_NONUNIFORM_INSITU_Z_WITH_Y
   ENDIF
   IF(Instructions(I_INFO)(1:31)=='*INSITU_SZ_3D_SEG_STRS_Z_WITH_Y'.and. Instructions(I_INFO)(32:32)==' ')THEN
     CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
@@ -5258,130 +5415,130 @@ DO I_INFO=1,Num_Instruction_line
   ENDIF
   !2023-05-18.
   IF(Instructions(I_INFO)(1:27)=='*KEY_3D_HF_TIME_STEP_METHOD'.and. Instructions(I_INFO)(28:28)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_3D_HF_Time_Step_Method
+      READ(Instructions(I_INFO+1), * ) Key_3D_HF_Time_Step_Method
   ENDIF
   !2023-08-08. NEWFTU2023080801.
   IF(Instructions(I_INFO)(1:28)=='*KEY_3D_HF_SLIPWATER_FK_TYPE'.and. Instructions(I_INFO)(29:29)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_3D_HF_SlipWater_fk_Type
+      READ(Instructions(I_INFO+1), * ) Key_3D_HF_SlipWater_fk_Type
   ENDIF
   !2023-08-10. IMPROV2023081001.
   IF(Instructions(I_INFO)(1:32)=='*SIFS_DIM_3D_OFFSET_DELTA_FACTOR'.and. Instructions(I_INFO)(33:33)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) SIFs_DIM_3D_Offset_Delta_Factor
+      READ(Instructions(I_INFO+1), * ) SIFs_DIM_3D_Offset_Delta_Factor
   ENDIF
   IF(Instructions(I_INFO)(1:20)=='*KEY_SIFS_DIM_POINTS'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_SIFs_DIM_Points
+      READ(Instructions(I_INFO+1), * ) Key_SIFs_DIM_Points
   ENDIF
   IF(Instructions(I_INFO)(1:20)=='*KEY_SIFS_DIM_METHOD'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_SIFs_DIM_Method
+      READ(Instructions(I_INFO+1), * ) Key_SIFs_DIM_Method
   ENDIF
   IF(Instructions(I_INFO)(1:23)=='*SIFS_DIM_3D_R_1_FACTOR'.and. Instructions(I_INFO)(24:24)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) SIFs_DIM_3D_r_1_Factor
+      READ(Instructions(I_INFO+1), * ) SIFs_DIM_3D_r_1_Factor
   ENDIF
   IF(Instructions(I_INFO)(1:23)=='*SIFS_DIM_3D_R_2_FACTOR'.and. Instructions(I_INFO)(24:24)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) SIFs_DIM_3D_r_2_Factor
+      READ(Instructions(I_INFO+1), * ) SIFs_DIM_3D_r_2_Factor
   ENDIF
   !2023-08-12.
   IF(Instructions(I_INFO)(1:26)=='*KEY_CRACK_APERTURE_METHOD'.and. Instructions(I_INFO)(27:27)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Crack_Aperture_Method
+      READ(Instructions(I_INFO+1), * ) Key_Crack_Aperture_Method
   ENDIF
   !2023-08-21. Surface Load.
   IF(Instructions(I_INFO)(1:18)=='*NUM_SURFACE_LOADS'.and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Num_Surface_Loads
+      READ(Instructions(I_INFO+1), * ) Num_Surface_Loads
   ENDIF
   IF(Instructions(I_INFO)(1:20)=='*FILE_SURFACE_LOAD_1' .and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) File_Surface_Load(1)
+      READ(Instructions(I_INFO+1), * ) File_Surface_Load(1)
   elseif(Instructions(I_INFO)(1:20)=='*FILE_SURFACE_LOAD_2' .and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) File_Surface_Load(2)
+      READ(Instructions(I_INFO+1), * ) File_Surface_Load(2)
   elseif(Instructions(I_INFO)(1:20)=='*FILE_SURFACE_LOAD_3' .and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) File_Surface_Load(3)
+      READ(Instructions(I_INFO+1), * ) File_Surface_Load(3)
   elseif(Instructions(I_INFO)(1:20)=='*FILE_SURFACE_LOAD_4' .and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) File_Surface_Load(4)
+      READ(Instructions(I_INFO+1), * ) File_Surface_Load(4)
   elseif(Instructions(I_INFO)(1:20)=='*FILE_SURFACE_LOAD_5' .and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) File_Surface_Load(5)
+      READ(Instructions(I_INFO+1), * ) File_Surface_Load(5)
   elseif(Instructions(I_INFO)(1:20)=='*FILE_SURFACE_LOAD_6' .and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) File_Surface_Load(6)
+      READ(Instructions(I_INFO+1), * ) File_Surface_Load(6)
   elseif(Instructions(I_INFO)(1:20)=='*FILE_SURFACE_LOAD_7' .and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) File_Surface_Load(7)
+      READ(Instructions(I_INFO+1), * ) File_Surface_Load(7)
   elseif(Instructions(I_INFO)(1:20)=='*FILE_SURFACE_LOAD_8' .and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) File_Surface_Load(8)
+      READ(Instructions(I_INFO+1), * ) File_Surface_Load(8)
   elseif(Instructions(I_INFO)(1:20)=='*FILE_SURFACE_LOAD_9' .and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) File_Surface_Load(9)
+      READ(Instructions(I_INFO+1), * ) File_Surface_Load(9)
   elseif(Instructions(I_INFO)(1:21)=='*FILE_SURFACE_LOAD_10'.and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) File_Surface_Load(10)
+      READ(Instructions(I_INFO+1), * ) File_Surface_Load(10)
   elseif(Instructions(I_INFO)(1:21)=='*FILE_SURFACE_LOAD_11'.and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) File_Surface_Load(11)
+      READ(Instructions(I_INFO+1), * ) File_Surface_Load(11)
   elseif(Instructions(I_INFO)(1:21)=='*FILE_SURFACE_LOAD_12'.and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) File_Surface_Load(12)
+      READ(Instructions(I_INFO+1), * ) File_Surface_Load(12)
   elseif(Instructions(I_INFO)(1:21)=='*FILE_SURFACE_LOAD_13'.and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) File_Surface_Load(13)
+      READ(Instructions(I_INFO+1), * ) File_Surface_Load(13)
   elseif(Instructions(I_INFO)(1:21)=='*FILE_SURFACE_LOAD_14'.and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) File_Surface_Load(14)
+      READ(Instructions(I_INFO+1), * ) File_Surface_Load(14)
   elseif(Instructions(I_INFO)(1:21)=='*FILE_SURFACE_LOAD_15'.and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) File_Surface_Load(15)
+      READ(Instructions(I_INFO+1), * ) File_Surface_Load(15)
   elseif(Instructions(I_INFO)(1:21)=='*FILE_SURFACE_LOAD_16'.and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) File_Surface_Load(16)
+      READ(Instructions(I_INFO+1), * ) File_Surface_Load(16)
   elseif(Instructions(I_INFO)(1:21)=='*FILE_SURFACE_LOAD_17'.and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) File_Surface_Load(17)
+      READ(Instructions(I_INFO+1), * ) File_Surface_Load(17)
   elseif(Instructions(I_INFO)(1:21)=='*FILE_SURFACE_LOAD_18'.and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) File_Surface_Load(18)
+      READ(Instructions(I_INFO+1), * ) File_Surface_Load(18)
   elseif(Instructions(I_INFO)(1:21)=='*FILE_SURFACE_LOAD_19'.and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) File_Surface_Load(19)
+      READ(Instructions(I_INFO+1), * ) File_Surface_Load(19)
   elseif(Instructions(I_INFO)(1:21)=='*FILE_SURFACE_LOAD_20'.and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) File_Surface_Load(20)
+      READ(Instructions(I_INFO+1), * ) File_Surface_Load(20)
   elseif(Instructions(I_INFO)(1:21)=='*FILE_SURFACE_LOAD_21'.and. Instructions(I_INFO)(22:22)==' ')THEN
       print *, '    Error :: kpp file does not support *FILE_SURFACE_LOAD_21 or higher!'
       call Warning_Message('S',Keywords_Blank)
   ENDIF
   IF(Instructions(I_INFO)(1:19)=='*SURFACE_PRESSURE_1' .and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Surface_Pressure(1)
+      READ(Instructions(I_INFO+1), * ) Surface_Pressure(1)
   ELSEIF(Instructions(I_INFO)(1:19)=='*SURFACE_PRESSURE_2' .and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Surface_Pressure(2)
+      READ(Instructions(I_INFO+1), * ) Surface_Pressure(2)
   ELSEIF(Instructions(I_INFO)(1:19)=='*SURFACE_PRESSURE_3' .and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Surface_Pressure(3)
+      READ(Instructions(I_INFO+1), * ) Surface_Pressure(3)
   ELSEIF(Instructions(I_INFO)(1:19)=='*SURFACE_PRESSURE_4' .and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Surface_Pressure(4)
+      READ(Instructions(I_INFO+1), * ) Surface_Pressure(4)
   ELSEIF(Instructions(I_INFO)(1:19)=='*SURFACE_PRESSURE_5' .and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Surface_Pressure(5)
+      READ(Instructions(I_INFO+1), * ) Surface_Pressure(5)
   ELSEIF(Instructions(I_INFO)(1:19)=='*SURFACE_PRESSURE_6' .and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Surface_Pressure(6)
+      READ(Instructions(I_INFO+1), * ) Surface_Pressure(6)
   ELSEIF(Instructions(I_INFO)(1:19)=='*SURFACE_PRESSURE_7' .and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Surface_Pressure(7)
+      READ(Instructions(I_INFO+1), * ) Surface_Pressure(7)
   ELSEIF(Instructions(I_INFO)(1:19)=='*SURFACE_PRESSURE_8' .and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Surface_Pressure(8)
+      READ(Instructions(I_INFO+1), * ) Surface_Pressure(8)
   ELSEIF(Instructions(I_INFO)(1:19)=='*SURFACE_PRESSURE_9' .and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Surface_Pressure(9)
+      READ(Instructions(I_INFO+1), * ) Surface_Pressure(9)
   ELSEIF(Instructions(I_INFO)(1:20)=='*SURFACE_PRESSURE_10'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Surface_Pressure(10)
+      READ(Instructions(I_INFO+1), * ) Surface_Pressure(10)
   ELSEIF(Instructions(I_INFO)(1:20)=='*SURFACE_PRESSURE_11'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Surface_Pressure(11)
+      READ(Instructions(I_INFO+1), * ) Surface_Pressure(11)
   ELSEIF(Instructions(I_INFO)(1:20)=='*SURFACE_PRESSURE_12'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Surface_Pressure(12)
+      READ(Instructions(I_INFO+1), * ) Surface_Pressure(12)
   ELSEIF(Instructions(I_INFO)(1:20)=='*SURFACE_PRESSURE_13'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Surface_Pressure(13)
+      READ(Instructions(I_INFO+1), * ) Surface_Pressure(13)
   ELSEIF(Instructions(I_INFO)(1:20)=='*SURFACE_PRESSURE_14'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Surface_Pressure(14)
+      READ(Instructions(I_INFO+1), * ) Surface_Pressure(14)
   ELSEIF(Instructions(I_INFO)(1:20)=='*SURFACE_PRESSURE_15'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Surface_Pressure(15)
+      READ(Instructions(I_INFO+1), * ) Surface_Pressure(15)
   ELSEIF(Instructions(I_INFO)(1:20)=='*SURFACE_PRESSURE_16'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Surface_Pressure(16)
+      READ(Instructions(I_INFO+1), * ) Surface_Pressure(16)
   ELSEIF(Instructions(I_INFO)(1:20)=='*SURFACE_PRESSURE_17'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Surface_Pressure(17)
+      READ(Instructions(I_INFO+1), * ) Surface_Pressure(17)
   ELSEIF(Instructions(I_INFO)(1:20)=='*SURFACE_PRESSURE_18'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Surface_Pressure(18)
+      READ(Instructions(I_INFO+1), * ) Surface_Pressure(18)
   ELSEIF(Instructions(I_INFO)(1:20)=='*SURFACE_PRESSURE_19'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Surface_Pressure(19)
+      READ(Instructions(I_INFO+1), * ) Surface_Pressure(19)
   ELSEIF(Instructions(I_INFO)(1:20)=='*SURFACE_PRESSURE_20'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Surface_Pressure(20)
-  ELSEIF(Instructions(I_INFO)(1:21)=='*SURFACE_PRESSURE_21'.and. Instructions(I_INFO)(21:21)==' ')THEN
+      READ(Instructions(I_INFO+1), * ) Surface_Pressure(20)
+  ELSEIF(Instructions(I_INFO)(1:20)=='*SURFACE_PRESSURE_21'.and. Instructions(I_INFO)(21:21)==' ')THEN
       print *, '    Error :: kpp file does not support *SURFACE_PRESSURE_21 or higher!'
       call Warning_Message('S',Keywords_Blank)
   ENDIF
   !2023-08-22.
   IF(Instructions(I_INFO)(1:25)=='*KEY_PRINT_SIFS_TO_SCREEN'.and. Instructions(I_INFO)(26:26)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Print_SIFs_to_Screen
+      READ(Instructions(I_INFO+1), * ) Key_Print_SIFs_to_Screen
   ENDIF
   IF(Instructions(I_INFO)(1:23)=='*SIFS_DIM_3D_R_K_FACTOR'.and. Instructions(I_INFO)(24:24)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) SIFs_DIM_3D_r_k_Factor
+      READ(Instructions(I_INFO+1), * ) SIFs_DIM_3D_r_k_Factor
   ENDIF
 !  !2023-08-24.
 !  IF(Instructions(I_INFO)(1:24)=='*SET_NATURAL_CRACKS_TYPE')THEN
@@ -5559,213 +5716,213 @@ DO I_INFO=1,Num_Instruction_line
       call Warning_Message('S',Keywords_Blank)
   ENDIF
   IF(Instructions(I_INFO)(1:25)=='*PENALTY_CS_NATURAL_CRACK' .and. Instructions(I_INFO)(26:26)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) penalty_CS_Natural_Crack
+      READ(Instructions(I_INFO+1), * ) penalty_CS_Natural_Crack
   ENDIF
   IF(Instructions(I_INFO)(1:18)=='*KEY_CONTA_CONCRIT' .and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Conta_ConCrit
+      READ(Instructions(I_INFO+1), * ) Key_Conta_ConCrit
   ENDIF
   !2023-08-27.
   ! Key_Penalty_CS_Method=1 means the penalty function controls the l, m, n displacements; =2
   ! (default) means the penalty function only controls displacement in the n direction, that is, the
   ! normal direction displacement. NEWFTU2023082701.
   IF(Instructions(I_INFO)(1:22)=='*KEY_PENALTY_CS_METHOD' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Penalty_CS_Method
+      READ(Instructions(I_INFO+1), * ) Key_Penalty_CS_Method
   ENDIF
   !2023-09-16.
   IF(Instructions(I_INFO)(1:20)=='*ADJ_PRP_STEP_3D_MAX' .and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Adj_Prp_Step_3D_Max
+      READ(Instructions(I_INFO+1), * ) Adj_Prp_Step_3D_Max
   ENDIF
   !2023-09-19.
   IF(Instructions(I_INFO)(1:20)=='*KEY_JUNCTION_ENRICH' .and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Junction_Enrich
+      READ(Instructions(I_INFO+1), * ) Key_Junction_Enrich
   ENDIF
   !2024-02-15.
   IF(Instructions(I_INFO)(1:22)=='*KEY_SAVE_CRACK_RADIUS' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Save_Crack_Radius
+      READ(Instructions(I_INFO+1), * ) Key_Save_Crack_Radius
   ENDIF
   !2024-02-22. NEWFTU2024022201.
   IF(Instructions(I_INFO)(1:15)=='*KIC_NA_CRACK_1' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(1)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(1)
   ELSEIF(Instructions(I_INFO)(1:15)=='*KIC_NA_CRACK_2' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(2)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(2)
   ELSEIF(Instructions(I_INFO)(1:15)=='*KIC_NA_CRACK_3' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(3)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(3)
   ELSEIF(Instructions(I_INFO)(1:15)=='*KIC_NA_CRACK_4' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(4)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(4)
   ELSEIF(Instructions(I_INFO)(1:15)=='*KIC_NA_CRACK_5' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(5)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(5)
   ELSEIF(Instructions(I_INFO)(1:15)=='*KIC_NA_CRACK_6' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(6)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(6)
   ELSEIF(Instructions(I_INFO)(1:15)=='*KIC_NA_CRACK_7' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(7)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(7)
   ELSEIF(Instructions(I_INFO)(1:15)=='*KIC_NA_CRACK_8' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(8)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(8)
   ELSEIF(Instructions(I_INFO)(1:15)=='*KIC_NA_CRACK_9' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(9)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(9)
   ELSEIF(Instructions(I_INFO)(1:16)=='*KIC_NA_CRACK_10' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(10)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(10)
   ELSEIF(Instructions(I_INFO)(1:16)=='*KIC_NA_CRACK_11' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(11)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(11)
   ELSEIF(Instructions(I_INFO)(1:16)=='*KIC_NA_CRACK_12' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(12)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(12)
   ELSEIF(Instructions(I_INFO)(1:16)=='*KIC_NA_CRACK_13' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(13)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(13)
   ELSEIF(Instructions(I_INFO)(1:16)=='*KIC_NA_CRACK_14' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(14)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(14)
   ELSEIF(Instructions(I_INFO)(1:16)=='*KIC_NA_CRACK_15' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(15)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(15)
   ELSEIF(Instructions(I_INFO)(1:16)=='*KIC_NA_CRACK_16' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(16)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(16)
   ELSEIF(Instructions(I_INFO)(1:16)=='*KIC_NA_CRACK_17' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(17)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(17)
   ELSEIF(Instructions(I_INFO)(1:16)=='*KIC_NA_CRACK_18' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(18)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(18)
   ELSEIF(Instructions(I_INFO)(1:16)=='*KIC_NA_CRACK_19' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(19)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(19)
   ELSEIF(Instructions(I_INFO)(1:16)=='*KIC_NA_CRACK_20' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(20)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(20)
   ELSEIF(Instructions(I_INFO)(1:16)=='*KIC_NA_CRACK_21' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(21)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(21)
   ELSEIF(Instructions(I_INFO)(1:16)=='*KIC_NA_CRACK_22' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(22)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(22)
   ELSEIF(Instructions(I_INFO)(1:16)=='*KIC_NA_CRACK_23' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(23)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(23)
   ELSEIF(Instructions(I_INFO)(1:16)=='*KIC_NA_CRACK_24' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(24)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(24)
   ELSEIF(Instructions(I_INFO)(1:16)=='*KIC_NA_CRACK_25' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(25)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(25)
   ELSEIF(Instructions(I_INFO)(1:16)=='*KIC_NA_CRACK_26' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(26)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(26)
   ELSEIF(Instructions(I_INFO)(1:16)=='*KIC_NA_CRACK_27' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(27)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(27)
   ELSEIF(Instructions(I_INFO)(1:16)=='*KIC_NA_CRACK_28' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(28)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(28)
   ELSEIF(Instructions(I_INFO)(1:16)=='*KIC_NA_CRACK_29' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(29)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(29)
   ELSEIF(Instructions(I_INFO)(1:16)=='*KIC_NA_CRACK_30' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KIc_NaCr(30)
+      READ(Instructions(I_INFO+1), * ) KIc_NaCr(30)
   ELSEIF(Instructions(I_INFO)(1:16)=='*KIC_NA_CRACK_31' .and. Instructions(I_INFO)(17:17)==' ')THEN
       print *, '    Error :: kpp file does not support *KIC_NA_CRACK_31 or higher!'
       call Warning_Message('S',Keywords_Blank)
   ENDIF
   !2024-02-22. NEWFTU2024022202.
   IF(Instructions(I_INFO)(1:8)=='*ST_NACR' .and. Instructions(I_INFO)(9:9)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) c_Temp_Double
+      READ(Instructions(I_INFO+1), * ) c_Temp_Double
       St_NaCr = c_Temp_Double
   ENDIF
   !2024-02-22. NEWFTU2024022202.
   IF(Instructions(I_INFO)(1:14)=='*ST_NA_CRACK_1' .and. Instructions(I_INFO)(15:15)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(1)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(1)
   ELSEIF(Instructions(I_INFO)(1:14)=='*ST_NA_CRACK_2' .and. Instructions(I_INFO)(15:15)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(2)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(2)
   ELSEIF(Instructions(I_INFO)(1:14)=='*ST_NA_CRACK_3' .and. Instructions(I_INFO)(15:15)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(3)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(3)
   ELSEIF(Instructions(I_INFO)(1:14)=='*ST_NA_CRACK_4' .and. Instructions(I_INFO)(15:15)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(4)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(4)
   ELSEIF(Instructions(I_INFO)(1:14)=='*ST_NA_CRACK_5' .and. Instructions(I_INFO)(15:15)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(5)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(5)
   ELSEIF(Instructions(I_INFO)(1:14)=='*ST_NA_CRACK_6' .and. Instructions(I_INFO)(15:15)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(6)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(6)
   ELSEIF(Instructions(I_INFO)(1:14)=='*ST_NA_CRACK_7' .and. Instructions(I_INFO)(15:15)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(7)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(7)
   ELSEIF(Instructions(I_INFO)(1:14)=='*ST_NA_CRACK_8' .and. Instructions(I_INFO)(15:15)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(8)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(8)
   ELSEIF(Instructions(I_INFO)(1:14)=='*ST_NA_CRACK_9' .and. Instructions(I_INFO)(15:15)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(9)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(9)
   ELSEIF(Instructions(I_INFO)(1:15)=='*ST_NA_CRACK_10' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(10)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(10)
   ELSEIF(Instructions(I_INFO)(1:15)=='*ST_NA_CRACK_11' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(11)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(11)
   ELSEIF(Instructions(I_INFO)(1:15)=='*ST_NA_CRACK_12' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(12)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(12)
   ELSEIF(Instructions(I_INFO)(1:15)=='*ST_NA_CRACK_13' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(13)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(13)
   ELSEIF(Instructions(I_INFO)(1:15)=='*ST_NA_CRACK_14' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(14)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(14)
   ELSEIF(Instructions(I_INFO)(1:15)=='*ST_NA_CRACK_15' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(15)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(15)
   ELSEIF(Instructions(I_INFO)(1:15)=='*ST_NA_CRACK_16' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(16)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(16)
   ELSEIF(Instructions(I_INFO)(1:15)=='*ST_NA_CRACK_17' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(17)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(17)
   ELSEIF(Instructions(I_INFO)(1:15)=='*ST_NA_CRACK_18' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(18)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(18)
   ELSEIF(Instructions(I_INFO)(1:15)=='*ST_NA_CRACK_19' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(19)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(19)
   ELSEIF(Instructions(I_INFO)(1:15)=='*ST_NA_CRACK_20' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(20)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(20)
   ELSEIF(Instructions(I_INFO)(1:15)=='*ST_NA_CRACK_21' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(21)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(21)
   ELSEIF(Instructions(I_INFO)(1:15)=='*ST_NA_CRACK_22' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(22)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(22)
   ELSEIF(Instructions(I_INFO)(1:15)=='*ST_NA_CRACK_23' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(23)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(23)
   ELSEIF(Instructions(I_INFO)(1:15)=='*ST_NA_CRACK_24' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(24)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(24)
   ELSEIF(Instructions(I_INFO)(1:15)=='*ST_NA_CRACK_25' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(25)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(25)
   ELSEIF(Instructions(I_INFO)(1:15)=='*ST_NA_CRACK_26' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(26)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(26)
   ELSEIF(Instructions(I_INFO)(1:15)=='*ST_NA_CRACK_27' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(27)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(27)
   ELSEIF(Instructions(I_INFO)(1:15)=='*ST_NA_CRACK_28' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(28)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(28)
   ELSEIF(Instructions(I_INFO)(1:15)=='*ST_NA_CRACK_29' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(29)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(29)
   ELSEIF(Instructions(I_INFO)(1:15)=='*ST_NA_CRACK_30' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) St_NaCr(30)
+      READ(Instructions(I_INFO+1), * ) St_NaCr(30)
   ELSEIF(Instructions(I_INFO)(1:15)=='*ST_NA_CRACK_31' .and. Instructions(I_INFO)(16:16)==' ')THEN
       print *, '    Error :: kpp file does not support *ST_NA_CRACK_31 or higher!'
       call Warning_Message('S',Keywords_Blank)
   ENDIF
   ! 2024-02-22. Related to 3D hydraulic fracturing experiments. NEWFTU2024022203.
   IF(Instructions(I_INFO)(1:21)=='*HFE_SURFACE_LOAD_NUM'.and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) HFE_Surface_Load_Num
+      READ(Instructions(I_INFO+1), * ) HFE_Surface_Load_Num
   ENDIF
   IF(Instructions(I_INFO)(1:27)=='*HFE_INITIAL_INJECTION_RATE'.and. Instructions(I_INFO)(28:28)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) HFE_Initial_Injection_Rate
+      READ(Instructions(I_INFO+1), * ) HFE_Initial_Injection_Rate
   ENDIF
   IF(Instructions(I_INFO)(1:20)=='*HFE_HOLE_MAT_NUMBER'.and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) HFE_Hole_Mat_Number
+      READ(Instructions(I_INFO+1), * ) HFE_Hole_Mat_Number
   ENDIF
   IF(Instructions(I_INFO)(1:25)=='*HFE_INITIAL_TRY_PRESSURE'.and. Instructions(I_INFO)(26:26)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) HFE_Initial_Try_Pressure
+      READ(Instructions(I_INFO+1), * ) HFE_Initial_Try_Pressure
   ENDIF
   IF(Instructions(I_INFO)(1:31)=='*HFE_INITIAL_PRESSURE_STEP_SIZE'.and. Instructions(I_INFO)(32:32)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) HFE_Initial_Pressure_Step_Size
+      READ(Instructions(I_INFO+1), * ) HFE_Initial_Pressure_Step_Size
   ENDIF
   IF(Instructions(I_INFO)(1:15)=='*SIZE_INI_CRACK' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Size_Ini_Crack
+      READ(Instructions(I_INFO+1), * ) Size_Ini_Crack
   ENDIF
   !2024-02-26. IMPROV2024022602.
   IF(Instructions(I_INFO)(1:20)=='*NUM_POLY_EDGES_NACR' .and. Instructions(I_INFO)(21:21)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Num_Poly_Edges_NaCr
+      READ(Instructions(I_INFO+1), * ) Num_Poly_Edges_NaCr
   ENDIF
   !2024-02-28.
   IF(Instructions(I_INFO)(1:28)=='*SLIPWATER_MAX_TIME_STEPS_3D' .and. Instructions(I_INFO)(29:29)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) SlipWater_Max_Time_Steps_3D
+      READ(Instructions(I_INFO+1), * ) SlipWater_Max_Time_Steps_3D
   ENDIF
   IF(Instructions(I_INFO)(1:28)=='*SLIPWATER_MAX_PRES_STEPS_3D' .and. Instructions(I_INFO)(29:29)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) SlipWater_Max_Pres_Steps_3D
+      READ(Instructions(I_INFO+1), * ) SlipWater_Max_Pres_Steps_3D
   ENDIF
   IF(Instructions(I_INFO)(1:31)=='*SLIPWATER_TIME_STEP_CONV_CHECK' .and. Instructions(I_INFO)(32:32)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) SlipWater_Time_Step_Conv_Check
+      READ(Instructions(I_INFO+1), * ) SlipWater_Time_Step_Conv_Check
   ENDIF
   IF(Instructions(I_INFO)(1:31)=='*SLIPWATER_PRES_STEP_CONV_CHECK' .and. Instructions(I_INFO)(32:32)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) SlipWater_Pres_Step_Conv_Check
+      READ(Instructions(I_INFO+1), * ) SlipWater_Pres_Step_Conv_Check
   ENDIF
   !2024-03-09.
   IF(Instructions(I_INFO)(1:16)=='*VISCOSITY_PAR_M' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Viscosity_Par_m
+      READ(Instructions(I_INFO+1), * ) Viscosity_Par_m
   ENDIF
-  IF(Instructions(I_INFO)(1:16)=='*KEY_VISCO_TYPE' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Visco_Type
+  IF(Instructions(I_INFO)(1:15)=='*KEY_VISCO_TYPE' .and. Instructions(I_INFO)(16:16)==' ')THEN
+      READ(Instructions(I_INFO+1), * ) Key_Visco_Type
   ENDIF  
   IF(Instructions(I_INFO)(1:13)=='*KEY_LEAKOFF' .and. Instructions(I_INFO)(14:14)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Leakoff
+      READ(Instructions(I_INFO+1), * ) Key_Leakoff
   ENDIF 
   IF(Instructions(I_INFO)(1:12)=='*COEFF_LEAK' .and. Instructions(I_INFO)(13:13)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Coeff_Leak
+      READ(Instructions(I_INFO+1), * ) Coeff_Leak
   ENDIF   
   IF (Instructions(I_INFO)(1:14)=='*INJECT_C_TIME'.and. Instructions(I_INFO)(15:15)==' ')THEN
       CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
@@ -5780,95 +5937,95 @@ DO I_INFO=1,Num_Instruction_line
   ENDIF
   !2024-03-11.
   IF (Instructions(I_INFO)(1:11)=='*KEY_RANDOM'.and. Instructions(I_INFO)(12:12)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) KEY_RANDOM
+      READ(Instructions(I_INFO+1), * ) KEY_RANDOM
   ENDIF
   !2024-03-13.
   IF(Instructions(I_INFO)(1:21)=='*THERMAL_STR_TEMPER_1' .and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(1)
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(1)
   ELSEIF(Instructions(I_INFO)(1:21)=='*THERMAL_STR_TEMPER_2' .and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(2)
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(2)
   ELSEIF(Instructions(I_INFO)(1:21)=='*THERMAL_STR_TEMPER_3' .and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(3)
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(3)
   ELSEIF(Instructions(I_INFO)(1:21)=='*THERMAL_STR_TEMPER_4' .and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(4)
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(4)
   ELSEIF(Instructions(I_INFO)(1:21)=='*THERMAL_STR_TEMPER_5' .and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(5)
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(5)
   ELSEIF(Instructions(I_INFO)(1:21)=='*THERMAL_STR_TEMPER_6' .and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(6)
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(6)
   ELSEIF(Instructions(I_INFO)(1:21)=='*THERMAL_STR_TEMPER_7' .and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(7)
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(7)
   ELSEIF(Instructions(I_INFO)(1:21)=='*THERMAL_STR_TEMPER_8' .and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(8)
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(8)
   ELSEIF(Instructions(I_INFO)(1:21)=='*THERMAL_STR_TEMPER_9' .and. Instructions(I_INFO)(22:22)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(9)
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(9)
   ELSEIF(Instructions(I_INFO)(1:22)=='*THERMAL_STR_TEMPER_10' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(10)
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(10)
   ELSEIF(Instructions(I_INFO)(1:22)=='*THERMAL_STR_TEMPER_11' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(11)
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(11)
   ELSEIF(Instructions(I_INFO)(1:22)=='*THERMAL_STR_TEMPER_12' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(12)
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(12)
   ELSEIF(Instructions(I_INFO)(1:22)=='*THERMAL_STR_TEMPER_13' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(13)      
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(13)      
   ELSEIF(Instructions(I_INFO)(1:22)=='*THERMAL_STR_TEMPER_14' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(14)
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(14)
   ELSEIF(Instructions(I_INFO)(1:22)=='*THERMAL_STR_TEMPER_15' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(15)
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(15)
   ELSEIF(Instructions(I_INFO)(1:22)=='*THERMAL_STR_TEMPER_16' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(16)
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(16)
   ELSEIF(Instructions(I_INFO)(1:22)=='*THERMAL_STR_TEMPER_17' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(17)      
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(17)      
   ELSEIF(Instructions(I_INFO)(1:22)=='*THERMAL_STR_TEMPER_18' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(18)
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(18)
   ELSEIF(Instructions(I_INFO)(1:22)=='*THERMAL_STR_TEMPER_19' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(19)
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(19)
   ELSEIF(Instructions(I_INFO)(1:22)=='*THERMAL_STR_TEMPER_20' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(20)
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(20)
   ELSEIF(Instructions(I_INFO)(1:22)=='*THERMAL_STR_TEMPER_21' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(21)      
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(21)      
   ELSEIF(Instructions(I_INFO)(1:22)=='*THERMAL_STR_TEMPER_22' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(22)
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(22)
   ELSEIF(Instructions(I_INFO)(1:22)=='*THERMAL_STR_TEMPER_23' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(23)
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(23)
   ELSEIF(Instructions(I_INFO)(1:22)=='*THERMAL_STR_TEMPER_24' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(24)
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(24)
   ELSEIF(Instructions(I_INFO)(1:22)=='*THERMAL_STR_TEMPER_25' .and. Instructions(I_INFO)(23:23)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Thermal_Str_Temper(25)            
+      READ(Instructions(I_INFO+1), * ) Thermal_Str_Temper(25)            
   ELSEIF(Instructions(I_INFO)(1:22)=='*THERMAL_STR_TEMPER_26' .and. Instructions(I_INFO)(23:23)==' ')THEN
       print *, '    Error :: kpp file does not support *THERMAL_STR_TEMPER_26 or higher!'
       call Warning_Message('S',Keywords_Blank)
   ENDIF
   !2024-03-13.
   IF(Instructions(I_INFO)(1:25)=='*MAT_NUMBER_OF_INSTRESS_1' .and. Instructions(I_INFO)(26:26)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Mat_Number_of_InStress(1)
+      READ(Instructions(I_INFO+1), * ) Mat_Number_of_InStress(1)
   ELSEIF(Instructions(I_INFO)(1:25)=='*MAT_NUMBER_OF_INSTRESS_2' .and. Instructions(I_INFO)(26:26)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Mat_Number_of_InStress(2)  
+      READ(Instructions(I_INFO+1), * ) Mat_Number_of_InStress(2)  
   ELSEIF(Instructions(I_INFO)(1:25)=='*MAT_NUMBER_OF_INSTRESS_3' .and. Instructions(I_INFO)(26:26)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Mat_Number_of_InStress(3)  
+      READ(Instructions(I_INFO+1), * ) Mat_Number_of_InStress(3)  
   ELSEIF(Instructions(I_INFO)(1:25)=='*MAT_NUMBER_OF_INSTRESS_4' .and. Instructions(I_INFO)(26:26)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Mat_Number_of_InStress(4)  
+      READ(Instructions(I_INFO+1), * ) Mat_Number_of_InStress(4)  
   ELSEIF(Instructions(I_INFO)(1:25)=='*MAT_NUMBER_OF_INSTRESS_5' .and. Instructions(I_INFO)(26:26)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Mat_Number_of_InStress(5)  
+      READ(Instructions(I_INFO+1), * ) Mat_Number_of_InStress(5)  
   ELSEIF(Instructions(I_INFO)(1:25)=='*MAT_NUMBER_OF_INSTRESS_6' .and. Instructions(I_INFO)(26:26)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Mat_Number_of_InStress(6)  
+      READ(Instructions(I_INFO+1), * ) Mat_Number_of_InStress(6)  
   ELSEIF(Instructions(I_INFO)(1:25)=='*MAT_NUMBER_OF_INSTRESS_7' .and. Instructions(I_INFO)(26:26)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Mat_Number_of_InStress(7)        
+      READ(Instructions(I_INFO+1), * ) Mat_Number_of_InStress(7)        
   ELSEIF(Instructions(I_INFO)(1:25)=='*MAT_NUMBER_OF_INSTRESS_8' .and. Instructions(I_INFO)(26:26)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Mat_Number_of_InStress(8)        
+      READ(Instructions(I_INFO+1), * ) Mat_Number_of_InStress(8)        
   ELSEIF(Instructions(I_INFO)(1:25)=='*MAT_NUMBER_OF_INSTRESS_9' .and. Instructions(I_INFO)(26:26)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Mat_Number_of_InStress(9)        
+      READ(Instructions(I_INFO+1), * ) Mat_Number_of_InStress(9)        
   ELSEIF(Instructions(I_INFO)(1:26)=='*MAT_NUMBER_OF_INSTRESS_10' .and. Instructions(I_INFO)(27:27)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Mat_Number_of_InStress(10)        
+      READ(Instructions(I_INFO+1), * ) Mat_Number_of_InStress(10)        
   ELSEIF(Instructions(I_INFO)(1:26)=='*MAT_NUMBER_OF_INSTRESS_11' .and. Instructions(I_INFO)(27:27)==' ')THEN
       print *, '    Error :: kpp file does not support *MAT_NUMBER_OF_INSTRESS_11 or higher!'
       call Warning_Message('S',Keywords_Blank)
   ENDIF
   !2024-03-13.
   IF(Instructions(I_INFO)(1:15)=='*MAT_INSTRESS_X' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) MAT_INSTRESS_X
+      READ(Instructions(I_INFO+1), * ) MAT_INSTRESS_X
   ELSEIF(Instructions(I_INFO)(1:15)=='*MAT_INSTRESS_Y' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) MAT_INSTRESS_Y 
+      READ(Instructions(I_INFO+1), * ) MAT_INSTRESS_Y 
   ELSEIF(Instructions(I_INFO)(1:15)=='*MAT_INSTRESS_Z' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) MAT_INSTRESS_Z  
+      READ(Instructions(I_INFO+1), * ) MAT_INSTRESS_Z  
   ENDIF
   
   !2024-03-13.
@@ -5920,52 +6077,52 @@ DO I_INFO=1,Num_Instruction_line
   ENDIF
   !2024-03-13.
   IF(Instructions(I_INFO)(1:30)=='*KEY_MAX_NUM_INITIATION_CRACKS' .and. Instructions(I_INFO)(31:31)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Max_Num_Initiation_Cracks
+      READ(Instructions(I_INFO+1), * ) Key_Max_Num_Initiation_Cracks
   ENDIF
   !2024-03-17.
   IF(Instructions(I_INFO)(1:15)=='*EDY_NUM_ITERAS' .and. Instructions(I_INFO)(16:16)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) EDY_NUM_ITERAS
+      READ(Instructions(I_INFO+1), * ) EDY_NUM_ITERAS
   ENDIF
   IF(Instructions(I_INFO)(1:18)=='*EDY_NUM_FORCE_ITR' .and. Instructions(I_INFO)(19:19)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) EDY_NUM_FORCE_ITR
+      READ(Instructions(I_INFO+1), * ) EDY_NUM_FORCE_ITR
   ENDIF 
   IF(Instructions(I_INFO)(1:19)=='*DELT_TIME_EXPLICIT' .and. Instructions(I_INFO)(20:20)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) delt_time_explicit
+      READ(Instructions(I_INFO+1), * ) delt_time_explicit
   ENDIF
   !2024-04-11.
   IF(Instructions(I_INFO)(1:17)=='*KEY_MIN_APERTURE' .and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) key_min_aperture
+      READ(Instructions(I_INFO+1), * ) key_min_aperture
   ENDIF
   !2024-04-24.
   IF(Instructions(I_INFO)(1:31)=='*KEY_PRINT_EBEPCG_SOLUTION_TIME' .and. Instructions(I_INFO)(32:32)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Print_EBEPCG_Solution_Time
+      READ(Instructions(I_INFO+1), * ) Key_Print_EBEPCG_Solution_Time
   ENDIF  
   !2024-05-02. IMPROV202450201.
-  IF(Instructions(I_INFO)(1:31)=='*KEY_SCHEME_SIGNED_DIS_INPLANE' .and. Instructions(I_INFO)(31:31)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Scheme_Signed_Dis_InPlane
+  IF(Instructions(I_INFO)(1:30)=='*KEY_SCHEME_SIGNED_DIS_INPLANE' .and. Instructions(I_INFO)(31:31)==' ')THEN
+      READ(Instructions(I_INFO+1), * ) Key_Scheme_Signed_Dis_InPlane
   ENDIF  
   
   !2024-06-24.
   IF(Instructions(I_INFO)(1:16)=='*KEY_WEIBULL_E_1' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Weibull_E(1)
+      READ(Instructions(I_INFO+1), * ) Key_Weibull_E(1)
   elseif(Instructions(I_INFO)(1:16)=='*KEY_WEIBULL_E_2' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Weibull_E(2)
+      READ(Instructions(I_INFO+1), * ) Key_Weibull_E(2)
   elseif(Instructions(I_INFO)(1:16)=='*KEY_WEIBULL_E_3' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Weibull_E(3)
+      READ(Instructions(I_INFO+1), * ) Key_Weibull_E(3)
   elseif(Instructions(I_INFO)(1:16)=='*KEY_WEIBULL_E_4' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Weibull_E(4)
+      READ(Instructions(I_INFO+1), * ) Key_Weibull_E(4)
   elseif(Instructions(I_INFO)(1:16)=='*KEY_WEIBULL_E_5' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Weibull_E(5)
+      READ(Instructions(I_INFO+1), * ) Key_Weibull_E(5)
   elseif(Instructions(I_INFO)(1:16)=='*KEY_WEIBULL_E_6' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Weibull_E(6)
+      READ(Instructions(I_INFO+1), * ) Key_Weibull_E(6)
   elseif(Instructions(I_INFO)(1:16)=='*KEY_WEIBULL_E_7' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Weibull_E(7)
+      READ(Instructions(I_INFO+1), * ) Key_Weibull_E(7)
   elseif(Instructions(I_INFO)(1:16)=='*KEY_WEIBULL_E_8' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Weibull_E(8)
+      READ(Instructions(I_INFO+1), * ) Key_Weibull_E(8)
   elseif(Instructions(I_INFO)(1:16)=='*KEY_WEIBULL_E_9' .and. Instructions(I_INFO)(17:17)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Weibull_E(9)
+      READ(Instructions(I_INFO+1), * ) Key_Weibull_E(9)
   elseif(Instructions(I_INFO)(1:17)=='*KEY_WEIBULL_E_10' .and. Instructions(I_INFO)(18:18)==' ')THEN
-      READ(Instructions(I_INFO+1) , * ) Key_Weibull_E(10)
+      READ(Instructions(I_INFO+1), * ) Key_Weibull_E(10)
   elseif(Instructions(I_INFO)(1:17)=='*KEY_WEIBULL_E_11' .and. Instructions(I_INFO)(18:18)==' ')THEN
       print *, '    Error :: kpp file does not support *KEY_WEIBULL_E_11 or higher!'
       call Warning_Message('S',Keywords_Blank)
@@ -6057,22 +6214,73 @@ DO I_INFO=1,Num_Instruction_line
   
   ! Radius factor for calculating weighted average stress. 2024-06-25.
   IF(Instructions(I_INFO)(1:13)=='*FACTOR_AVE_R' .and. Instructions(I_INFO)(14:14)==' ')THEN
-      READ(Instructions(I_INFO+1) , *) factor_ave_r
+      READ(Instructions(I_INFO+1), *) factor_ave_r
   ENDIF
   
   ! Parameters for calculating weighted average stress. 2024-06-25.
   IF(Instructions(I_INFO)(1:10)=='*A_AVE_SHI' .and. Instructions(I_INFO)(11:11)==' ')THEN
-      READ(Instructions(I_INFO+1) , *) a_ave_shi
+      READ(Instructions(I_INFO+1), *) a_ave_shi
   ENDIF
   
   ! Jagged cracks. 2024-06-25. For demonstration purposes only.
   IF(Instructions(I_INFO)(1:24)=='*KEY_SAWTOOTH_CRACK_PATH' .and. Instructions(I_INFO)(25:25)==' ')THEN
-      READ(Instructions(I_INFO+1) , *) Key_Sawtooth_Crack_Path
+      READ(Instructions(I_INFO+1), *) Key_Sawtooth_Crack_Path
+  ENDIF
+  
+  ! IMPROV-2026010901.
+  IF(Instructions(I_INFO)(1:32)=='*KEY_CAL_HF_CRACK_POINTS_INFO_3D' .and. Instructions(I_INFO)(33:33)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Key_Cal_HF_Crack_Points_Info_3D
+  ENDIF
+  
+  ! 2026-01-10.
+  IF(Instructions(I_INFO)(1:20)=='*PRP_BISEC_FACTOR_3D' .and. Instructions(I_INFO)(21:21)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Prp_Bisec_Factor_3D
+  ENDIF
+  
+  ! 2026-01-11. IMPROV-2026011101.
+  IF (Instructions(I_INFO)(1:16)=='*BOUNDARY_CRACKS'.and. Instructions(I_INFO)(17:17)==' ')THEN
+      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
+      IF(NUM_DATA < NUM_CRACK)THEN
+          PRINT *,'    ERROR:: WRONG *BOUNDARY_CRACKS, ALL INITIAL CRACKS SHOULD BE GIVEN!'
+          CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
+      ENDIF
+      ALLOCATE(temp_boundary_cracks(NUM_DATA))
+      READ(Instructions(I_INFO+1),*) temp_boundary_cracks(1:NUM_DATA)
+      
+      WHERE (temp_boundary_cracks(1:NUM_DATA) == 0)
+        Boundary_Cracks(1:NUM_DATA) = .FALSE.
+      ELSEWHERE
+        Boundary_Cracks(1:NUM_DATA) = .TRUE.
+      END WHERE
+      
+      DEALLOCATE(temp_boundary_cracks)
+  endif
+  
+  ! 2026-01-10. NEWFTU-2026011101.
+  IF(Instructions(I_INFO)(1:18)=='*KEY_WARNING_LEVEL' .and. Instructions(I_INFO)(19:19)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Key_Warning_Level
+  ENDIF
+  
+  ! 2026-01-14. 
+!  IF(Instructions(I_INFO)(1:28)=='*KEY_3D_SIFS_IIM_ENABLE_XFEM' .and.
+!  Instructions(I_INFO)(29:29)==' ')THEN
+!      READ(Instructions(I_INFO+1), *) Key_3D_Sifs_IIM_Enable_XFEM
+!  ENDIF
+  IF(Instructions(I_INFO)(1:33)=='*KEY_3D_SIFS_IIM_NUM_GAUSS_POINTS' .and. Instructions(I_INFO)(34:34)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Key_3D_Sifs_IIM_num_Gauss_Points
+      if (     Key_3D_Sifs_IIM_num_Gauss_Points/=2**3   &
+         .and. Key_3D_Sifs_IIM_num_Gauss_Points/=4**3   &
+         .and. Key_3D_Sifs_IIM_num_Gauss_Points/=6**3   &
+         .and. Key_3D_Sifs_IIM_num_Gauss_Points/=8**3   &
+         .and. Key_3D_Sifs_IIM_num_Gauss_Points/=10**3) then
+          print *, '    Error :: *KEY_3D_SIFS_IIM_NUM_GAUSS_POINTS should be 8, 64, 216, 512, or 1000!'
+          call Warning_Message('S',Keywords_Blank)
+      endif
   ENDIF
   
   ! User-defined 2D crack propagation path. 2024-11-17. NEWFTU2024111701.
   IF(Instructions(I_INFO)(1:31)=='*KEY_USER_DEFINED_2D_CRACK_PATH' .and. Instructions(I_INFO)(32:32)==' ')THEN
-      READ(Instructions(I_INFO+1) , *) Key_User_Defined_2D_Crack_Path
+      READ(Instructions(I_INFO+1), *) Key_User_Defined_2D_Crack_Path
       allocate(User_Defined_2D_Crack_Path(99,60))
       allocate(User_Defined_2D_Crack_Path_Num_Points(99))
       User_Defined_2D_Crack_Path(1:99,1:60)   = ZR
@@ -6115,17 +6323,147 @@ DO I_INFO=1,Num_Instruction_line
         END IF
   END DO
   
-  !#################################
-  !                               #
-  !                               #
-  ! Internal program keyword.     #
-  !                               #
-  !                               #  
-  !#################################
   !2024-04-11.
   IF(Instructions(I_INFO)(1:28)=='*KEY_NON_NEGTIVE_APERTURE_3D' .and. Instructions(I_INFO)(29:29)==' ')THEN
-      READ(Instructions(I_INFO+1) , *) Key_Non_Negtive_Aperture_3D
+      READ(Instructions(I_INFO+1), *) Key_Non_Negtive_Aperture_3D
   ENDIF  
+  
+  !2026-01-15.
+  IF(Instructions(I_INFO)(1:18)=='*KEY_3D_SIFS_PRINT' .and. Instructions(I_INFO)(19:19)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Key_3D_SIFs_Print
+  ENDIF
+  
+  !2026-01-23.
+  IF(Instructions(I_INFO)(1:40)=='*KEY_SAVE_3D_SIFS_IIM_INTEGRAL_CYLINDERS' .and. Instructions(I_INFO)(41:41)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Key_Save_3D_SIFs_IIM_Integral_cylinders
+  ENDIF
+  
+  !2026-02-01. NEWFTU-2026020101.
+  IF(Instructions(I_INFO)(1:37)=='*KEY_3D_CFCP2_PROGATION_VECTOR_SCHEME' .and. Instructions(I_INFO)(38:38)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Key_3D_CFCP2_Progation_Vector_Scheme
+  ENDIF
+  
+  !2026-02-02. 
+  IF(Instructions(I_INFO)(1:18)=='*KEY_ELEMENT_BREAK' .and. Instructions(I_INFO)(19:19)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Key_Element_Break
+  ENDIF
+  IF(Instructions(I_INFO)(1:23)=='*KEY_ELEMENT_BREAK_RULE' .and. Instructions(I_INFO)(24:24)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Key_Element_Break_Rule
+  ENDIF
+  IF(Instructions(I_INFO)(1:14)=='*BREAK_MAT_NUM' .and. Instructions(I_INFO)(15:15)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Break_Mat_Num
+  ENDIF 
+  IF(Instructions(I_INFO)(1:40)=='*KEY_ELEMENT_BREAK_NUM_ELEMENTS_PER_STEP' .and. Instructions(I_INFO)(41:41)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Key_Element_Break_num_Elements_Per_Step
+  ENDIF 
+  
+  !2026-02-06. 
+  IF(Instructions(I_INFO)(1:21)=='*KEY_SCHOLLMANN_TWIST' .and. Instructions(I_INFO)(22:22)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Key_Schollmann_Twist
+  ENDIF
+  IF(Instructions(I_INFO)(1:21)=='*KEY_MULTI_TIPENRNODE' .and. Instructions(I_INFO)(22:22)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Key_Multi_TipEnrNode
+  ENDIF
+  
+  !2026-02-07. 
+  IF(Instructions(I_INFO)(1:38)=='*STEP_NUMBER_TO_START_INITIATION_CHECK' .and. Instructions(I_INFO)(39:39)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Step_Number_to_Start_Initiation_Check
+  ENDIF
+  !NEWFTU-2026020703.
+  IF(Instructions(I_INFO)(1:20)=='*KEY_INITIATION_ZONE' .and. Instructions(I_INFO)(21:21)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Key_Initiation_Zone
+  ENDIF
+  IF(Instructions(I_INFO)(1:22)=='*INITIATION_ZONE_X_MIN' .and. Instructions(I_INFO)(23:23)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Initiation_Zone_X_Min
+  ENDIF
+  IF(Instructions(I_INFO)(1:22)=='*INITIATION_ZONE_Y_MIN' .and. Instructions(I_INFO)(23:23)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Initiation_Zone_Y_Min
+  ENDIF
+  IF(Instructions(I_INFO)(1:22)=='*INITIATION_ZONE_Z_MIN' .and. Instructions(I_INFO)(23:23)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Initiation_Zone_Z_Min
+  ENDIF  
+  IF(Instructions(I_INFO)(1:22)=='*INITIATION_ZONE_X_MAX' .and. Instructions(I_INFO)(23:23)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Initiation_Zone_X_Max
+  ENDIF
+  IF(Instructions(I_INFO)(1:22)=='*INITIATION_ZONE_Y_MAX' .and. Instructions(I_INFO)(23:23)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Initiation_Zone_Y_Max
+  ENDIF
+  IF(Instructions(I_INFO)(1:22)=='*INITIATION_ZONE_Z_MAX' .and. Instructions(I_INFO)(23:23)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Initiation_Zone_Z_Max
+  ENDIF  
+  
+  IF(Instructions(I_INFO)(1:13)=='*KEY_INI_RULE' .and. Instructions(I_INFO)(14:14)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Key_Ini_Rule
+  ENDIF
+  
+  IF(Instructions(I_INFO)(1:19)=='*KEY_INI_CR_3D_TYPE' .and. Instructions(I_INFO)(20:20)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Key_Ini_Cr_3D_Type
+  ENDIF
+  
+  !2026-02-10.
+  IF(Instructions(I_INFO)(1:21)=='*KEY_DEL_NEG_APERTURE' .and. Instructions(I_INFO)(22:22)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Key_Del_Neg_Aperture
+  ENDIF
+  
+  !2026-02-14.
+  IF(Instructions(I_INFO)(1:37)=='*KEY_3D_CIRCULAR_CRACK_MESHING_SCHEME' .and. Instructions(I_INFO)(38:38)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Key_3D_Circular_Crack_Meshing_Scheme
+  ENDIF
+  
+  !2026-02-18.
+  IF(Instructions(I_INFO)(1:26)=='*KEY_SAVE_STIFFNESS_MATRIX' .and. Instructions(I_INFO)(27:27)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Key_Save_Stiffness_Matrix
+  ENDIF
+  
+  ! 2026-02-25. NEWFTU-2026022501. 
+  IF (Instructions(I_INFO)(1:26)=='*KEY_CRACKS_INPLANE_GROWTH'.and. Instructions(I_INFO)(27:27)==' ')THEN
+      CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
+      IF(NUM_DATA < NUM_CRACK)THEN
+          PRINT *,'    ERROR:: WRONG *KEY_CRACKS_INPLANE_GROWTH, ALL INITIAL CRACKS SHOULD BE GIVEN!'
+          CALL WARNING_MESSAGE('S',KEYWORDS_BLANK)
+      ENDIF
+      ALLOCATE(temp_Cracks_InPlane_Growth(NUM_DATA))
+      READ(Instructions(I_INFO+1),*) temp_Cracks_InPlane_Growth(1:NUM_DATA)
+      
+      WHERE (temp_Cracks_InPlane_Growth(1:NUM_DATA) == 0)
+        Key_Cracks_InPlane_Growth(1:NUM_DATA) = .FALSE.
+      ELSEWHERE
+        Key_Cracks_InPlane_Growth(1:NUM_DATA) = .TRUE.
+      END WHERE
+      
+      DEALLOCATE(temp_Cracks_InPlane_Growth)
+  endif
+  
+  !2026-02-25. NEWFTU-2026022502. 
+  IF(Instructions(I_INFO)(1:38)=='*KEY_INITIATION_3D_CRACK_NORMAL_VECTOR' .and. Instructions(I_INFO)(39:39)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Key_Initiation_3D_Crack_Normal_Vector
+  ENDIF
+  
+  IF (Instructions(I_INFO)(1:34)=='*INITIATION_3D_CRACK_NORMAL_VECTOR' .and. Instructions(I_INFO)(35:35)==' ')THEN
+    CALL TOOL_GET_NUM_DATA_FROM_A_STRING(Instructions(I_INFO+1),256,NUM_DATA,YES_EVEN)
+    READ(Instructions(I_INFO+1) ,*) Initiation_3D_Crack_Normal_Vector(1:NUM_DATA)
+  endif
+  
+  !2026-02-27. NEWFTU-2026022701. 
+  IF(Instructions(I_INFO)(1:29)=='*KEY_3D_SLIP_HF_KEEP_PRESSURE' .and. Instructions(I_INFO)(30:30)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Key_3D_Slip_HF_Keep_Pressure
+  ENDIF
+  
+  !NEWFTU-2026022801.
+  IF(Instructions(I_INFO)(1:7)=='*CG_TOL' .and. Instructions(I_INFO)(8:8)==' ')THEN
+      READ(Instructions(I_INFO+1), *) cg_tol
+  ENDIF
+  
+  !2026-03-01.
+  IF(Instructions(I_INFO)(1:20)=='*KEY_ADJ_PRP_STEP_3D' .and. Instructions(I_INFO)(21:21)==' ')THEN
+      READ(Instructions(I_INFO+1), *) Key_Adj_Prp_Step_3D
+  ENDIF
+  
+  !2026-03-05.
+  IF(Instructions(I_INFO)(1:17)=='*KEY_EBE_PCG_BLAS' .and. Instructions(I_INFO)(18:18)==' ')THEN
+      READ(Instructions(I_INFO+1), *) KEY_EBE_PCG_BLAS
+  ENDIF
+  
   
 ENDDO
 

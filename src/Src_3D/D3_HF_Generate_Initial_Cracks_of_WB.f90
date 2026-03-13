@@ -256,6 +256,13 @@ if (i_Stage==1 .and. i_WB>=2) then
   ! Update the active HF fracture status of the previous crack segment
   do i_C =1,num_Crs_Last_Stage
       Crack_Type_Status_3D(c_Cracks(i_C),1) = 3
+      
+      !NEWFTU-2026022701.
+      if (Key_3D_Slip_HF_Keep_Pressure==1) then
+          Crack_Type_Status_3D(c_Cracks(i_C),1)=1
+          WBPT_3D_Slip_HF_Crack_Convergent_Pressure(c_Cracks(i_C)) = WBPT_3D_Slip_HF_Convergent_Pressure
+      endif
+      
       Crack_Type_Status_3D(c_Cracks(i_C),2) = 2
       Crack_Type_Status_3D(c_Cracks(i_C),3) = 0
   enddo
@@ -268,6 +275,13 @@ if (i_Stage==1 .and. i_WB>=2) then
           ! If it is a natural fracture communicated by HF
           if (Crack_Type_Status_3D(i_C,6)/=0) then
               Crack_Type_Status_3D(i_C,1) = 3
+              
+              !NEWFTU-2026022701.
+              if (Key_3D_Slip_HF_Keep_Pressure==1) then
+                  Crack_Type_Status_3D(c_Cracks(i_C),1)=1
+                  WBPT_3D_Slip_HF_Crack_Convergent_Pressure(c_Cracks(i_C)) = WBPT_3D_Slip_HF_Convergent_Pressure
+              endif
+      
               Crack_Type_Status_3D(i_C,2) = 2
               Crack_Type_Status_3D(i_C,3) = 0
           endif
@@ -288,6 +302,13 @@ if (i_Stage>=2) then
   ! Update the active HF fracture status of the previous crack segment
   do i_C =1,num_Crs_Last_Stage
       Crack_Type_Status_3D(c_Cracks(i_C),1) = 3
+      
+      !NEWFTU-2026022701.
+      if (Key_3D_Slip_HF_Keep_Pressure==1) then
+          Crack_Type_Status_3D(c_Cracks(i_C),1)=1
+          WBPT_3D_Slip_HF_Crack_Convergent_Pressure(c_Cracks(i_C)) = WBPT_3D_Slip_HF_Convergent_Pressure
+      endif
+      
       Crack_Type_Status_3D(c_Cracks(i_C),2) = 2
       Crack_Type_Status_3D(c_Cracks(i_C),3) = 0
   enddo
@@ -298,6 +319,13 @@ if (i_Stage>=2) then
       do i_C = 1,num_Crack  
           if (Crack_Type_Status_3D(i_C,6)/=0) then
               Crack_Type_Status_3D(i_C,1) = 3
+              
+              !NEWFTU-2026022701.
+              if (Key_3D_Slip_HF_Keep_Pressure==1) then
+                  Crack_Type_Status_3D(c_Cracks(i_C),1)=1
+                  WBPT_3D_Slip_HF_Crack_Convergent_Pressure(c_Cracks(i_C)) = WBPT_3D_Slip_HF_Convergent_Pressure
+              endif
+      
               Crack_Type_Status_3D(i_C,2) = 2
               Crack_Type_Status_3D(i_C,3) = 0
           endif

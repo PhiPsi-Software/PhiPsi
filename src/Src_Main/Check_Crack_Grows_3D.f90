@@ -51,6 +51,7 @@ subroutine Check_Crack_Grows_3D(ifra,iter,Yes_Grow)
 use Global_Float_Type
 use Global_Crack_Common
 use Global_Crack_3D
+use Global_Crack
 use Global_DISP
 use Global_Elem_Area_Vol
 use Global_Model
@@ -197,6 +198,10 @@ integer Natural_Crack,Num_List_Elements
 integer c_Ele_location
 logical c_Yes_Ele_In
 integer Num_Suspended_Cracks
+real(kind=FT) temp_point(3)
+logical logical_close
+logical,ALLOCATABLE::Points_to_Smooth_Flag_Inside(:)
+real(kind=FT) Vector_C(3)
 
 !************************************************************************************************
 !SECTION 2: 
@@ -237,8 +242,8 @@ print *,'    Checking propagation of each crack front vertex...'
 1061 FORMAT(5X,'-- Warning :: vertex ',I5,' of crack ',I4, ' is going beyong the model, crack ',I3, ' stop propagting!')       
 1071 FORMAT(5X,'Warning :: vertex ',I6,' of crack ',I4, ' is going outside the model!')   
 1062 FORMAT(5X,'-- Attention :: crack ',I4,' will not grow!')      
-
- 
+1081 FORMAT(5X,'-- Theta of vertex ',I5,' of crack',I3, ' is', F8.3,' degrees')  
+1231 FORMAT(5X,'-- KIeq of vertex ',I5,' of crack',I3, ' is', F16.6,' MPa*m^1/2;','   Growth factor:',F6.2)      
 !*********************************
 ! SECTION 5: Data Initialization.
 !*********************************
@@ -267,8 +272,8 @@ delta_L   = Factor_Propagation*Ave_Elem_L_Enrich
 ! crack propagation still occurs according to the scale of the larger grid before encryption
 ! (2021-08-22).
 if (Key_Local_Mesh_Refine>=1) then
-  Check_L = Prp_Bisec_Factor_3D*Ave_Elem_L_Enrich_Unlocalrefined
-  delta_L = Factor_Propagation*Ave_Elem_L_Enrich_Unlocalrefined
+    Check_L = Prp_Bisec_Factor_3D*Ave_Elem_L_Enrich_Unlocalrefined
+    delta_L = Factor_Propagation*Ave_Elem_L_Enrich_Unlocalrefined
 endif
 
 ! If a fixed propagation step length is specified through the keyword *Propagation_Length
@@ -352,15 +357,15 @@ do i_C =1,num_Crack
     ! Select according to the crack propagation criteria.
     select case(CFCP)
     
-    !/////////////////////////////////////////////////////////////////////////
-    !/                                                            /
-    !/                                                            /
-    !/                                                            /
-    ! / CFCP=2, Weighted Average Maximum Principal Tensile Stress Criterion /
-    !/                                                            /
-    !/                                                            /
-    !/                                                            /
-    !/////////////////////////////////////////////////////////////////////////
+    !//////////////////////////////////////////////////////////////////////////
+    !/                                                                       /
+    !/                                                                       /
+    !/                                                                       /
+    !/ CFCP=2, Weighted Average Maximum Principal Tensile Stress Criterion.  /
+    !/                                                                       /
+    !/                                                                       /
+    !/                                                                       /
+    !//////////////////////////////////////////////////////////////////////////
     case(2)
     !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! STEP 1, Loop through the discrete points along the crack surface boundary to calculate the
@@ -512,7 +517,8 @@ do i_C =1,num_Crack
                       Ave_Sxx_GP,Ave_Syy_GP,Ave_Szz_GP,Ave_Sxy_GP,Ave_Syz_GP,Ave_Sxz_GP)
           !ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
           ! Do not use weighting; instead, use several points within the sphere and then take the
-          ! average (2021-08-24).
+          ! average
+          ! (2021-08-24)
           ! It doesn't work well and is not recommended for use.
           !ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
           elseif(Key_Ave_Stress == 4)  then
@@ -600,59 +606,71 @@ do i_C =1,num_Crack
           
           ! Calculate the update direction of possible crack surface discrete nodes, Save to
           ! Prop_Vector_all(i_Out_Node, 1:3)
-          ! Discretize the circle and identify the possible directions in which discrete crack edge nodes may
-          ! extend.
-          ! References: http://blog.sina.com.cn/s/blog_622fbc040102wt9o.html or theoretical_documents
-          !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-          !  OPTION 1: Brute force search algorithm
-          !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-          !num_divison = 200
-          !num_divison = 360
-          !num_divison = 720
-          num_divison = 1440
-          num_poss_Vector = num_divison
-          do i_theta = 1,num_divison
-              theta = (i_theta-1)*TWO*pi/num_divison
-              call Vector_Cross_Product_3(Vector_S1,[ONE,ZR,ZR],a)                 
-              if(sum(abs(a))<=Tol_20) then
-                call Vector_Cross_Product_3(Vector_S1,[ZR,ONE,ZR],a)   
-              endif
-              if(sum(abs(a))<=Tol_20) then
-                call Vector_Cross_Product_3(Vector_S1,[ZR,ZR,ONE],a)   
-              endif
-              ! b = cross(n, a)! Calculate the b vector
-              call Vector_Cross_Product_3(Vector_S1,a,b)   
-              ! a = a / norm(a)! Normalize the vector a
-              ! b = b / norm(b)! Normalizing the b vector
-              call Vector_Norm2(3,a,norm_a)   
-              call Vector_Norm2(3,b,norm_b)  
-              a=a/norm_a
-              b=b/norm_b
-              poss_Vector(i_theta,1)=a(1)*cos(theta)+b(1)*sin(theta)
-              poss_Vector(i_theta,2)=a(2)*cos(theta)+b(2)*sin(theta)
-              poss_Vector(i_theta,3)=a(3)*cos(theta)+b(3)*sin(theta)
-          enddo
-          ! The finally selected point is the one with the smallest sum of distances to all discrete points of
-          ! the cracks (i.e., expanding outward).
-          MAX_DIS = ZR
-          do i_Find=1,num_poss_Vector
-            c_P(1) = c_x_old + delta_L*poss_Vector(i_Find,1)
-            c_P(2) = c_y_old + delta_L*poss_Vector(i_Find,2)
-            c_P(3) = c_z_old + delta_L*poss_Vector(i_Find,3)
-            c_DIS  = ZR
-            do i_N = 1,Crack3D_Meshed_Node_num(i_C)
-                c_DIS = c_DIS+Tool_Function_2Point_Dis_3D(c_P,Crack3D_Meshed_Node(i_C)%row(i_N,1:3))
-            enddo
-            if (c_DIS>=MAX_DIS)then
-                MAX_DIS = c_DIS
-                !Final_Point(i_Out_Node,1:3) = c_P(1:3)
-                Prop_Vector_all(i_Out_Node,1:3) =  poss_Vector(i_Find,1:3)
-            endif
-          enddo
-          !~~~~~~~~~~~~~~~~~~~~~~~~
-          !  OPTION 2: To Be Done.
-          !~~~~~~~~~~~~~~~~~~~~~~~~
-          !To Be Done.
+          !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          !  OPTION 1: NEWFTU-2026020101. 2026-02-01.
+          !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          if (Key_3D_CFCP2_Progation_Vector_Scheme==1) then
+              !Vector_S1(1:3)
+              !c_Vec_x(1:3)
+              !Project vector A onto the plane perpendicular to vector B to obtain vector C.
+              call Tool_Project_vA_onto_plane_per_to_vB_to_get_vC(c_Vec_x(1:3),Vector_S1(1:3),Vector_C(1:3))
+              call Vector_Normalize(3,Vector_C)  
+              Prop_Vector_all(i_Out_Node,1:3) = Vector_C
+              
+          !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          !  OPTION 2: Brute force search algorithm (old scheme)
+          !  Discretize the circle and identify the possible directions
+          !  in which discrete crack edge nodes may extend.
+          !  References: http://blog.sina.com.cn/s/blog_622fbc040102wt9o.html
+          !              or theoretical_documents.
+          !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          elseif (Key_3D_CFCP2_Progation_Vector_Scheme==2) then
+              !num_divison = 200
+              !num_divison = 360
+              !num_divison = 720
+              num_divison = 1440
+              num_poss_Vector = num_divison
+              do i_theta = 1,num_divison
+                  theta = (i_theta-1)*TWO*pi/num_divison
+                  call Vector_Cross_Product_3(Vector_S1,[ONE,ZR,ZR],a)                 
+                  if(sum(abs(a))<=Tol_20) then
+                    call Vector_Cross_Product_3(Vector_S1,[ZR,ONE,ZR],a)   
+                  endif
+                  if(sum(abs(a))<=Tol_20) then
+                    call Vector_Cross_Product_3(Vector_S1,[ZR,ZR,ONE],a)   
+                  endif
+                  ! b = cross(n, a)! Calculate the b vector
+                  call Vector_Cross_Product_3(Vector_S1,a,b)   
+                  ! a = a / norm(a)! Normalize the vector a
+                  ! b = b / norm(b)! Normalizing the b vector
+                  call Vector_Norm2(3,a,norm_a)   
+                  call Vector_Norm2(3,b,norm_b)  
+                  a=a/norm_a
+                  b=b/norm_b
+                  poss_Vector(i_theta,1)=a(1)*cos(theta)+b(1)*sin(theta)
+                  poss_Vector(i_theta,2)=a(2)*cos(theta)+b(2)*sin(theta)
+                  poss_Vector(i_theta,3)=a(3)*cos(theta)+b(3)*sin(theta)
+              enddo
+              ! The finally selected point is the one with the max sum of distances to all discrete points of
+              ! the cracks (i.e., expanding outward).
+              MAX_DIS = ZR
+              do i_Find=1,num_poss_Vector
+                c_P(1) = c_x_old + delta_L*poss_Vector(i_Find,1)
+                c_P(2) = c_y_old + delta_L*poss_Vector(i_Find,2)
+                c_P(3) = c_z_old + delta_L*poss_Vector(i_Find,3)
+                c_DIS  = ZR
+                do i_N = 1,Crack3D_Meshed_Node_num(i_C)
+                    temp_point = Crack3D_Meshed_Node(i_C)%row(i_N,1:3)
+                    c_DIS = c_DIS+Tool_Function_2Point_Dis_3D(c_P,temp_point)
+                enddo
+                if (c_DIS>=MAX_DIS)then
+                    MAX_DIS = c_DIS
+                    !Final_Point(i_Out_Node,1:3) = c_P(1:3)
+                    Prop_Vector_all(i_Out_Node,1:3) =  poss_Vector(i_Find,1:3)
+                endif
+              enddo
+          endif
+
           
       endif
     end do
@@ -669,6 +687,7 @@ do i_C =1,num_Crack
       print *,'    Saving cvpr file for crack ',i_C,'...'
       write(104,'(50000E20.12)') (S1_all(i_v),i_v=1,Num_CrMesh_Outlines)        
     endif
+    
     ! Denoising. 2022-04-25. NEWFTU2022042501.
     if (Key_Denoise_Vertex_Value>=1)then
         print *,'    Denoising vertex values of S1...'   
@@ -678,15 +697,18 @@ do i_C =1,num_Crack
     endif
     
     ! Data Smoothing Processing. 2022-04-25. NEWFTU2022042501.
+    logical_close = .True.
+    if (Boundary_Cracks(i_C) .eqv. .True.) logical_close = .False.
     if (Key_Smooth_Vertex_Value>=1)then
         print *,'    Smoothing vertex values of S1...'
+         ! The last logical variable represents the handling method for closure at the beginning and end.
         call Tool_Smooth_Data(S1_all(1:Num_CrMesh_Outlines),Num_CrMesh_Outlines, &
-                 Key_Smooth_Vertex_Value,Smooth_Vertex_n, .True.)
+                 Key_Smooth_Vertex_Value,Smooth_Vertex_n, logical_close)  
       ! Data Smoothing (Secondary Processing). 2022-05-25. NEWFTU2022052501.
       if (Key_Smooth_Vertex_Value2>=1)then
           print *,'    Smoothing vertex values of S1...'
           call Tool_Smooth_Data(S1_all(1:Num_CrMesh_Outlines),Num_CrMesh_Outlines, &
-                Key_Smooth_Vertex_Value2,Smooth_Vertex_n2, .True.)
+                Key_Smooth_Vertex_Value2,Smooth_Vertex_n2, logical_close)
       endif           
     endif
     
@@ -707,6 +729,9 @@ do i_C =1,num_Crack
     !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     !STEP 2: Determine the propagated fracture front vertex.
     !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if(allocated(Pre_Fronts)) deallocate(Pre_Fronts)
+    allocate(Pre_Fronts(Num_CrMesh_Outlines,3))
+        
     !Loop over i_Out_Node.
     Ele_Num_Cache = 1
     do i_Out_Node = 1,Num_CrMesh_Outlines
@@ -742,6 +767,8 @@ do i_C =1,num_Crack
       c_x_old  = Crack3D_Meshed_Node(i_C)%row(c_Mesh_Node,1) 
       c_y_old  = Crack3D_Meshed_Node(i_C)%row(c_Mesh_Node,2) 
       c_z_old  = Crack3D_Meshed_Node(i_C)%row(c_Mesh_Node,3)
+      
+      Pre_Fronts(i_Out_Node,1:3) = [c_x_old,c_y_old,c_z_old]
       
       
       c_OUT_Elem_Old(i_Out_Node) = in_Ele_Num
@@ -841,7 +868,7 @@ do i_C =1,num_Crack
         c_P(3)=c_z_old+delta_L_Stoped*Prop_Vector_all(i_Out_Node,3) 
       endif  
       
-737     continue    
+737   continue    
       
       ! If this vertex is a Segmentation suppression vertex (2021-08-20)
       if (key_front_segmentation==1)then
@@ -858,6 +885,7 @@ do i_C =1,num_Crack
       endif
       
       Final_Point(i_Out_Node,1:3) = c_P
+      
       !---------------------------------------------------------------------------------------------
       ! If it is in-plane growth (Key_InPlane_Growth = 1), then correct the Final_Point back to the
       ! plane of the initial crack.
@@ -866,7 +894,13 @@ do i_C =1,num_Crack
       !---------------------------------------------------------------------------------------------
       if(Key_InPlane_Growth== 1) then
         call D3_In_Plane_Growth(Final_Point(i_Out_Node,1:3),i_C)
-      endif          
+      endif   
+      
+      !NEWFTU-2026022501. 
+      if (Key_Cracks_InPlane_Growth(i_C)) then
+        call D3_In_Plane_Growth(Final_Point(i_Out_Node,1:3),i_C)    
+      endif
+      
     enddo
     
     
@@ -1034,6 +1068,16 @@ do i_C =1,num_Crack
           Theta_All(i_Out_Node) = Check_Theta(i_Theta_min)
 
           c_Theta = Theta_All(i_Out_Node)
+          
+          !2026-02-06.
+          if (Key_3D_SIFs_Print==1)then
+            write(*,1081) i_Out_Node,i_C,c_Theta*180.0D0/pi
+          endif
+          
+          !2D. 2026-02-06.
+          !Theta_All(i_Out_Node) = TWO*atan(-2*c_KII_3D/c_KI_3D/(ONE+sqrt(ONE+EIG*(c_KII_3D/c_KI_3D)**2)))
+          !c_Theta = Theta_All(i_Out_Node)
+          
           !............................................................................
           ! Calculate c_Sai when Key_Schollmann_Twist = 1. Used for twist calculation.
           !............................................................................
@@ -1212,7 +1256,7 @@ do i_C =1,num_Crack
           ! NEWFTU2022070201.
           !ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
           elseif(Key_CFCP_3_Type   == 2) then
-            if (KI_eq(i_Out_Node) >=(ZR+Tol_3)) then
+            if (KI_eq(i_Out_Node) >=(ZR+Tol_5)) then
                 c_Growth_Factor = KI_eq(i_Out_Node)/c_KIc
                 if(c_Growth_Factor>=Adj_Prp_Step_3D_Max)then
                     c_Growth_Factor=Adj_Prp_Step_3D_Max
@@ -1232,25 +1276,31 @@ do i_C =1,num_Crack
             endif
           endif                 
           All_Growth_Factor(i_Out_Node) = c_Growth_Factor
+          write(*,1231) i_Out_Node,i_C,KI_eq(i_Out_Node)/1.0D6,c_Growth_Factor
         enddo
         
         !.........................................................................
         ! Perform denoising and smoothing on the Growth Factor. NEWFTU2022071402.
         !.........................................................................
+        logical_close = .True.
+        !If the crack is boundary crack, then set logical_close as False. IMPROV-2026011101.
+        if (Boundary_Cracks(i_C) .eqv. .True.) logical_close = .False.
+             
         ! Denoising.
         if (Key_Denoise_GF_Value>=1)then
             n_Sigma =2
             call Tool_Denoise_Data(All_Growth_Factor(1:Num_CrMesh_Outlines), &
-                           Num_CrMesh_Outlines,Key_Denoise_Vertex_Value,n_Sigma,.True.)
+                           Num_CrMesh_Outlines,Key_Denoise_Vertex_Value,n_Sigma,logical_close)
         endif
         ! Data smoothing.
         if (Key_Smooth_GF_Value>=1)then
+             
             call Tool_Smooth_Data(All_Growth_Factor(1:Num_CrMesh_Outlines), Num_CrMesh_Outlines, &
-                        Key_Smooth_GF_Value,Smooth_GF_n,.True.)
+                        Key_Smooth_GF_Value,Smooth_GF_n,logical_close)
             ! Data smoothing (secondary processing).
             if (Key_Smooth_GF_Value2>=1)then
               call Tool_Smooth_Data(All_Growth_Factor(1:Num_CrMesh_Outlines),Num_CrMesh_Outlines, &
-                        Key_Smooth_GF_Value2,Smooth_GF_n2,.True.)
+                        Key_Smooth_GF_Value2,Smooth_GF_n2,logical_close)
             endif  
         endif  
         
@@ -1294,9 +1344,9 @@ do i_C =1,num_Crack
           c_Theta = Theta_All(i_Out_Node)
  
           
-          !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+          !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
           ! Consider the effect of the twisted vector w (Key_Schollmann_Twist==1)
-          !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+          !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
           if(Key_Schollmann_Twist==1)then
               ! c_Theta = c_Theta   Global_w(i_Out_Node)/delta_L   !Angle equals arc length divided by radius
               c_Theta = c_Theta + TWO*asin(Global_w(i_Out_Node)/delta_L/TWO)   
@@ -1304,30 +1354,33 @@ do i_C =1,num_Crack
               WRITE(*,1032)  i_Out_Node,i_C,Global_w(i_Out_Node)/delta_L*180/pi               
           endif
 
-          !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+          !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
           ! Calculate the extension direction vector poss_Vector(1:3) of the discrete nodes at the crack
           ! boundary
           ! The theory is as follows: (1) In the local coordinate system xy plane at the discrete nodes of the
-          ! crack boundary, the x-axis
-          ! Direction vector, rotating about the y-axis from the local coordinate origin by c_Theta
+          ! crack boundary, the x-axis direction vector, rotating about the y-axis from the local coordinate 
+          ! origin by c_Theta.
           ! The angle obtained is to rotate the original local coordinate system around the z-axis by an angle
           ! of c_Theta.
           ! (2) The rotation algorithm can be found in 3D Math Primer for Graphics and Game
           ! Development_2011_Introduction to Three-Dimensional Geometry P144
-          !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&       
+          !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&       
           
           n_x = Crack3D_Meshed_Vertex_z_Vector(i_C)%row(i_Out_Node,1)
           n_y = Crack3D_Meshed_Vertex_z_Vector(i_C)%row(i_Out_Node,2)
           n_z = Crack3D_Meshed_Vertex_z_Vector(i_C)%row(i_Out_Node,3)
-          Rot_Matrix(1,1)=n_x**2*(ONE-cos(c_Theta))+cos(c_Theta)
-          Rot_Matrix(1,2)=n_x*n_y*(ONE- cos(c_Theta))+ n_z*sin(c_Theta)
+          
+          
+          Rot_Matrix(1,1)= n_x**2*(ONE-cos(c_Theta))+cos(c_Theta)
+          Rot_Matrix(1,2)= n_x*n_y*(ONE- cos(c_Theta))+ n_z*sin(c_Theta)
           Rot_Matrix(1,3)= n_x*n_z*(ONE- cos(c_Theta))- n_y*sin(c_Theta)   
           Rot_Matrix(2,1)= n_x*n_y*(ONE- cos(c_Theta))- n_z*sin(c_Theta) 
-          Rot_Matrix(2,2)=n_y**2*(ONE-cos(c_Theta))+cos(c_Theta)     
+          Rot_Matrix(2,2)= n_y**2*(ONE-cos(c_Theta))+cos(c_Theta)     
           Rot_Matrix(2,3)= n_y*n_z*(ONE- cos(c_Theta))+ n_x*sin(c_Theta)   
           Rot_Matrix(3,1)= n_x*n_z*(ONE- cos(c_Theta))+ n_y*sin(c_Theta)      
           Rot_Matrix(3,2)= n_y*n_z*(ONE- cos(c_Theta))- n_x*sin(c_Theta)       
-          Rot_Matrix(3,3)=n_z**2*(ONE-cos(c_Theta))+cos(c_Theta)      
+          Rot_Matrix(3,3)= n_z**2*(ONE-cos(c_Theta))+cos(c_Theta)      
+
           c_poss_Vector(i_Out_Node,1:3) = MATMUL(Crack3D_Meshed_Vertex_x_Vector(i_C)%row(i_Out_Node,1:3),Rot_Matrix(1:3,1:3))
           if(sum(abs(c_poss_Vector(i_Out_Node,1:3)))<=Tol_10)then
               print *,'    Error :: c_poss_Vector!'
@@ -1443,7 +1496,20 @@ do i_C =1,num_Crack
                   if (i_Out_Node==1) then
                       c_Prop_Vector=c_poss_Vector(Num_CrMesh_Outlines,1:3) 
                   else
-                     c_Prop_Vector=c_poss_Vector(i_Out_Node-1,1:3) 
+                      c_Prop_Vector=c_poss_Vector(i_Out_Node-1,1:3) 
+                  endif
+                  
+                  if(Key_InPlane_Growth== 1) then
+                      c_Prop_Vector=Crack3D_Meshed_Vertex_x_Vector(i_C)%row(i_Out_Node,1:3)
+                  endif
+                  
+                  !NEWFTU-2026022501. 
+                  if (Key_Cracks_InPlane_Growth(i_C)) then
+                      c_Prop_Vector=Crack3D_Meshed_Vertex_x_Vector(i_C)%row(i_Out_Node,1:3)
+                  endif
+                  
+                  if (Key_Smooth_Front==1) then
+                      c_Prop_Vector=Crack3D_Meshed_Vertex_x_Vector(i_C)%row(i_Out_Node,1:3)
                   endif
                   c_P(1)=c_x+delta_L*c_Prop_Vector(1)
                   c_P(2)=c_y+delta_L*c_Prop_Vector(2)
@@ -1459,6 +1525,19 @@ do i_C =1,num_Crack
                   else
                      c_Prop_Vector=c_poss_Vector(i_Out_Node+1,1:3) 
                   endif
+                  if(Key_InPlane_Growth== 1) then
+                      c_Prop_Vector=Crack3D_Meshed_Vertex_x_Vector(i_C)%row(i_Out_Node,1:3)
+                  endif
+                  
+                  !NEWFTU-2026022501. 
+                  if (Key_Cracks_InPlane_Growth(i_C)) then
+                      c_Prop_Vector=Crack3D_Meshed_Vertex_x_Vector(i_C)%row(i_Out_Node,1:3)
+                  endif
+                  
+                  if (Key_Smooth_Front==1) then
+                      c_Prop_Vector=Crack3D_Meshed_Vertex_x_Vector(i_C)%row(i_Out_Node,1:3)
+                  endif
+                  
                   c_P(1)=c_x+delta_L*c_Prop_Vector(1)
                   c_P(2)=c_y+delta_L*c_Prop_Vector(2)
                   c_P(3)=c_z+delta_L*c_Prop_Vector(3)    
@@ -1493,8 +1572,13 @@ do i_C =1,num_Crack
           ! Final_Point, 2022-04-18, NEWFTU2022041801
           !------------------------------------------------------------------------------------------
           if(Key_InPlane_Growth== 1) then
-            call D3_In_Plane_Growth(Final_Point(i_Out_Node,1:3),i_C)
+              call D3_In_Plane_Growth(Final_Point(i_Out_Node,1:3),i_C)
           endif
+          !NEWFTU-2026022501. 
+          if (Key_Cracks_InPlane_Growth(i_C)) then
+              call D3_In_Plane_Growth(Final_Point(i_Out_Node,1:3),i_C)
+          endif
+                  
         end do
         
         
@@ -1520,7 +1604,7 @@ do i_C =1,num_Crack
     !------------------------------------------------------------------------------------------
     ! Taubin Smoothing. 2022-12-18. IMPROV2022122002.
     ! Taubin algorithm. Key_Smooth_Front=6. IMPROV2022121001.
-    !  Ref: \theory_documents\042 Mesh Smoothing-2022-12-10.pdf，P15-P25.
+    !  Ref: \theory_documents\042 Mesh Smoothing-2022-12-10.pdf P15-P25.
     ! Only applicable to the leading edge of closed cracks.
     ! It should be ensured that the apex of the front edge of all crack surfaces is within the
     ! model.
@@ -1532,11 +1616,58 @@ do i_C =1,num_Crack
             allocate(Points_to_Smooth(Num_CrMesh_Outlines,3))
             allocate(Points_Smoothed(Num_CrMesh_Outlines,3))
             Points_to_Smooth(1:Num_CrMesh_Outlines,1:3) = Final_Point(1:Num_CrMesh_Outlines,1:3)
+            
+            !2026-02-01. Check whether the point is inside the model.
+            !Store in Points_to_Smooth_Flag_Inside(1:Num_CrMesh_Outlines).
+            !IMPROV-2026020101.
+            allocate(Points_to_Smooth_Flag_Inside(Num_CrMesh_Outlines))
+            Points_to_Smooth_Flag_Inside(1:Num_CrMesh_Outlines) = .False.
+            do i_Out_Node =1,Num_CrMesh_Outlines
+                call Cal_Ele_Num_by_Coors_3D(Points_to_Smooth(i_Out_Node,1), &
+                                             Points_to_Smooth(i_Out_Node,2), &
+                                             Points_to_Smooth(i_Out_Node,3),&
+                                     Ele_Num_Cache,c_OUT_Elem)
+                if (c_OUT_Elem >=1) then
+                    Points_to_Smooth_Flag_Inside(i_Out_Node) = .True.
+                endif
+            enddo
+            
+            
             ! Taubin smoothing.
-            call Tool_Fit_3D_Points_Taubin(i_C,Num_CrMesh_Outlines, &
-                            Points_to_Smooth(1:Num_CrMesh_Outlines,1:3), &
-                            Points_Smoothed(1:Num_CrMesh_Outlines,1:3))   
+            if (Boundary_Cracks(i_C) .eqv. .True.) then
+                call Tool_Fit_3D_Points_Taubin_Non_Closed(i_C,Num_CrMesh_Outlines, &
+                            Points_to_Smooth(1:Num_CrMesh_Outlines,1:3),&
+                            Points_to_Smooth_Flag_Inside(1:Num_CrMesh_Outlines), &
+                            Points_Smoothed(1:Num_CrMesh_Outlines,1:3))  
+            else
+                call Tool_Fit_3D_Points_Taubin(i_C,Num_CrMesh_Outlines, &
+                            Points_to_Smooth(1:Num_CrMesh_Outlines,1:3),&
+                            Points_to_Smooth_Flag_Inside(1:Num_CrMesh_Outlines), &
+                            Points_Smoothed(1:Num_CrMesh_Outlines,1:3))  
+            endif
+            
+!            call Tool_Fit_3D_Points_Taubin(i_C,Num_CrMesh_Outlines, &
+!                    Points_to_Smooth(1:Num_CrMesh_Outlines,1:3),&
+!                    Points_to_Smooth_Flag_Inside(1:Num_CrMesh_Outlines), &
+!                    Points_Smoothed(1:Num_CrMesh_Outlines,1:3)) 
                             
+            !2026-01-10.
+            if (.not. allocated(Pre_Fronts)) then
+                print *, "    Error: Pre_Fronts not allocated! Error in Check_Crack_Grows_3D.f"
+                print *, "           Key_Smooth_Front=6 for closed cracks only!"
+                call Warning_Message('S',Keywords_Blank)     
+            endif
+            
+            !2026-01-10.
+            if (size(Pre_Fronts, 1) < Num_CrMesh_Outlines) then
+                print *, "    Error: Pre_Fronts size mismatch!"
+                print *, "           Pre_Fronts size:", size(Pre_Fronts, 1)
+                print *, "           Required size:", Num_CrMesh_Outlines
+                print *, "           Error in Check_Crack_Grows_3D.f"
+                print *, "           Key_Smooth_Front=6 for closed cracks only!"
+                call Warning_Message('S',Keywords_Blank)   
+            endif
+                
             ! Prevent the vertex at the front edge of the crack from retreating back into the original crack
             ! front polygon after optimization. For theoretical details, see PhiPsi Record V1, P91.
             ! IMPROV2022122001.
@@ -1549,6 +1680,7 @@ do i_C =1,num_Crack
             Final_Point(1:Num_CrMesh_Outlines,1:3) = Points_Smoothed(1:Num_CrMesh_Outlines,1:3)
             deallocate(Points_to_Smooth)
             deallocate(Points_Smoothed)
+            deallocate(Points_to_Smooth_Flag_Inside)
         endif
     endif
     

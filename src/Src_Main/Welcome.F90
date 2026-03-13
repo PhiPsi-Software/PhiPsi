@@ -50,7 +50,7 @@ implicit none
 character(120) :: print_compiler,print_release_date,print_phipsi_version
 
 !=============Modify the following part=============
-PhiPsi_Version      = '1.56.16'
+PhiPsi_Version      = '1.58'
 !PhiPsi_Release_Date = 'December 24, 2024'
 !PhiPsi_Release_Date = 'January 27, 2024 '
 !PhiPsi_Release_Date = 'Feburary 26, 2024'     
@@ -61,7 +61,10 @@ PhiPsi_Version      = '1.56.16'
 !PhiPsi_Release_Date = 'October 4, 2024  '
 !PhiPsi_Release_Date = 'November 7, 2024' 
 !PhiPsi_Release_Date = 'January 26, 2025' 
-PhiPsi_Release_Date = 'November 21, 2024' 
+!PhiPsi_Release_Date = 'November 21, 2025' 
+!PhiPsi_Release_Date = 'December 28, 2025'
+!PhiPsi_Release_Date = 'January 23, 2026'
+PhiPsi_Release_Date = 'Feburary 15, 2026'    
 !=======================END=========================
 
 print_phipsi_version=repeat(' ',4)//'****'//repeat(' ',16)//'Version '//&
@@ -112,7 +115,7 @@ print *,"    >           Problems based Mainly on FEM and XFEM.   <"
 print *, trim(print_release_date)
 print *, trim(print_compiler)
 print *,"    > Author:   Fang Shi, shifang@hyit.edu.cn            <"
-print *,"    > Website:  phipsi.top, copyright(c) 2016-2025       <"
+print *,"    > Website:  phipsi.top, copyright(c) 2016-2026       <"
 print *,"    ======================================================"
 print *,"                                                          "
 

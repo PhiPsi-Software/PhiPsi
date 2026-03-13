@@ -34,7 +34,7 @@
           write(301,*) '    i_WB   |   i_Stage   | i_Prop   ' 
      &       //'|    Time (s)   |     Pressure (Pa)'   
       endif   
-      write(301, '(3I10,F18.5,5X,F18.5)') i_WB,i_Stage,i_Prop,
+      write(301, '(3I10,E18.5,5X,E18.5)') i_WB,i_Stage,i_Prop,
      &                                    c_Time,c_Pres
       close(301)    
  

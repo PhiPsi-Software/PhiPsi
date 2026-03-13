@@ -261,9 +261,28 @@ do i_Pres = 1,Max_Pres_Steps
     print *,'       Calculate f_Vol(p)...'
     f_Vol(1) = ZR
     do i_C = 1,num_Crack
-          if(Crack_Type_Status_3D(i_C,1)==1) then
-              f_Vol(1) = f_Vol(1) + Cracks_Volume(i_C)
+          !if(Crack_Type_Status_3D(i_C,1)==1) then ! If it is an HF crack.
+          !    f_Vol(1) = f_Vol(1) + Cracks_Volume(i_C)
+          !endif
+          
+          !NEWFTU-2026022701. 
+          if (Key_3D_Slip_HF_Keep_Pressure==0) then
+              if(Crack_Type_Status_3D(i_C,1)==1) then
+                  f_Vol(1) = f_Vol(1) + Cracks_Volume(i_C)
+                  
+                  !IMPROV-2026030701.
+                  !f_Vol(1) = f_Vol(1) + max(ZR, Cracks_Volume(i_C))
+              endif
+          elseif (Key_3D_Slip_HF_Keep_Pressure==1) then
+              ! If it is an HF crack, and not post HF crack.
+              if(Crack_Type_Status_3D(i_C,1)==1 .and. Crack_Type_Status_3D(i_C,2) /= 2 ) then
+                  f_Vol(1) = f_Vol(1) + Cracks_Volume(i_C)
+                  
+                  !IMPROV-2026030701.
+                  !f_Vol(1) = f_Vol(1) + max(ZR, Cracks_Volume(i_C))
+              endif
           endif
+          
     enddo
     f_Vol(1) = f_Vol(1) - c_Stage_Q*c_Time           
     
@@ -372,8 +391,27 @@ do i_Pres = 1,Max_Pres_Steps
     print *,'       Calculate f_Vol(p+delta_p)...'
     f_Vol(2) = ZR
     do i_C = 1,num_Crack
-          if(Crack_Type_Status_3D(i_C,1)==1) then
-              f_Vol(2) = f_Vol(2) + Cracks_Volume(i_C)
+          
+          !if(Crack_Type_Status_3D(i_C,1)==1) then ! If it is an HF crack
+          !      f_Vol(2) = f_Vol(2) + Cracks_Volume(i_C)
+          !endif
+          
+          !NEWFTU-2026022701. 
+          if (Key_3D_Slip_HF_Keep_Pressure==0) then
+              if(Crack_Type_Status_3D(i_C,1)==1) then
+                  f_Vol(2) = f_Vol(2) + Cracks_Volume(i_C)
+                  
+                  !IMPROV-2026030701.
+                  !f_Vol(2) = f_Vol(2) + max(ZR, Cracks_Volume(i_C))
+              endif
+          elseif (Key_3D_Slip_HF_Keep_Pressure==1) then
+              ! If it is an HF crack, and not post HF crack.
+              if(Crack_Type_Status_3D(i_C,1)==1 .and. Crack_Type_Status_3D(i_C,2) /= 2 ) then 
+                  f_Vol(2) = f_Vol(2) + Cracks_Volume(i_C)
+                  
+                  !IMPROV-2026030701.
+                  !f_Vol(2) = f_Vol(2) + max(ZR, Cracks_Volume(i_C))
+              endif
           endif
     enddo
     f_Vol(2) = f_Vol(2) - c_Stage_Q*c_Time               
@@ -476,13 +514,14 @@ do i_Pres = 1,Max_Pres_Steps
             endif
             
             if (i_Try == Max_Pres_Steps) then
-                ! Pop up an error message.
-                write(*,4007) 
-                write(*,4009) Max_Pres_Steps
-                write(*,4007) 
-                call Warning_Message('S',Keywords_Blank) 
+                if (KEY_WARNING_LEVEL==3) then
+                    !Pop up an warning message.
+                    write(*,4007) 
+                    write(*,4009) Max_Pres_Steps
+                    write(*,4007) 
+                    call Warning_Message('S',Keywords_Blank) 
+                endif
             endif
-            
           enddo
     endif
   
@@ -494,9 +533,29 @@ Output_Pres = tem_Pres
 ! internal water pressure.
 do i_C=1,num_Crack
     ! If it is an HF crack.
-    if(Crack_Type_Status_3D(i_C,1) == 1) then 
-        Crack_Pressure(i_C) = Output_Pres
+    !if(Crack_Type_Status_3D(i_C,1) == 1) then 
+    !    Crack_Pressure(i_C) = Output_Pres
+    !endif    
+    
+    !NEWFTU-2026022701. 
+    if (Key_3D_Slip_HF_Keep_Pressure==0) then
+        ! If it is an HF crack.
+        if(Crack_Type_Status_3D(i_C,1) == 1) then 
+            Crack_Pressure(i_C) = Output_Pres
+        endif    
+    elseif (Key_3D_Slip_HF_Keep_Pressure==1) then
+        ! If it is an HF crack
+        if(Crack_Type_Status_3D(i_C,1)==1) then 
+            ! If it is not a post HF crack.
+            if (Crack_Type_Status_3D(i_C,2) /= 2) then 
+                Crack_Pressure(i_C) = Output_Pres
+            ! If it is a post HF crack, use the saved pressure.  
+            elseif (Crack_Type_Status_3D(i_C,2) == 2) then 
+                Crack_Pressure(i_C) = WBPT_3D_Slip_HF_Crack_Convergent_Pressure(i_C)
+            endif
+        endif
     endif
+          
 enddo
 
 

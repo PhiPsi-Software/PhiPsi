@@ -20,16 +20,19 @@
       real(kind=FT) delta_1_2,delta_2_3,delta_3_4,Pa_2_x
       real(kind=FT) Pa_3_x,Pa_4_x,Pa_1_x,delta_x_n,delta_x_l
       real(kind=FT) Max_Aperture,Pre_Gradi,c_CalP_c,Real_Visco
-      real(kind=FT) Last_Cr_CalP_Conc(Max_Num_Cr,Max_Num_Cr_CalP)
       real(kind=FT) u_tem,Inject_Q
+      real(kind=FT), allocatable :: Last_Cr_CalP_Conc(:,:)
       
       Cracks_CalP_Velo(1:Max_Num_Cr,1:Max_Num_Cr_CalP)= ZR 
       Cracks_CalP_Quan(1:Max_Num_Cr,1:Max_Num_Cr_CalP)= ZR 
       
+      allocate(Last_Cr_CalP_Conc(Max_Num_Cr,Max_Num_Cr_CalP))
       Last_Cr_CalP_Conc(1:Max_Num_Cr,1:Max_Num_Cr_CalP) =ZR
       if(ifra==1)then
       elseif(ifra > 1)then
-          Last_Cr_CalP_Conc = Map_L_Cracks_CalP_Conc
+          if (Key_Propp_Trans==1) then
+              Last_Cr_CalP_Conc = Map_L_Cracks_CalP_Conc
+          endif
       endif
       call Tool_Get_Value_from_x_y_Curve(Inject_Q_Time,Inject_Q_Val,
      &                                   200,total_time,Inject_Q)
@@ -50,10 +53,11 @@
                   n_CalP_P = Cracks_CalP_Pres(i_C,i_CalP+1)
                   n_CalP_x = Cracks_CalP_Coors(i_C,i_CalP+1,1)
                   n_CalP_y = Cracks_CalP_Coors(i_C,i_CalP+1,2) 
-                  c_CalP_c = Last_Cr_CalP_Conc(i_C,i_CalP)
+
                   if(Key_Visco_Type==1)then
                       Real_Visco = Viscosity
                   elseif(Key_Visco_Type==2)then
+                      c_CalP_c = Last_Cr_CalP_Conc(i_C,i_CalP)
                       Real_Visco = Viscosity*
      &                   (ONE-c_CalP_c/Max_c)**(-Viscosity_Par_m)
                   endif
@@ -91,10 +95,11 @@
                   Cracks_CalP_Velo(i_C,1)=ZR
                   Cracks_CalP_Quan(i_C,1)=ZR
               else
-                  c_CalP_c = Last_Cr_CalP_Conc(i_C,1)
+                  
                   if(Key_Visco_Type==1)then
                       Real_Visco = Viscosity
                   elseif(Key_Visco_Type==2)then
+                      c_CalP_c = Last_Cr_CalP_Conc(i_C,1)
                       Real_Visco = Viscosity*
      &                   (ONE-c_CalP_c/Max_c)**(-Viscosity_Par_m)
                   endif
@@ -155,10 +160,11 @@
                   Cracks_CalP_Velo(i_C,Num_Div_Points)=ZR
                   Cracks_CalP_Quan(i_C,Num_Div_Points)=ZR
               else
-                  c_CalP_c = Last_Cr_CalP_Conc(i_C,Num_Div_Points)
+                  
                   if(Key_Visco_Type==1)then
                       Real_Visco = Viscosity
                   elseif(Key_Visco_Type==2)then
+                      c_CalP_c = Last_Cr_CalP_Conc(i_C,Num_Div_Points)
                       Real_Visco = Viscosity*
      &                   (ONE-c_CalP_c/Max_c)**(-Viscosity_Par_m)
                   endif
@@ -231,6 +237,6 @@
               end if
           end if
       end do
-      
+      deallocate(Last_Cr_CalP_Conc)    
       return 
       end SUBROUTINE Cal_HF_Flow_Quan    

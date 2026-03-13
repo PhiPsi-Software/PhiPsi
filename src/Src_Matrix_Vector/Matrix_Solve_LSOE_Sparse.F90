@@ -71,11 +71,13 @@ INTEGER IERR_6,IERR
 #ifdef gfortran
 #ifndef macos
 #ifndef github
+#ifndef cbfortran
 integer Ap(n+1),numeric, symbolic, status_7, sys, filenum
 real(kind=FT) control_7(20)
 real(kind=FT) info_7(90)
 real(kind=FT) Ax(K_CSR_NNZ)
 integer Ai(K_CSR_NNZ)
+#endif
 #endif
 #endif
 #endif
@@ -546,6 +548,7 @@ case(7)
 #ifdef notlinux
 #ifndef macos
 #ifndef github
+#ifndef cbfortran
     control_7(1:20) = ZR
     info_7(1:90)    = ZR
 
@@ -605,6 +608,7 @@ case(7)
     stop
     endif
     call umf4fnum (numeric)
+#endif
 #endif
 #endif
 #endif

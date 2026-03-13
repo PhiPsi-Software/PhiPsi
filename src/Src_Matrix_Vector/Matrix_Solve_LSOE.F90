@@ -85,10 +85,12 @@ INTEGER IERR_6
 #endif
 
 #ifdef gfortran
+#ifndef cbfortran
 integer Ap(n+1),numeric, symbolic, status_7, sys, filenum
 real(kind=FT) control_7(20), info_7(90)
 real(kind=FT),allocatable:: Ax(:)
 integer,allocatable:: Ai(:)
+#endif
 #endif
 
 #ifdef gfortran
@@ -756,6 +758,7 @@ case(7)
 #ifdef notlinux
 #ifndef macos
 #ifndef github
+#ifndef cbfortran
     Ap(1:n+1) = 0
 
     NZ_NUM = COUNT(K.ne.ZR)
@@ -820,6 +823,7 @@ case(7)
     call umf4fnum (numeric)
     DEALLOCATE(Ax)
     DEALLOCATE(Ai)
+#endif
 #endif
 #endif
 #endif

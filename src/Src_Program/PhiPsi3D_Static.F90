@@ -108,6 +108,14 @@ integer,ALLOCATABLE:: K_CSR_ja(:)
 integer,ALLOCATABLE:: K_CSR_ia(:)
 integer(kind=LIT) K_CSR_NNZ_Max
 integer K_CSR_NNZ
+real(kind=FT) Max_S1,St
+integer i_E,Max_El
+
+real(kind=FT) Candidate_Elements_S1(Num_Elem)
+integer Real_Candidate_Elements(Key_Element_Break_num_Elements_Per_Step)
+integer Candidate_Elements_S1_num
+integer Index_Candidate_Elements(Num_Elem)
+integer i_Candidate
       
 !-------------------------------------
 ! Initial value of temporary variable
@@ -131,6 +139,7 @@ New_Crack_Flag = .False.
 4001 FORMAT(5X,'Number of crack is ',I3,' / ',I5)   
 1171 FORMAT('  >> Substep ',I3,' of stage ',I3,' /',I3,' of WB ',I3,' /',I3,' started:')   
 1172 FORMAT('     Step count:',I3) 
+909 FORMAT(5X,'WARNING :: element ',I7,' is broken due to S1 > St!')
 
 !------------------------------------------
 ! Check for water pressure inside the seam
@@ -255,6 +264,8 @@ do i_WB = 1,num_Wellbore
         do i_Prop = 1,Num_Substeps
             print *, "  " 
             isub = isub + 1
+            ! Initially, mark it as a non-XFEM analysis
+            Yes_XFEM = .False.
             if(Key_HF_Multistage_3D==0) then
               WRITE(*,1001) i_Prop,Num_Substeps
             elseif (Key_HF_Multistage_3D==1) then
@@ -331,6 +342,8 @@ do i_WB = 1,num_Wellbore
       !                                             %
       !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       if(num_Crack.ne.0)then
+          ! Marked as XFEM analysis, not FEM analysis
+          Yes_XFEM = .True.
           !*************************************************************************************
           ! Check whether the maximum allowable number of cracks has been exceeded (2021-08-21)
           !*************************************************************************************
@@ -370,7 +383,7 @@ do i_WB = 1,num_Wellbore
               print *,'    Determine enriched node...'
               call Determine_Enriched_Nodes_3D(ifra,isub)
           endif
-          
+
           !*************************************************
           ! Enhanced Unit Local Optimization (2021-08-06)
           ! Attention: This operation will change the total 
@@ -458,20 +471,23 @@ do i_WB = 1,num_Wellbore
           !*****************************************************************************************
           call D3_Get_New_and_Updated_XFEM_Elements(isub)
           
-          !***************************************************************************
-          ! Calculate related data for crack calculation points (fluid element nodes)
-          !***************************************************************************
-1104      FORMAT(5X,'Total DOFs of fluid:',I8)  
-          call D3_Cal_HF_Crack_Points_Info_Linear(isub)
-          num_Tol_CalP_Water = 0
-          do i_C=1,Num_Crack
-            ! If it is an HF fracture
-            if(Crack_Type_Status_3D(i_C,1) == 1) then
-                num_Tol_CalP_Water= num_Tol_CalP_Water +Cracks_Real_CalP_Num_3D(i_C)        
-            endif
-          end do 
-          
-          WRITE(*,1104) num_Tol_CalP_Water        
+          !****************************************************************************
+          ! Calculate related data for crack calculation points (fluid element nodes).
+          ! Calculation points are also used to calculate crack apertures.
+          !****************************************************************************
+          if(Key_Cal_HF_Crack_Points_Info_3D==1) then
+1104          FORMAT(5X,'Total DOFs of fluid:',I8)  
+              call D3_Cal_HF_Crack_Points_Info_Linear(isub)
+              num_Tol_CalP_Water = 0
+              do i_C=1,Num_Crack
+                ! If it is an HF fracture
+                if(Crack_Type_Status_3D(i_C,1) == 1) then
+                    num_Tol_CalP_Water= num_Tol_CalP_Water +Cracks_Real_CalP_Num_3D(i_C)        
+                endif
+              end do 
+              
+              WRITE(*,1104) num_Tol_CalP_Water   
+          endif
 
           !*********************************************************************************
           ! If it is a block integration algorithm, then perform the relevant calculations.
@@ -719,6 +735,15 @@ do i_WB = 1,num_Wellbore
                         K_CSR_ia(1:num_FreeD+1),&
                         F(freeDOF(1:num_FreeD)),&
                         delta_x(1:num_FreeD),num_FreeD)
+                        
+              !2026-02-18. NEWFTU-2026021801.          
+              if (Key_Save_Stiffness_Matrix==1)then
+                  !Save CSR matrix to files csra,csrj,csri,csrn. 
+                  call Save_Stiffness_Matrix_CSR(isub,K_CSR_NNZ, num_FreeD, &
+                      Usual_Freedom-num_FixedD+1, &
+                      K_CSR_aa(1:K_CSR_NNZ),K_CSR_ja(1:K_CSR_NNZ),K_CSR_ia(1:num_FreeD+1))
+              endif    
+                        
 !#endif
 #endif
 #endif
@@ -819,6 +844,12 @@ do i_WB = 1,num_Wellbore
           !********************************************************************
           call Save_Files_Crack_3D(isub)    
           
+          !*************************************************************************
+          !Cut and save 3D boundary cracks, only keep the surface inside the model.
+          !NEWFTU-2026020801.
+          !*************************************************************************
+          call Cut_and_Save_Boundary_Cracks_3D(isub,DISP)    
+          
           !**************************************
           ! Save crack width related information
           !**************************************          
@@ -828,9 +859,13 @@ do i_WB = 1,num_Wellbore
           ! Calculate stress intensity factor
           !***********************************
           print *,'    Calculating stress intensity factors......'   
-          if (CFCP==3 .and. Key_SIFs_Method==1) then
-              call Cal_SIFs_DIM_3D(isub,DISP,5)
-              call Tool_Print_to_Screen(1,5)
+          if (CFCP==3) then
+              if (Key_SIFs_Method==1) then      
+                  call Cal_SIFs_DIM_3D(isub,DISP,5)
+                  call Tool_Print_to_Screen(1,5)
+              elseif(Key_SIFs_Method==2)then
+                  call Cal_SIFs_IIM_3D(isub,DISP,5)
+              endif
           end if
 
           !****************************************************
@@ -856,9 +891,17 @@ do i_WB = 1,num_Wellbore
            
            ! Check for any new cracks, 2020-03-12.
            New_Crack_Flag =.false.
-           if (Key_Initiation ==1 .and. Key_Max_Num_Initiation_Cracks>=2 &
+           if (Key_Initiation ==1 .and. Key_Max_Num_Initiation_Cracks>=1 &
               .and. (Num_Initiation_Cracks < Key_Max_Num_Initiation_Cracks)) then
-                call Check_Crack_initialize_3D(1,isub,New_Crack_Flag)  
+                  !call Check_Crack_initialize_3D(1,isub,New_Crack_Flag)  
+                  if (Step_Number_to_Start_Initiation_Check==0) then
+                      call Check_Crack_initialize_3D(1,isub,New_Crack_Flag)  
+                  !NEWFTU-2026020701.    
+                  elseif(Step_Number_to_Start_Initiation_Check >0)then
+                    if (isub >= Step_Number_to_Start_Initiation_Check) then
+                       call Check_Crack_initialize_3D(1,isub,New_Crack_Flag)  
+                    endif
+                  endif
            endif
          
            ! If a crack has propagated, update the crack propagation flag: Yes_Last_Growth
@@ -904,7 +947,8 @@ do i_WB = 1,num_Wellbore
           !**************************
           ! Total degrees of freedom
           !**************************
-          Total_FD = 3*Num_Node
+          Total_FD       = 3*Num_Node
+          Usual_Freedom  = 3*Num_Node
           print *,'    Total_FD:',Total_FD
           
           !************************
@@ -918,6 +962,8 @@ do i_WB = 1,num_Wellbore
           !******************************
           ALLOCATE(freeDOF(Total_FD))
           ALLOCATE(fixedDOF(Total_FD))
+          
+          
           call Boundary_Cond_3D(Total_FD,isub,freeDOF,num_FreeD,fixedDOF,num_FixedD) 
  
           !****************************************************
@@ -990,6 +1036,15 @@ do i_WB = 1,num_Wellbore
                         K_CSR_ia(1:num_FreeD+1),&
                         F(freeDOF(1:num_FreeD)),&
                         tem_DISP,num_FreeD)
+                        
+              !2026-02-18. NEWFTU-2026021801.          
+              if (Key_Save_Stiffness_Matrix==1)then
+                  !Save CSR matrix to files csra,csrj,csri,csrn. 
+                  call Save_Stiffness_Matrix_CSR(isub,K_CSR_NNZ, num_FreeD, &
+                      Usual_Freedom-num_FixedD+1, &
+                      K_CSR_aa(1:K_CSR_NNZ),K_CSR_ja(1:K_CSR_NNZ),K_CSR_ia(1:num_FreeD+1))
+              endif  
+              
 !#endif
 #endif
 #endif
@@ -1010,13 +1065,28 @@ do i_WB = 1,num_Wellbore
           ! Check if any new cracks have appeared, 2020-03-12
           !***************************************************
           if (Key_Initiation ==1) then
-              call Check_Crack_initialize_3D(1,isub,New_Crack_Flag)  
+              if (Step_Number_to_Start_Initiation_Check==0) then
+                  call Check_Crack_initialize_3D(1,isub,New_Crack_Flag)  
+              !NEWFTU-2026020701.    
+              elseif(Step_Number_to_Start_Initiation_Check >0)then
+                if (isub >= Step_Number_to_Start_Initiation_Check) then
+                  call Check_Crack_initialize_3D(1,isub,New_Crack_Flag)  
+                endif
+              endif
               ! First activation of XFEM. 2023-01-23. BUGFIX2023012301.
               if(First_XFEM_Step == 0) then
                    First_XFEM_Step = 1  
               endif
           endif              
       end if
+      
+      
+      
+      
+      
+      
+      
+      
           
       !#################################################################################
       ! Displacement in the Column Coordinate System of the Computing Node (2021-09-11)
@@ -1039,9 +1109,9 @@ do i_WB = 1,num_Wellbore
           DEALLOCATE(DISP_Cylinder)
       endif 
           
-      !###########################
-      ! Computational Node Stress
-      !###########################
+      !#####################
+      ! Compute Node Stress
+      !#####################
       if(Key_Post_CS_N_Strs==1)then
           ALLOCATE(Stress_xx_Node(num_Node),Stress_yy_Node(num_Node),Stress_zz_Node(num_Node))
           ALLOCATE(Stress_xy_Node(num_Node),Stress_yz_Node(num_Node),Stress_xz_Node(num_Node),Stress_vm_Node(num_Node))      
@@ -1061,6 +1131,110 @@ do i_WB = 1,num_Wellbore
           !Save nodal stress.
           call Save_Stress_Node(isub,1)
       endif    
+      
+        !***********************************************************************************
+        ! If needed, calculate and save the Gauss point stress for post-processing display.
+        ! 2026-02-02.
+        !***********************************************************************************
+        if (Key_Post_CS_G_Strs==1 .and. Total_Num_G_P >0) then
+              ALLOCATE(Stress_xx_Gauss(Total_Num_G_P))
+              ALLOCATE(Stress_yy_Gauss(Total_Num_G_P))
+              ALLOCATE(Stress_xy_Gauss(Total_Num_G_P))
+              ALLOCATE(Stress_zz_Gauss(Total_Num_G_P))
+              ALLOCATE(Stress_yz_Gauss(Total_Num_G_P))
+              ALLOCATE(Stress_xz_Gauss(Total_Num_G_P))
+              ALLOCATE(Stress_vm_Gauss(Total_Num_G_P))
+              ! If thermal stress is considered, allocate memory for thermal stress at Gauss points
+              if(Key_Thermal_Stress==1)then
+                  !To be done!
+              endif
+              ! Calculate Gauss point stress
+              if(Yes_XFEM.eqv..True.)then
+                  !To be done!
+              else
+                  call Get_Gauss_Stress_FEM_3D(isub,DISP)
+              endif
+              ! Save Gauss point stress
+              call Save_Gauss_Stress(isub,Total_Num_G_P)
+        end if
+  
+      
+!        !*********************************************************
+!        ! If necessary, look for the break elements, 
+!        ! Only one element can be destroyed at a time.
+!        ! Cppied from 2D. NEWFTU-2026020201.
+!        !*********************************************************
+!        if(Key_Element_Break==1) then
+!              if(Key_Element_Break_Rule ==1)then ! According to the Maximum Principal Stress
+!              Criterion
+!                  Max_S1 =1.0D-20
+!                  St = Material_Para(Break_Mat_Num,5)
+!                  do i_E = 1,Num_Elem
+!                      if (Elem_Mat(i_E)==Break_Mat_Num) then
+!                          if(Elem_Ave_Gauss_S1(i_E)>=Max_S1)then
+!                              if (Elem_Break(i_E).eqv. .False.) then
+!                                  Max_S1 = Elem_Ave_Gauss_S1(i_E)
+!                                  Max_El = i_E
+!                              endif
+!                          endif
+!                      endif
+!                  enddo
+!                  print *,'    Max s1 (MPa) of elements:',Max_S1/1.0D6
+!                  if(Max_S1>=St)then
+!                      Elem_Break(Max_El) =.True.
+!                      write(*,909) Max_El
+!                  endif
+!              endif
+!              ! Save killed (destroyed) elements to kiel file.
+!              call Save_Killed_Elements(isub)
+!        endif
+!        
+
+
+        !********************************************************
+        ! If necessary, look for the break elements, 2026-02-02.
+        ! Only one element can be destroyed at a time.
+        !********************************************************
+        !Key_Element_Break_num_Elements_Per_Step
+        if(Key_Element_Break==1) then
+              if(Key_Element_Break_Rule ==1)then
+                  Max_S1 =1.0D-20
+                  St = Material_Para(Break_Mat_Num,5)
+                  Candidate_Elements_S1(:) = ZR
+                  Candidate_Elements_S1_num = 0
+                  !
+                  do i_E = 1,Num_Elem
+                      if (Elem_Mat(i_E)==Break_Mat_Num) then
+                          if(Elem_Ave_Gauss_S1(i_E) >= St)then
+                              if (Elem_Break(i_E).eqv. .False.) then
+                                  Candidate_Elements_S1(i_E) = Elem_Ave_Gauss_S1(i_E) 
+                                  Candidate_Elements_S1_num =  Candidate_Elements_S1_num + 1
+                                  Index_Candidate_Elements(Candidate_Elements_S1_num) = i_E
+                              endif
+                          endif
+                      endif
+                  enddo
+                  
+                  if (Candidate_Elements_S1_num <=Key_Element_Break_num_Elements_Per_Step) then
+                      do i_Candidate=1,Candidate_Elements_S1_num
+                          Elem_Break(Index_Candidate_Elements(i_Candidate)) = .True.
+                          write(*,909) Index_Candidate_Elements(i_Candidate)
+                      enddo
+                  else
+                      !Find the m largest value of vector and save its index.
+                      call Tool_find_top_m_indices_of_vector(Candidate_Elements_S1(1:Num_Elem),Num_Elem,&
+                              Key_Element_Break_num_Elements_Per_Step, &
+                              Real_Candidate_Elements(1:Key_Element_Break_num_Elements_Per_Step))  
+                      do i_Candidate=1,Key_Element_Break_num_Elements_Per_Step
+                          Elem_Break(Real_Candidate_Elements(i_Candidate)) = .True.
+                          write(*,909) Real_Candidate_Elements(i_Candidate)
+                      enddo
+                  endif
+              endif
+              ! Save killed (destroyed) elements
+              call Save_Killed_Elements(isub)
+        endif        
+                
 
       !######################################
       ! Calculation Node Strain (2021-09-10)
@@ -1139,6 +1313,9 @@ do i_WB = 1,num_Wellbore
           !----------------------------------------
       endif            
       
+      
+      
+      
       !***************************
       ! Save VTK file, 2021-07-16
       !***************************
@@ -1194,6 +1371,17 @@ do i_WB = 1,num_Wellbore
           if (allocated(Stress_vm_Node))DEALLOCATE(Stress_vm_Node)              
       endif
       
+      ! Clear Gauss point stress memory space. 2026-02-02.
+      if (Key_Post_CS_G_Strs==1) then
+        if(allocated(Stress_xx_Gauss)) DEALLOCATE(Stress_xx_Gauss)
+        if(allocated(Stress_yy_Gauss)) DEALLOCATE(Stress_yy_Gauss)
+        if(allocated(Stress_xy_Gauss)) DEALLOCATE(Stress_xy_Gauss)
+        if(allocated(Stress_vm_Gauss)) DEALLOCATE(Stress_vm_Gauss)
+        if(allocated(Stress_zz_Gauss)) DEALLOCATE(Stress_zz_Gauss)
+        if(allocated(Stress_yz_Gauss)) DEALLOCATE(Stress_yz_Gauss)
+        if(allocated(Stress_xz_Gauss)) DEALLOCATE(Stress_xz_Gauss)
+      endif
+      
       if(Key_Post_CS_N_Stra==1)then
           if (allocated(Strain_xx_Node))DEALLOCATE(Strain_xx_Node)
           if (allocated(Strain_yy_Node))DEALLOCATE(Strain_yy_Node)
@@ -1222,7 +1410,14 @@ do i_WB = 1,num_Wellbore
       ! If all cracks have stopped propagating and no new cracks have formed, terminate the program.
       if(num_Crack.ne.0)then
           if((Yes_Last_Growth .eqv. .False.) .and. (New_Crack_Flag .eqv. .false.))then
-              goto 200
+              !goto 200
+              
+              !2026-02-07.
+              if (Step_Number_to_Start_Initiation_Check >=1 .and. (isub < Step_Number_to_Start_Initiation_Check)) then
+                !do nothing.
+              else
+                goto 200
+              endif
           endif
       endif
       

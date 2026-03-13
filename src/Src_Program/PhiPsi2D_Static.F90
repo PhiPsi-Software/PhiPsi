@@ -122,6 +122,14 @@ integer,ALLOCATABLE::User_Defined_Crack_and_Point_Count(:,:)
 real(kind=FT), allocatable:: tem_vector(:)
 #endif
 
+real(kind=FT) Candidate_Elements_S1(Num_Elem)
+integer Real_Candidate_Elements(Key_Element_Break_num_Elements_Per_Step)
+integer Candidate_Elements_S1_num
+integer Index_Candidate_Elements(Num_Elem)
+integer i_Candidate
+
+
+
 !-------------------------------------
 ! Initial value of temporary variable
 !-------------------------------------
@@ -133,10 +141,10 @@ New_Crack_Flag = .False.
 !----------------------------
 1001 FORMAT('  >> Load step ',I5,' of ',I5,' started:')
 1002 FORMAT('     Force factor is ',F5.3)
-1021 FORMAT(5X,'Range of displacement x:   ',E14.6,' m to ',E14.6,' m')
-1022 FORMAT(5X,'Range of displacement y:   ',E14.6,' m to ',E14.6,' m')
-1121 FORMAT(5X,'Range of displacement x:   ',E14.6,' mm to ',E14.5,' mm')
-1122 FORMAT(5X,'Range of displacement y:   ',E14.6,' mm to ',E14.5,' mm')
+1021 FORMAT(5X,'Range of displacement x:   ',E16.8,' m to ',E16.8,' m')
+1022 FORMAT(5X,'Range of displacement y:   ',E16.8,' m to ',E16.8,' m')
+1121 FORMAT(5X,'Range of displacement x:   ',E16.8,' mm to ',E16.8,' mm')
+1122 FORMAT(5X,'Range of displacement y:   ',E16.8,' mm to ',E16.8,' mm')
 1131 FORMAT(5X,'KI and KII of crack ',I5,' tip 1 are ', E16.7,' and ',E16.7,' MPa.m^(1/2)')
 1132 FORMAT(5X,'KI and KII of crack ',I5,' tip 2 are ', E16.7,' and ',E16.7,' MPa.m^(1/2)')
 1041 FORMAT(5X,'Max Von-mises stress of all nodes:   ',E15.5,' MPa')
@@ -149,7 +157,7 @@ New_Crack_Flag = .False.
 2037 FORMAT(5X,'Average conductivity: ',E14.5,' μm^2·cm')
 3042 FORMAT(5X,'Max damage factor of Gauss points:   ',F8.4)
 4001 FORMAT(5X,'Number of elements to be killed in this step:',I5)
-909 FORMAT(5X,'WARNING :: element ',I7,' is broken due to S1>St!')
+909 FORMAT(5X,'WARNING :: element ',I7,' is broken due to S1 > St!')
 Num_Frac = Num_Substeps
 ! If the fracture zone is defined, initial inclusions and cracks will only be generated within the
 ! fracture zone.
@@ -433,6 +441,7 @@ do isub = 1,Num_Substeps
   if(num_Crack.ne.0 .or. num_Hole.ne.0 .or. num_Inclusion.ne.0 )then
       ! Marked as XFEM analysis, not FEM analysis
       Yes_XFEM = .True.
+
       !***************************
       ! Confirm enhancement node.
       !***************************
@@ -680,6 +689,14 @@ do isub = 1,Num_Substeps
                         K_CSR_ia(1:num_FreeD+1),&
                         globalF(freeDOF(1:num_FreeD)),&
                         tem_DISP,num_FreeD)
+                        
+              !2026-02-18. NEWFTU-2026021801.          
+              if (Key_Save_Stiffness_Matrix==1)then
+                  !Save CSR matrix to files csra,csrj,csri,csrn. 
+                  call Save_Stiffness_Matrix_CSR(isub,K_CSR_NNZ, num_FreeD,&
+                        Usual_Freedom-num_FixedD+1, &
+                        K_CSR_aa(1:K_CSR_NNZ),K_CSR_ja(1:K_CSR_NNZ),K_CSR_ia(1:num_FreeD+1))
+              endif                         
 #endif
 #endif
 #endif
@@ -745,6 +762,15 @@ do isub = 1,Num_Substeps
                         K_CSR_ia(1:num_FreeD+1),&
                         globalF(freeDOF(1:num_FreeD)),&
                         tem_DISP,num_FreeD)
+                        
+              !2026-02-18. NEWFTU-2026021801.          
+              if (Key_Save_Stiffness_Matrix==1)then
+                  !Save CSR matrix to files csra,csrj,csri,csrn. 
+                  call Save_Stiffness_Matrix_CSR(isub,K_CSR_NNZ, num_FreeD, &
+                       Usual_Freedom-num_FixedD+1, &
+                       K_CSR_aa(1:K_CSR_NNZ),K_CSR_ja(1:K_CSR_NNZ),K_CSR_ia(1:num_FreeD+1))
+              endif                         
+                        
 #endif
 #endif
 #endif
@@ -827,8 +853,10 @@ do isub = 1,Num_Substeps
       !**************************
       ! Total degrees of freedom
       !**************************
-      Total_FD = 2*Num_Node
+      Total_FD       = 2*Num_Node
+      Usual_Freedom  = 2*Num_Node
       print *,'    Total_FD:',Total_FD
+      
       !*****************
       ! Cluster payload
       !*****************
@@ -917,6 +945,16 @@ do isub = 1,Num_Substeps
                     K_CSR_ia(1:num_FreeD+1),&
                     globalF(freeDOF(1:num_FreeD)),&
                     tem_DISP,num_FreeD)
+                    
+          !2026-02-18. NEWFTU-2026021801.          
+          if (Key_Save_Stiffness_Matrix==1)then
+              num_FixedD = Usual_Freedom - num_FreeD
+              !Save CSR matrix to files csra,csrj,csri,csrn. 
+              call Save_Stiffness_Matrix_CSR(isub,K_CSR_NNZ, num_FreeD, &
+                   Usual_Freedom-num_FixedD+1, &
+                   K_CSR_aa(1:K_CSR_NNZ),K_CSR_ja(1:K_CSR_NNZ),K_CSR_ia(1:num_FreeD+1))
+          endif             
+                    
 #endif
 #endif
 #endif
@@ -1078,33 +1116,69 @@ do isub = 1,Num_Substeps
       ! Save Gauss point stress
       call Save_Gauss_Stress(isub,Total_Num_G_P)
   end if
+  
+  !***********************************************************************************
+  ! Calculate and save shaped cracks for post-processing display. 
+  ! Save to sccx, sccy and scdx, scdy files.
+  ! sccx: store the x coodinates of shaped crack points. 
+  !       Each line store 1 crack x cooridnate
+  ! sccy: store the y coodinates of shaped crack points. 
+  !       Each line store 1 crack y cooridnate
+  ! sccx: store the x coodinates of shaped crack points. 
+  !       Each line store 1 crack x cooridnate
+  ! sccy: store the y coodinates of shaped crack points. 
+  !       Each line store 1 crack y cooridnate
+  ! NEWFTU-2025122602.
+  !***********************************************************************************
+  call Cal_Shaped_Cracks_2D(isub,DISP)
+  
 
   !*********************************************************
   ! If necessary, look for the damaged elements, 2020-02-28
   ! Only one element can be destroyed at a time
   !*********************************************************
+  !Key_Element_Break_num_Elements_Per_Step
   if(Key_Element_Break==1) then
       if(Key_Element_Break_Rule ==1)then
           Max_S1 =1.0D-20
           St = Material_Para(Break_Mat_Num,5)
+          Candidate_Elements_S1(:) = ZR
+          Candidate_Elements_S1_num = 0
+          !
           do i_E = 1,Num_Elem
               if (Elem_Mat(i_E)==Break_Mat_Num) then
-                  if(Elem_Ave_Gauss_S1(i_E)>=Max_S1)then
-                      Max_S1 = Elem_Ave_Gauss_S1(i_E)
-                      Max_El = i_E
+                  if(Elem_Ave_Gauss_S1(i_E) >= St)then
+                      if (Elem_Break(i_E).eqv. .False.) then
+                          Candidate_Elements_S1(i_E) = Elem_Ave_Gauss_S1(i_E) 
+                          Candidate_Elements_S1_num =  Candidate_Elements_S1_num + 1
+                          Index_Candidate_Elements(Candidate_Elements_S1_num) = i_E
+                      endif
                   endif
               endif
           enddo
-          print *,'    Max s1 (MPa) of elements:',Max_S1/1.0D6
-          if(Max_S1>=St)then
-              !Elem_Break(Max_El) =.True.
-              write(*,909) i_E
+          
+          if (Candidate_Elements_S1_num <=Key_Element_Break_num_Elements_Per_Step) then
+              do i_Candidate=1,Candidate_Elements_S1_num
+                  Elem_Break(Index_Candidate_Elements(i_Candidate)) = .True.
+                  write(*,909) Index_Candidate_Elements(i_Candidate)
+              enddo
+          else
+              !Find the m largest value of vector and save its index.
+              call Tool_find_top_m_indices_of_vector(Candidate_Elements_S1(1:Num_Elem),Num_Elem,&
+                      Key_Element_Break_num_Elements_Per_Step, &
+                      Real_Candidate_Elements(1:Key_Element_Break_num_Elements_Per_Step))  
+              do i_Candidate=1,Key_Element_Break_num_Elements_Per_Step
+                  Elem_Break(Real_Candidate_Elements(i_Candidate)) = .True.
+                  write(*,909) Real_Candidate_Elements(i_Candidate)
+              enddo
           endif
       endif
       ! Save killed (destroyed) elements
       call Save_Killed_Elements(isub)
   endif
   
+
+
 
   !----------------------------------------------------
   ! If it contains damaged material, material type = 3
@@ -1206,10 +1280,18 @@ do isub = 1,Num_Substeps
       else
           Yes_Last_Growth = .False.
           if(isub < Num_Substeps)then
-              print *,'    ---$---$---$---$---$---$---$---$---$---S---S---S---'
-              print *,'    Warning :: No crack propapated, program was ended!'
-              print *,'    ---$---$---$---$---$---$---$---$---$---S---S---S---'
-              goto 200
+              if(num_Hole.ne.0 .and. Key_Hole_Crack_Generate==1)then
+                  !do nothing
+              elseif(Key_Damage ==1 .and. Material_Dam2Frac_Value < ONE)then 
+                  !do nothing
+              elseif (Key_Initiation ==1 .and. (Num_Initiation_Cracks < Key_Max_Num_Initiation_Cracks)) then
+                  !do nothing
+              else
+                  print *,'    ---$---$---$---$---$---$---$---$---$---S---S---S---'
+                  print *,'    Warning :: No crack propapated, program was ended!'
+                  print *,'    ---$---$---$---$---$---$---$---$---$---S---S---S---'
+                  goto 200
+              endif
           elseif(isub == Num_Substeps)then
               print *,'    |<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<|'
               print *,'    |    All propagation steps done!  |'
@@ -1245,6 +1327,19 @@ do isub = 1,Num_Substeps
   if(num_Hole.ne.0 .and. Key_Hole_Crack_Generate==1)then
       call Check_Hole_Crack_Generate(1,isub,Yes_Generated)
   endif
+  
+  !2026-01-07.
+  if(num_Crack.ne.0 .and. Yes_Last_Growth .eqv. .False.)then
+    if(num_Hole.ne.0 .and. Key_Hole_Crack_Generate==1)then
+        if (Yes_Generated .eqv. .False.) then
+            print *,'    ---$---$---$---$---$---$---$---$---$---S---S---S---'
+            print *,'    Warning :: No crack propapated, program was ended!'
+            print *,'    ---$---$---$---$---$---$---$---$---$---S---S---S---'
+            goto 200
+        endif
+    endif
+  endif
+  
 
   !-------------------------------------------------------------------------------------------------
   ! If necessary, calculate and save the tangential relative displacement at each crack calculation

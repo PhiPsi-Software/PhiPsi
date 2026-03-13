@@ -169,6 +169,7 @@ do i_V =1,num_Cr_Edges
     Crack3D_Meshed_Vertex_y_Vector(i_C)%row(i_V,1:3)=Vector_y
     Crack3D_Meshed_Vertex_z_Vector(i_C)%row(i_V,1:3)=Vector_z
     
+    
     !##########################################################
     ! Calculate rotation angle and rotation matrix, 2020-01-04
     !##########################################################    

@@ -18,10 +18,12 @@
       real(kind=FT) tem_1 ,tem_2
       
       if (Key_Save_Nothing==1) return
+      
+      if (Key_Cal_HF_Crack_Points_Info_3D ==0)  return
+        
       tem_1 = 1000.0D0
       tem_2 = 1.0D6
       
-
       print *,'    Saving apertures of calculation points...'
       write(temp,'(I5)') isub
       c_File_name_1   =  trim(Full_Pathname)//'.'

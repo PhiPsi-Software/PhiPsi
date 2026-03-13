@@ -399,6 +399,12 @@ do i_E = 1,num_XFEM_Elem
           endif
       endif
       
+      if(isub>=2)then
+          if(Elem_Topology_Markers_3D(c_Elem) /= Elem_Topology_Markers_3D_Old(c_Elem)) then
+              Need_XFEM_Assem_Flag =.True.
+          endif    
+      endif
+      
       local(1:MDOF_3D) = 0
       
       DO k=1,num_Loc_ESM

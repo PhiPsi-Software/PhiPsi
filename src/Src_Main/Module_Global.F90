@@ -81,7 +81,8 @@ module Global_Float_Type
   REAL(kind=FT)::ZPZ1 = 0.01e0
   REAL(kind=FT)::ZPZZ1= 0.001e0
   REAL(kind=FT)::ZPZZZ1= 0.0001e0
-  REAL(kind=FT)::ZP25 = 0.25e0
+  REAL(kind=FT)::ZP25  = 0.25e0
+  REAL(kind=FT)::ZP125 = 0.125e0
   REAL(kind=FT)::ONEP5= 1.5e0
   REAL(kind=FT)::Time_year  = 365.0e0*30.416e0*24.0e0*3600.0e0
   REAL(kind=FT)::Time_month = 30.416e0*24.0e0*3600.0e0
@@ -175,7 +176,8 @@ module Global_Float_Type
   REAL(kind=FT)::ZPZ1 = 0.01D0
   REAL(kind=FT)::ZPZZ1= 0.001D0
   REAL(kind=FT)::ZPZZZ1= 0.0001D0
-  REAL(kind=FT)::ZP25 = 0.25D0
+  REAL(kind=FT)::ZP25  = 0.25D0
+  REAL(kind=FT)::ZP125 = 0.125D0
   REAL(kind=FT)::ONEP5= 1.5D0
   ! Others
   REAL(kind=FT)::Time_year  = 365.0D0*30.416D0*24.0D0*3600.0D0
@@ -384,7 +386,7 @@ module Global_Common
   integer Key_Cond_Number
   integer Key_Determinant
   integer Key_Eigenvalue
-  integer Key_BLAS
+  integer KEY_EBE_PCG_BLAS
                                                     !EBE_XFEM_PCG_3D_with_K.f90
   integer Key_Hole_Value
   real(kind=FT) Delta_Factor_SIFs
@@ -635,6 +637,7 @@ module Global_Common
   integer Key_Element_Break
   integer Key_Element_Break_Rule
   integer Break_Mat_Num
+  integer Key_Element_Break_num_Elements_Per_Step
   !**********************************
   !About EBE-PCG solver, 2021-07-31.
   !**********************************
@@ -685,6 +688,26 @@ module Global_Common
   integer Key_Sawtooth_Crack_Path
   integer Key_User_Defined_2D_Crack_Path
   integer Num_User_Defined_2D_Crack_Path
+  integer Key_Cal_HF_Crack_Points_Info_3D
+  integer Key_Warning_Level
+  !integer Key_3D_Sifs_IIM_Enable_XFEM     ! 2026-01-14.
+  integer Key_3D_Sifs_IIM_num_Gauss_Points
+  integer Key_3D_SIFs_Print
+  integer Key_3D_CFCP2_Progation_Vector_Scheme
+  integer Step_Number_to_Start_Initiation_Check
+  integer Key_Initiation_Zone
+  real(kind=FT) Initiation_Zone_X_Min
+  real(kind=FT) Initiation_Zone_X_Max
+  real(kind=FT) Initiation_Zone_Y_Min
+  real(kind=FT) Initiation_Zone_Y_Max
+  real(kind=FT) Initiation_Zone_Z_Min
+  real(kind=FT) Initiation_Zone_Z_Max
+  !integer Key_3D_Initiation_Crack_Type !=1, Circle 3D Initiation crack; =2, Square 3D Initiation
+  !crack. 2026-02-07.
+  integer Key_Del_Neg_Aperture
+  integer Key_3D_Circular_Crack_Meshing_Scheme
+  integer Key_Save_Stiffness_Matrix
+  
   
 end module Global_Common
 
@@ -965,8 +988,10 @@ module Global_Crack
   ! parameter (Max_Num_Cr = 150) !Up to 150 cracks, 100 is fine for gfortran, but causes issues with
   ! Intel Fortran; 50 is fine for all
   ! parameter (Max_Num_Cr = 100) ! Up to 150 cracks, 100 works fine in gfortran, but causes issues in
-  ! Intel Fortran; 50 works fine
-  parameter (Max_Num_Cr        = 50   )
+  ! Intel Fortran; 50 works fine.
+  parameter (Max_Num_Cr        = 100   )
+  !parameter (Max_Num_Cr = 150 ) ! For Simply Fortran, if Max_Num_Cr > 100 and fail, then use
+  !-fmax-stack-var-size=102400 to compile. 2026-01-15.
   parameter (Max_Num_Cr_P      = 200   )
   parameter (Max_Num_Cr_CalP   = 300 )
   parameter (Max_Num_Seg_CalP  = 200  )
@@ -978,6 +1003,7 @@ module Global_Crack
   !---------
   parameter (Max_Num_Ele_CalP  = 5   )
   parameter (Max_Num_Hl        = 100   )
+  integer Falg_Holes_Cut_by_Cracks(Max_Num_Hl)
   !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   ! cccccccccccccccccc         Program Size Control Parameters        ccccccccccccccccccccccc
   !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -985,6 +1011,8 @@ module Global_Crack
   ! Related to enriched nodes, the meaning of the variables can be found in the subroutine
   ! Determine_Enriched_Nodes
   !****************************************************************************************
+  logical Boundary_Cracks(Max_Num_Cr)
+  logical Key_Cracks_InPlane_Growth(Max_Num_Cr)
   real(kind=FT) Crack_Coor(Max_Num_Cr,Max_Num_Cr_P,2)
   real(kind=FT) Arc_Crack_Coor(Max_Num_Cr,Max_Num_Cr_P-1,11)
                                                                 ! x, y, Direction (1 for counterclockwise, -1 for clockwise), r, Radian_Start, Radian_End, Radian,
@@ -1177,6 +1205,8 @@ module Global_Crack
   !*************************************************
   real(kind=FT),ALLOCATABLE:: User_Defined_2D_Crack_Path(:,:)
   integer,ALLOCATABLE:: User_Defined_2D_Crack_Path_Num_Points(:)
+  
+
 end module Global_Crack
 
 !------------------------------------------
@@ -1491,6 +1521,7 @@ module Global_Crack_3D
 
   ! 3D enhancement element Related. 2022-09-05. IMPROV2022090502.
   integer,ALLOCATABLE:: Elem_Type_3D(:,:)
+  integer,ALLOCATABLE:: Elem_Topology_Markers_3D(:),Elem_Topology_Markers_3D_Old(:)
   integer,ALLOCATABLE:: c_POS_3D(:,:)
   integer,ALLOCATABLE:: Enriched_Node_Type_3D(:,:)
   type(Ragged_Array_2D),allocatable::Enriched_Node_Crack_n_Vector_3D(:)
@@ -1532,6 +1563,11 @@ module Global_Crack_3D
   !2024-05-03.
   integer,allocatable::simplified_crack_outline_num(:)
   real(kind=FT),allocatable::simplified_crack_outline_points(:,:,:)
+  integer Key_Initiation_3D_Crack_Normal_Vector
+  real(kind=FT) Initiation_3D_Crack_Normal_Vector(3)
+  integer Key_3D_Slip_HF_Keep_Pressure
+  real(kind=FT) WBPT_3D_Slip_HF_Convergent_Pressure
+  real(kind=FT),ALLOCATABLE:: WBPT_3D_Slip_HF_Crack_Convergent_Pressure(:)
 end module Global_Crack_3D
 
 !--------------------------
@@ -2030,6 +2066,7 @@ module Global_POST
   integer Key_Save_Nothing
   integer Key_Post_Elements_Gauss_Num
   integer Key_Get_Permeability
+  integer Key_Save_3D_SIFs_IIM_Integral_cylinders
 end module Global_POST
 
 !------------------------------------------------------------------------------

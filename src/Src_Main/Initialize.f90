@@ -118,7 +118,7 @@ num_Hole  = 0
 num_Circ_Hole  = 0
 num_Ellip_Hole  = 0
 ! Cracks Related to Hole Formation
-Key_Hole_Crack_Generate  =0
+Key_Hole_Crack_Generate     = 0
 Num_Crack_Hole_Generated    = 2
 num_Hole_Crack_Generated(1:1000) = 0
 Hole_Crack_Generated_num(1:1000,1:10) =0
@@ -273,7 +273,8 @@ Key_Contact =0
 Contact_Aper_Tol  = ZR
 fric_mu_Cont      = ZR
 ! Maximum number of iterations for fracture surface contact (including proppant issues) >= 50
-Max_Contact_Iter  = 50
+!Max_Contact_Iter  = 50
+Max_Contact_Iter  = 10
 ! Number of contact integration points (1 or 2, default is 1)
 Conta_Integ_Point =1
 ! Contact Analysis Convergence Criteria (1: Determined by residuals; 2: Determined by displacements;
@@ -325,8 +326,8 @@ Num_Gauss_Points  = 64
                          
 Num_Gauss_P_Inc   = 400
 Num_Gau_Points_3D = 512
-                          ! Supported number of Gauss points: 16, 36, 64, 100, 144 (12*12), 196 (14*14), 400 (20*20), 676
-                          ! (26*26), 900 (30*30)
+!Num_Gau_Points_3D = 216 ! Number of Gaussian integration points for the 3D enhancement element,
+!default is 512 = 8*8*8
 Num_Gau_Points_3D_MC= 1000
 Num_Gau_P_SubInteg_6= 64
 Num_Gau_P_SubInteg_4= 4
@@ -440,7 +441,7 @@ Key_Visit_PhiPsi_top   =  0
 Key_Cond_Number        =  0
 Key_Determinant        =  0
 Key_Eigenvalue         =  0
-Key_BLAS               =  0
+KEY_EBE_PCG_BLAS               =  0
                                    !EBE_XFEM_PCG_3D_with_K.f90
 ! Material parameters related
 Material_Interface(1:2) = ZR
@@ -500,6 +501,8 @@ file_Sparse_K_Mask_COO_bin     = .False.
 Key_Schollmann_Twist = 0
 Key_Ave_Stress    = 1
 S1_Point_Factor   = 0.2D0
+!S1_Point_Factor = 0.02D0 ! Weighted stress calculation point movement factor (move outward from the
+!crack centroid; default to 0.2)
 num_Gauss_S1      = 216
 Key_Adj_Prp_Step_3D = 0
 Prp_3D_Factor_m     = 0.3333D0
@@ -848,8 +851,43 @@ key_hf_secant_ts   = 0
 KI  = ZR
 KII = ZR
 Yes_XFEM = .false.
-cg_tol = 1.0D-6
+!cg_tol = 1.0D-6        ! PCG-EBE solver tolerance. 2025-12-01.
+cg_tol = 1.0D-9
 
+Key_Cal_HF_Crack_Points_Info_3D = 1
+Boundary_Cracks(1:Max_Num_Cr)             =  .False.
+Key_Cracks_InPlane_Growth(1:Max_Num_Cr)   =  .False.
+Key_Warning_Level = 2
+                                    ! Key_Warning_Level = 0  ! No warnings
+                                    ! Key_Warning_Level = 1  ! Show critical warnings only
+                                    ! Key_Warning_Level = 2  ! Show major warnings
+                                    ! Key_Warning_Level = 3  ! Show all warnings (default)
+!Key_3D_Sifs_IIM_Enable_XFEM = 1        ! 2026-01-14.
+Key_3D_Sifs_IIM_num_Gauss_Points = 6**3
+Key_3D_SIFs_Print = 0
+Key_Save_3D_SIFs_IIM_Integral_cylinders = 0
+Key_3D_CFCP2_Progation_Vector_Scheme    = 1
+Break_Mat_Num = 1
+Key_Element_Break_Rule =1
+Key_Element_Break_num_Elements_Per_Step = 1
+Step_Number_to_Start_Initiation_Check   = 0
+Key_Initiation_Zone =0
+Initiation_Zone_X_Min = ZR
+Initiation_Zone_X_Max = ZR
+Initiation_Zone_Y_Min = ZR
+Initiation_Zone_Y_Max = ZR
+Initiation_Zone_Z_Min = ZR
+Initiation_Zone_Z_Max = ZR
+!Key_3D_Initiation_Crack_Type = 1 !=1, Circle 3D Initiation crack; =2, Square 3D Initiation crack.
+!2026-02-07.
+Key_Del_Neg_Aperture = 0
+
+Key_3D_Circular_Crack_Meshing_Scheme = 1
+
+Key_Save_Stiffness_Matrix = 0
+Key_Initiation_3D_Crack_Normal_Vector = 0
+Initiation_3D_Crack_Normal_Vector(1:3) = [ZR,ZR,ONE]
+Key_3D_Slip_HF_Keep_Pressure = 0
 
 print *," "
 

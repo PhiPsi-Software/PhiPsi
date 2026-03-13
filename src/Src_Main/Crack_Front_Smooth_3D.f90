@@ -59,7 +59,7 @@ use Global_HF
 use Global_Common
 use Global_Material
 use Global_Filename
-
+use Global_Crack
 use Global_Cal_Ele_Num_by_Coors_3D  
   
   
@@ -85,6 +85,12 @@ real(kind=FT) c_All_Nor_Vector(3),centroid_x,centroid_y,centroid_z
 integer Ele_Num_Cache
 integer Smoothed_Cracks(num_Crack),n_Smoothed_Cracks,c_C
 real(kind=FT) c_Kesi,c_Yita,c_Zeta 
+logical,ALLOCATABLE::Points_to_Smooth_Flag_Inside(:)
+integer c_OUT_Elem
+logical pre_flag,pre_pre_flag,next_flag,next_next_flag,current_flag
+integer, allocatable :: Vertexes_Copy(:)
+
+
 !******************************************************************************************
 ! If there is no crack tip (crack tip enhancement node), there is no need to perform crack
 ! propagation calculations.
@@ -121,10 +127,10 @@ do i_C =1,n_Smoothed_Cracks
     if (allocated(Points_to_Smooth)) deallocate(Points_to_Smooth) 
     if (allocated(Points_Smoothed)) deallocate(Points_Smoothed) 
     
-    !---------   STEP   1 ----------
-    ! Loop over the front edge points of the crack to obtain the points within the model,
-    ! Thus, dealing with the situation of edge cracks.
-    !-------------------------------
+    !---------   STEP   1 -------------------------------------------------------
+    ! Loop over the front edge points of the crack to obtain the points
+    !  within the model. Thus, dealing with the situation of edge cracks.
+    !----------------------------------------------------------------------------
     allocate(Vertexes_in_Model(Num_CrMesh_Outlines))
     Vertexes_in_Model(1:Num_CrMesh_Outlines) = 0        
     do i_Out_Node = 1,Num_CrMesh_Outlines
@@ -138,8 +144,60 @@ do i_C =1,n_Smoothed_Cracks
           Vertexes_in_Model(i_Out_Node) =1
       endif
     enddo
+    
+    
+    ! For boundary crack. 2026-02-06. IMPROV-2026020602.
+    if (Boundary_Cracks(c_C) .eqv. .True.) then 
+        if (Key_Smooth_Front==1) then
+            allocate(Vertexes_Copy(Num_CrMesh_Outlines))
+            Vertexes_Copy = Vertexes_in_Model(1:Num_CrMesh_Outlines)
+            do i_Out_Node = 1, Num_CrMesh_Outlines
+                pre_flag     = .False.
+                current_flag = .False.
+                next_flag    = .False.
+
+                if (i_Out_Node == 1) then
+                    if (Vertexes_Copy(Num_CrMesh_Outlines)==1) pre_flag     = .True.
+                    if (Vertexes_Copy(i_Out_Node  )==1)         current_flag = .True.
+                    if (Vertexes_Copy(i_Out_Node+1)==1)         next_flag    = .True.
+                    if (current_flag .and. pre_flag .and. (.not. next_flag)) then
+                        Vertexes_in_Model(i_Out_Node+1) = 1
+                    endif
+                    if (current_flag .and. next_flag .and. (.not. pre_flag)) then
+                        Vertexes_in_Model(Num_CrMesh_Outlines) = 1
+                    endif
+                elseif (i_Out_Node == Num_CrMesh_Outlines) then
+                    if (Vertexes_Copy(i_Out_Node-1)==1) pre_flag     = .True.
+                    if (Vertexes_Copy(i_Out_Node  )==1) current_flag = .True.
+                    if (Vertexes_Copy(1)==1)            next_flag    = .True.
+                    if (current_flag .and. pre_flag .and. (.not. next_flag)) then
+                        Vertexes_in_Model(1) = 1
+                    endif
+                    if (current_flag .and. next_flag .and. (.not. pre_flag)) then
+                        Vertexes_in_Model(i_Out_Node-1) = 1
+                    endif
+                else
+                    if (Vertexes_Copy(i_Out_Node-1)==1) pre_flag     = .True.
+                    if (Vertexes_Copy(i_Out_Node  )==1) current_flag = .True.
+                    if (Vertexes_Copy(i_Out_Node+1)==1) next_flag    = .True.
+                    if (current_flag .and. pre_flag .and. (.not. next_flag)) then
+                        Vertexes_in_Model(i_Out_Node+1) = 1
+                    endif
+                    if (current_flag .and. next_flag .and. (.not. pre_flag)) then
+                        Vertexes_in_Model(i_Out_Node-1) = 1
+                    endif
+                endif
+            enddo
+
+            deallocate(Vertexes_Copy)
+        endif
+    endif
+    
+    
     ! Total number of points that need smoothing
     Num_Point_Smooth = sum(Vertexes_in_Model(1:Num_CrMesh_Outlines))
+    
+
     
     ! If the leading edge of the crack is located outside the model, it is not suitable for the
     ! smoothing algorithm 6, 2022-12-17.
@@ -174,9 +232,33 @@ do i_C =1,n_Smoothed_Cracks
     ! Fit to line.
     !//////////////
     if(Key_Smooth_Front==1)then
+!        if (Boundary_Cracks(i_C) .eqv. .True.) then !For boundary crack. 2026-02-01.
+!            allocate(Points_to_Smooth_Flag_Inside(Num_Point_Smooth))
+!            Points_to_Smooth_Flag_Inside(1:Num_Point_Smooth) = .False.
+!            do i_Out_Node =1,Num_Point_Smooth
+!                call Cal_Ele_Num_by_Coors_3D(Points_to_Smooth(i_Out_Node,1), &
+!                                             Points_to_Smooth(i_Out_Node,2), &
+!                                             Points_to_Smooth(i_Out_Node,3),&
+!                                     Ele_Num_Cache,c_OUT_Elem)
+!                if (c_OUT_Elem >=1) then
+!                    Points_to_Smooth_Flag_Inside(i_Out_Node) = .True.
+!                endif
+!            enddo
+!            
+!            call Tool_Fit_3D_Points_to_Straight_Line_Non_Closed(Num_Point_Smooth, &
+!                    Points_to_Smooth(1:Num_Point_Smooth,1:3), &
+!                    Points_to_Smooth_Flag_Inside(1:Num_Point_Smooth), &
+!                    Points_Smoothed(1:Num_Point_Smooth,1:3))
+!            deallocate(Points_to_Smooth_Flag_Inside)
+!        else
+!            call Tool_Fit_3D_Points_to_Straight_Line(Num_Point_Smooth, &
+!                    Points_to_Smooth(1:Num_Point_Smooth,1:3), &
+!                    Points_Smoothed(1:Num_Point_Smooth,1:3))
+!        endif
+            
         call Tool_Fit_3D_Points_to_Straight_Line(Num_Point_Smooth, &
-                    Points_to_Smooth(1:Num_Point_Smooth,1:3), &
-                    Points_Smoothed(1:Num_Point_Smooth,1:3))
+                Points_to_Smooth(1:Num_Point_Smooth,1:3), &
+                Points_Smoothed(1:Num_Point_Smooth,1:3))
 
     !///////////////////////////////
     !     Fit to circle, 2021-10-30
@@ -221,7 +303,7 @@ do i_C =1,n_Smoothed_Cracks
 
     !//////////////////////////////////////////////////////////////////////////////////////////
     ! Taubin algorithm. Key_Smooth_Front=6. IMPROV2022121001.
-    !  Ref: \theory_documents\042 Mesh Smoothing-2022-12-10.pdf，P15-P25.
+    ! Ref: \theory_documents\042 Mesh Smoothing-2022-12-10.pdf, pp. 15-25.
     ! Only applicable to the leading edge of closed cracks.
     ! It should be ensured that the apex of the front edge of all crack surfaces is within the
     ! model.
@@ -234,9 +316,9 @@ do i_C =1,n_Smoothed_Cracks
     
     
     
-    !---------   STEP   4 ----------
+    !---------   STEP   4 ----------------------------
     ! Update the front edge coordinates of the crack.
-    !-------------------------------
+    !-------------------------------------------------
     c_count = 0
     Ele_Num_Cache = 1
     do i_Out_Node = 1,Num_CrMesh_Outlines
@@ -248,10 +330,12 @@ do i_C =1,n_Smoothed_Cracks
           call Cal_Ele_Num_by_Coors_3D(Points_Smoothed(c_count,1),Points_Smoothed(c_count,2),Points_Smoothed(c_count,3), &
                          Ele_Num_Cache,in_Elem_num)  
           if(in_Elem_num<=0)then
-              print *, '    Error-2022121701:: in_Elem_num<=0!'
-              print *, '          In Crack_Front_Smooth_3D.f!'
-              print *, '          Points_Smoothed:',Points_Smoothed(c_count,1:3)
-              call Warning_Message('S',Keywords_Blank)
+              if(Key_Warning_Level>=3)then
+                  print *, '    Warning-2022121701:: in_Elem_num<=0!'
+                  print *, '            In Crack_Front_Smooth_3D.f!'
+                  print *, '            Points_Smoothed:',Points_Smoothed(c_count,1:3)
+                  !call Warning_Message('S',Keywords_Blank)
+              endif
           else
             Cr3D_Meshed_Node_in_Ele_Num(c_C)%row(c_Mesh_Node)=in_Elem_num 
             !2022-12-18.

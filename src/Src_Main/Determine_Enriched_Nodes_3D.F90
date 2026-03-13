@@ -172,6 +172,10 @@ logical c_Logical_Dif
 real(kind=FT) Vol_Enrich_Eles(Num_Elem)
 integer Vol_Enrich_Eles_Flag(Num_Elem)
 integer num_XFEM_Elem_Flag(Num_Elem)
+integer, parameter :: primes(8) = [2, 3, 5, 7, 11, 13, 17, 19]
+integer enrich_type
+
+
 901  FORMAT(5X,'Number of elements with enriched nodes is ',I8)         
 902  FORMAT(5X,'Number of elements without enriched nodes is ',I8)           
 1001 FORMAT(5X,'Enrichment ratio is ',F8.4,'%')     
@@ -222,6 +226,11 @@ ALLOCATE(Elem_Related_Cracks(Num_Elem,Key_Ele_Max_Related_Cracks))
 ! ---Low Memory Usage---
 IF(ALLOCATED(tem_Solid_El_Vertex_num)) DEALLOCATE(tem_Solid_El_Vertex_num)   
 ALLOCATE(tem_Solid_El_Vertex_num(Num_Elem,Solid_El_Max_num_Crs,20))
+!NEWFTU-2026021501
+IF(ALLOCATED(Elem_Topology_Markers_3D)) DEALLOCATE(Elem_Topology_Markers_3D)   
+ALLOCATE(Elem_Topology_Markers_3D(Num_Elem))
+
+
 !.................................
 ! Related variable initialization
 !.................................
@@ -231,14 +240,14 @@ Enriched_Node_Type_3D(1:Num_Node,1:num_Crack) = 0
 Vector_o_Orient(1:num_Crack,1:3)           = ZR
 Sign_o_Orient(1:num_Crack)                 = 0
 allocate(Ragged_Array_2D_n_Vectors(Num_Node))
-Elem_num_Related_Cracks(1:Num_Elem)            = 0
+Elem_num_Related_Cracks(1:Num_Elem)        = 0
 Elem_Related_Cracks(1:Num_Elem,1:Key_Ele_Max_Related_Cracks)  = 0
 !----------  IMPROV2022081502.
 Solid_El_num_Crs(1:Num_Elem)  = 0
 Solid_El_Crs(1:Num_Elem,1:Solid_El_Max_num_Crs) = 0
+tem_Solid_El_Vertex_num(1:Num_Elem,1:Solid_El_Max_num_Crs,1:20)=0
 
-
-tem_Solid_El_Vertex_num(1:Num_Elem,1:Solid_El_Max_num_Crs,1:20)   = 0
+Elem_Topology_Markers_3D(1:Num_Elem) = 0
 
 !...........................................
 !                                         .
@@ -1011,7 +1020,24 @@ do i_Node = 1,num_Node
                     c_Dis_Node_to_FS,c_Dis_Node_to_FS_v2,                     &
                     c_Yes_Node_PER_in_FS,c_PER_Node_to_FS(1:3),               &
                     Yes_Found_Min_Signed_Dis,c_n_Vector)
-                    
+          
+!          if (i_Node==13685)then
+!              
+!!                        call D3_Get_Signed_Dis_to_Crack_Mesh(c_Node_Coor,i_C,Check_Ball_R,  &
+!! c_Dis_Node_to_FS,c_Dis_Node_to_FS_v2, & ! Dis_Node_to_FS_v2 does not distinguish whether the
+!perpendicular foot is on the fracture surface
+!!                    c_Yes_Node_PER_in_FS,c_PER_Node_to_FS(1:3),               &   !IMPROV2022090504.
+!! Yes_Found_Min_Signed_Dis,c_n_Vector) ! n_Vector is the outward normal vector of the crack surface
+!at the foot point, 2022-05-12.
+!              
+!              
+!              print *,"node13685:",c_Dis_Node_to_FS
+!              print *,"Node_Max_L(i_Node):",Node_Max_L(i_Node)
+!          endif
+!          if (i_Node==13707)then
+!              print *,"node13707:",c_Dis_Node_to_FS
+!              print *,"Node_Max_L(i_Node):",Node_Max_L(i_Node)
+!          endif
           !Dis_Node_to_FS(i_Node,i_C)= c_Dis_Node_to_FS          
           if(.not. allocated(Dis_Node_to_FS(i_Node)%row))then
             allocate(Dis_Node_to_FS(i_Node)%row(num_Crack))
@@ -1116,7 +1142,6 @@ do i_E = 1,Num_Elem
      c_min = minval(c_Eight_Values(1:8)) 
         
      ! If the element's nodes include both positive and negative nodes
-     !if( c_max > ZR .and. c_min < ZR)then
      if( c_max > Tol_11 .and. c_min < -Tol_11)then
        ! First, ensure that the element has not been enhanced (relative to i_C)
        !if(Elem_Type_3D(i_E,i_C) ==0)then
@@ -1767,96 +1792,96 @@ enddo
       
 1120 CONTINUE
  
-!....................................................................
-!                                                                  .
-!                                                                  .
-! Step 7: Multiple tip fractures enhancement, 2020-02-11.
-!                                                                  .
-!                                                                  .
-!....................................................................
+!.....................................................................
+!                                                                   .
+!                                                                   .
+! Step 7: Multiple tip fractures enhancement, 2020-02-11.           .
+!                                                                   .
+!                                                                   .
+!.....................................................................
 !call Cal_Ele_Num_by_Coors_3D(0.75D0,0.75D0,0.48D0,c_OUT_Elem)
 if(Key_Multi_TipEnrNode==1)then
     do i_C=1,num_Crack
-    added_tip_el(1:Num_Elem) = .False.
-    added_tip_node(1:Num_Elem,1:Num_Node) = .False.
-    added_tip_node_refe(1:Num_Elem,1:Num_Node) =0        
-    !******************
-    !   Step1: finding
-    !******************
-    do i_E = 1,Num_Elem  
-         c_NN  = G_NN(:,i_E)
-         ! If the element has not been enhanced
-         if(Elem_Type_3D(i_E,i_C) == 0)then
-           ! If the element contains four or more crack tip enrichment nodes and does not contain Heaviside
-           ! enrichment nodes
-           num_tip_enrich=count(Enriched_Node_Type_3D(c_NN(1:8),i_C)==1) 
-           num_H_enrich  =count(Enriched_Node_Type_3D(c_NN(1:8),i_C)==2)      
-           if(num_tip_enrich>=4 .and. num_H_enrich <=0)then
-             !~~~~~~~~~~~~~~~~~~
-             !Get the ref_elem.
-             !~~~~~~~~~~~~~~~~~~
-             do i_Node=1,8
-              if(Enriched_Node_Type_3D(c_NN(i_Node),i_C)==1)then
-                !ref_elem=Ele_Num_Tip_Enriched_Node_3D(c_NN(i_Node),i_C)
-                ref_elem=Ele_Num_Tip_Enriched_Node_3D(c_NN(i_Node))%row(i_C)
-                exit
-              endif
-             enddo
-             !~~~~~~~~~~~~~~~~~~~~~~~~~~
-             !Save temporary variables.
-             !~~~~~~~~~~~~~~~~~~~~~~~~~~
-             
-             added_tip_el(i_E)    = .True.
-             do i_Node=1,8
-               ! If the node has not been enhanced
-               if(Enriched_Node_Type_3D(c_NN(i_Node),i_C) ==0)then
-                added_tip_node(i_E,i_Node) = .True.
-                added_tip_node_refe(i_E,i_Node) = ref_elem
+        added_tip_el(1:Num_Elem) = .False.
+        added_tip_node(1:Num_Elem,1:8) = .False.
+        added_tip_node_refe(1:Num_Elem,1:8) =0        
+        !******************
+        !   Step1: finding
+        !******************
+        do i_E = 1,Num_Elem  
+             c_NN  = G_NN(:,i_E)
+             ! If the element has not been enhanced
+             if(Elem_Type_3D(i_E,i_C) == 0)then
+               ! If the element contains four or more crack tip enrichment nodes and does not contain Heaviside
+               ! enrichment nodes
+               num_tip_enrich=count(Enriched_Node_Type_3D(c_NN(1:8),i_C)==1) 
+               num_H_enrich  =count(Enriched_Node_Type_3D(c_NN(1:8),i_C)==2)      
+               if(num_tip_enrich>=4 .and. num_H_enrich <=0)then
+                 !~~~~~~~~~~~~~~~~~~
+                 !Get the ref_elem.
+                 !~~~~~~~~~~~~~~~~~~
+                 do i_Node=1,8
+                  if(Enriched_Node_Type_3D(c_NN(i_Node),i_C)==1)then
+                    !ref_elem=Ele_Num_Tip_Enriched_Node_3D(c_NN(i_Node),i_C)
+                    ref_elem=Ele_Num_Tip_Enriched_Node_3D(c_NN(i_Node))%row(i_C)
+                    exit
+                  endif
+                 enddo
+                 !~~~~~~~~~~~~~~~~~~~~~~~~~~
+                 !Save temporary variables.
+                 !~~~~~~~~~~~~~~~~~~~~~~~~~~
+                 
+                 added_tip_el(i_E)    = .True.
+                 do i_Node=1,8
+                   ! If the node has not been enhanced
+                   if(Enriched_Node_Type_3D(c_NN(i_Node),i_C) ==0)then
+                    added_tip_node(i_E,i_Node) = .True.
+                    added_tip_node_refe(i_E,i_Node) = ref_elem
+                   endif
+                 enddo
                endif
-             enddo
-           endif
-         endif
-    enddo
-    !*******************
-    !   Step2: updating
-    !*******************
-    do i_E = 1,Num_Elem  
-         c_NN  = G_NN(:,i_E)
-         !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-         ! Bug fix: Removed the tear tip enhancement element marker
-         ! You only need to obtain the additional crack tip enhancement nodes, 
-         ! without needing to mark them as crack tip enhanced elements.
-         ! The reasons are as follows:
-         ! If it is marked as a crack tip enhanced element, then the ref_elem
-         ! number obtained through the following statement is incorrect.
-         !     if ((Elem_Type_3D(in_Elem,i_C).eq.1 )) then
-         !         ref_elem=in_Elem
-         !     else
-         ! !Number of the enriched element corresponding to the enriched node (reference element number)
-         ! ref_elem = Ele_Num_Tip_Enriched_Node_3D(NODES_iE(i_N), i_C)  
-         !     endif
-         !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-         do i_Node=1,8
-             if(added_tip_node(i_E,i_Node) .eqv. .True.) then
-               Enriched_Node_Type_3D(c_NN(i_Node),i_C) =1
-               ref_elem = added_tip_node_refe(i_E,i_Node) 
-               
-               ! Ele_Num_Tip_Enriched_Node_3D(c_NN(i_Node),i_C) = ref_elem ! Reference element number for the crack
-               ! tip enriched node
-                if(.not. allocated(Ele_Num_Tip_Enriched_Node_3D(c_NN(i_Node))%row)) then
-                    allocate(Ele_Num_Tip_Enriched_Node_3D(c_NN(i_Node))%row(num_Crack))
-                    Ele_Num_Tip_Enriched_Node_3D(c_NN(i_Node))%row(1:num_Crack) = 0
-                endif
-                ! The outward normal vector of the crack surface corresponding to the enhanced node (used for
-                ! the penalty function treatment of compression-shear cracks).
-                Ele_Num_Tip_Enriched_Node_3D(c_NN(i_Node))%row(i_C) =ref_elem
-                Enriched_Node_Crack_n_Vector_3D(G_NN(i_Node,ref_elem))%row(i_C,1:3)= &
-                          Ragged_Array_2D_n_Vectors(G_NN(i_Node,ref_elem))%row(i_C,1:3) 
-!                Enriched_Node_Crack_n_Vector_3D(G_NN(i_Node,i_E))%row(i_C,1:3) = &
-!                                         Ragged_Array_2D_n_Vectors(G_NN(i_Node,i_E))%row(i_C,1:3) 
              endif
-         enddo
-    enddo
+        enddo
+        !*******************
+        !   Step2: updating
+        !*******************
+        do i_E = 1,Num_Elem  
+             c_NN  = G_NN(:,i_E)
+             !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+             ! Bug fix: Removed the tear tip enhancement element marker
+             ! You only need to obtain the additional crack tip enhancement nodes, 
+             ! without needing to mark them as crack tip enhanced elements.
+             ! The reasons are as follows:
+             ! If it is marked as a crack tip enhanced element, then the ref_elem
+             ! number obtained through the following statement is incorrect.
+             !     if ((Elem_Type_3D(in_Elem,i_C).eq.1 )) then
+             !         ref_elem=in_Elem
+             !     else
+             ! !Number of the enriched element corresponding to the enriched node (reference element number)
+             ! ref_elem = Ele_Num_Tip_Enriched_Node_3D(NODES_iE(i_N), i_C)  
+             !     endif
+             !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+             do i_Node=1,8
+                 if(added_tip_node(i_E,i_Node) .eqv. .True.) then
+                   Enriched_Node_Type_3D(c_NN(i_Node),i_C) =1
+                   ref_elem = added_tip_node_refe(i_E,i_Node) 
+                   
+                   ! Ele_Num_Tip_Enriched_Node_3D(c_NN(i_Node),i_C) = ref_elem ! Reference element number for the crack
+                   ! tip enriched node
+                    if(.not. allocated(Ele_Num_Tip_Enriched_Node_3D(c_NN(i_Node))%row)) then
+                        allocate(Ele_Num_Tip_Enriched_Node_3D(c_NN(i_Node))%row(num_Crack))
+                        Ele_Num_Tip_Enriched_Node_3D(c_NN(i_Node))%row(1:num_Crack) = 0
+                    endif
+                    ! The outward normal vector of the crack surface corresponding to the enhanced node (used for
+                    ! the penalty function treatment of compression-shear cracks).
+                    Ele_Num_Tip_Enriched_Node_3D(c_NN(i_Node))%row(i_C) =ref_elem
+                    Enriched_Node_Crack_n_Vector_3D(G_NN(i_Node,ref_elem))%row(i_C,1:3)= &
+                              Ragged_Array_2D_n_Vectors(G_NN(i_Node,ref_elem))%row(i_C,1:3) 
+    !                Enriched_Node_Crack_n_Vector_3D(G_NN(i_Node,i_E))%row(i_C,1:3) = &
+    !                                         Ragged_Array_2D_n_Vectors(G_NN(i_Node,i_E))%row(i_C,1:3) 
+                 endif
+             enddo
+        enddo
     enddo
 endif
 
@@ -2256,6 +2281,30 @@ if (isub>=2)then
         print *,'                       First Rollbacked_FEM_Element:',Rollbacked_FEM_Elements(1)
     endif
 endif
+
+!............................................................
+!Get element enhancement topology marker. NEWFTU-2026021501.
+!............................................................
+if(allocated(Elem_Topology_Markers_3D_Old)) deallocate(Elem_Topology_Markers_3D_Old)
+allocate(Elem_Topology_Markers_3D_Old(Num_Elem))
+Elem_Topology_Markers_3D_Old = Elem_Topology_Markers_3D
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_E,i_C,c_NN,i_Node,enrich_type)  
+do i_E = 1, Num_Elem
+    do i_C = 1, num_Crack    
+        c_NN = G_NN(:,i_E)
+        do i_Node = 1, 8
+            enrich_type = Enriched_Node_Type_3D(c_NN(i_Node), i_C)
+            if (enrich_type > 0) then
+                Elem_Topology_Markers_3D(i_E) = Elem_Topology_Markers_3D(i_E) + &
+                    (i_C * 1000000) + (primes(i_Node) ** enrich_type)
+            endif
+        enddo
+    enddo
+enddo
+!$omp end parallel do
+
+!do i_E = 1, Num_Elem
+!enddo
 
 !..................................................................
 !                                                                .

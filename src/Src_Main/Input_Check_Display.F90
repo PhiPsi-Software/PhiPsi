@@ -2485,8 +2485,10 @@ end if
       print *, '    Crack initiation:          allowed'
       ! Note, Key_Initiation is only used when num_Crack=0
       if(num_Crack>=1)then
-          print *, '    Error :: *Key_Initiation=1 is available only when *num_Crack=0!'
-          call Warning_Message('S',Keywords_Blank)
+          if(Key_Dimension==2)then
+            print *, '    Error :: for 2D problems, *Key_Initiation=1 is available only when *num_Crack=0!'
+            call Warning_Message('S',Keywords_Blank)
+          endif
       endif
       !2024-06-23.
       if(Key_Dimension==2)then
@@ -2528,8 +2530,8 @@ end if
           if(Key_Ini_Cr_3D_Type==1)then
               print *, '    Type of initial crack:     circle'
           elseif(Key_Ini_Cr_3D_Type==2)then
-              print *, '    Error :: *Key_Ini_Cr_3D_Type=2 not avaliable yet!'
-              call Warning_Message('S',Keywords_Blank)
+              print *, '    Type of initial crack:     square'
+              !call Warning_Message('S',Keywords_Blank)
           else
               print *, '    Error :: *Key_Ini_Cr_3D_Type not defined or illegal!'
               call Warning_Message('S',Keywords_Blank)
@@ -2661,18 +2663,25 @@ end if
           print *, '               All cracks propagate in plane!'
       endif
       
-    !2024-05-02.  
-    if(Key_Scheme_Signed_Dis_InPlane==2) then
+      !2024-05-02.  
+      if(Key_Scheme_Signed_Dis_InPlane==2) then
         print *, '    Warning :: Key_Scheme_Signed_Dis_InPlane=2 is specified!'
         print *, '               This scheme to calculate signed distance is fast but not robust!'
-    elseif(Key_Scheme_Signed_Dis_InPlane==3) then
+      elseif(Key_Scheme_Signed_Dis_InPlane==3) then
         print *, '    Warning :: Key_Scheme_Signed_Dis_InPlane=3 is specified!'
         print *, '               This scheme to calculate signed distance is fast but not robust!'
-    elseif(Key_Scheme_Signed_Dis_InPlane==1)then
+      elseif(Key_Scheme_Signed_Dis_InPlane==1)then
         !do nothing
-    else
-          call Warning_Message('E','Key_Scheme_Signed_Dis_InPlane')
-    endif
+      else
+        call Warning_Message('E','Key_Scheme_Signed_Dis_InPlane')
+      endif
+      
+      !2026-02-25. NEWFTU-2026022501. 
+      IF (ANY(Key_Cracks_InPlane_Growth(:))) THEN
+        print *, '    Error :: *Key_Cracks_InPlane_Growth is not valid when *Key_InPlane_Growth=1!'
+        call Warning_Message('S',Keywords_Blank)
+      endif
+    
   elseif(Key_InPlane_Growth==0)then
       !do nothing
   else
@@ -2725,11 +2734,10 @@ end if
   if (Key_SIFs_Method .eq. 1)then
       print *, '    SIFs:                      displacement interpolation method'
   elseif (Key_SIFs_Method .eq. 2)then
-      ! For 2D only
-      if(Key_Dimension== 3)then
-          print *, '    ERROR :: Key_SIFs_Method==2 for 2D problems only!'
-          call Warning_Message('S',Keywords_Blank)
-      endif
+!      ! For 2D only
+!      if(Key_Dimension== 3)then
+!          call Warning_Message('S',Keywords_Blank)
+!      endif
       print *, '    SIFs:                      interaction integral method'
   else
       call Warning_Message('E','Key_SIFs_Method')
@@ -3067,25 +3075,25 @@ end if
   !**********************************
   ! BLAS library related, 2022-08-22
   !**********************************
-  if (Key_BLAS ==1)then
+  if (KEY_EBE_PCG_BLAS ==1)then
       print *, '    Using BLAS library (Parallel for Intel Fortran): active!'
       ! Only supports EBE-PCG solver No. 11
       if(Key_SLOE /= 11) then
-          print *,'    Error :: Key_BLAS=1 supports only solver 11!'
+          print *,'    Error :: KEY_EBE_PCG_BLAS=1 supports only solver 11!'
           call Warning_Message('S',Keywords_Blank)
       endif
       ! Only analysis type 4 is supported.
       if(Key_Analysis_Type/= 4) then
-          print *,'    Error :: Key_BLAS=1 supports only analysis type 4!'
+          print *,'    Error :: KEY_EBE_PCG_BLAS=1 supports only analysis type 4!'
           call Warning_Message('S',Keywords_Blank)
       endif
       ! 3D only.
       if(Key_Dimension/= 3) then
-          print *,'    Error :: Key_BLAS=1 supports only 3D problems!'
+          print *,'    Error :: KEY_EBE_PCG_BLAS=1 supports only 3D problems!'
           call Warning_Message('S',Keywords_Blank)
       endif
-  elseif(abs(Key_BLAS)>=2) then
-      call Warning_Message('E','Key_BLAS')
+  elseif(abs(KEY_EBE_PCG_BLAS)>=2) then
+      call Warning_Message('E','KEY_EBE_PCG_BLAS')
   endif
 
   !****************************************************
@@ -3525,8 +3533,8 @@ end if
             ! Key_NaCr_Active_Scheme_3D=3 does not support circular initial cracks. 2024-02-26.
             ! NEWFTU2024022601.
             if(Key_NaCr_Type_3D ==2)then
-              print *,'    Error :: *Key_NaCr_Type_3D=2 is illegal when Key_NaCr_Active_Scheme_3D=3!'
-              print *,'             Set *Key_NaCr_Type_3D=3 (polygon NF) instead!'
+              print *,'    Warning :: *Key_NaCr_Type_3D=2 is illegal when Key_NaCr_Active_Scheme_3D=3!'
+              print *,'                Set *Key_NaCr_Type_3D=3 (polygon NF) instead!'
               call Warning_Message('S',Keywords_Blank)
             endif
         else
@@ -3536,7 +3544,7 @@ end if
     ! Logic Check. 2023-01-09.
     if (Key_NaCr_Active_Scheme_3D>=2 .and. Key_Cpp_Call_Fortran_Lib/=1) then
         if(Key_Random_NaCr == 0)then
-          print *,'    Key_NaCr_Active_Scheme_3D >=2 is illegal when Key_Random_NaCr=0!'
+          print *,'    Warning :: Key_NaCr_Active_Scheme_3D >=2 is illegal when Key_Random_NaCr=0!'
           call Warning_Message('S',Keywords_Blank)
         endif
     endif
@@ -3688,6 +3696,9 @@ end if
       end do
     end if
   endif
+  
+  
+  
 
   !**************************************************************************************************
   ! Check whether the initial cracks are within the model range (only check rectangular or polygonal
@@ -3695,6 +3706,13 @@ end if
   !**************************************************************************************************
   3551 FORMAT(5X,'Error :: crack ',I3,' is outside the model!')
   if (Key_Dimension==3)then
+      
+    !2026-02-12. IMPROV-2026021201.
+    if (ANY(Boundary_Cracks)) then
+          Key_Allow_3D_Outside_Crack = 1
+          !Key_Stop_Outside_Crack     = 0
+    endif
+  
     if (num_Crack.ne. 0) then
       ! Individual crack cycles
       do i_C=1,num_Crack
@@ -5412,6 +5430,54 @@ end if
           call Warning_Message('S',Keywords_Blank)
       endif
   endif
+  
+  !2026-02-02. NEWFTU-2026020201.
+  if (Key_Element_Break==1) then
+      if (Key_Dimension == 3)then
+          if (num_Crack>=1)then
+              print *,'    Error :: For 3D problems, *Key_Element_Break=1 is valid for problems without crack!'
+              print *,'             Current num_Crack: ',num_Crack
+              call Warning_Message('S',Keywords_Blank)
+          endif
+          Key_Post_CS_G_Strs=1
+      endif
+  endif
+  
+  !2026-02-18.
+  if (Key_Save_Stiffness_Matrix  ==1) then
+!      if (Key_Dimension == 2)then
+!          if (num_Crack>=1)then
+!              print *,'    Error :: For 2D problems, *Key_Save_Stiffness_Matrix=1 is invalid!'
+!              call Warning_Message('S',Keywords_Blank)
+!          endif
+!      endif 
+      if(Key_K_Sparse== 0) then
+          print *,'    Error :: *Key_Save_Stiffness_Matrix=1 is valid only when *Key_K_Sparse=1!'
+          call Warning_Message('S',Keywords_Blank)
+      endif
+      if(Key_SLOE==11) then
+          print *,'    Error :: *Key_Save_Stiffness_Matrix=1 is invalid when *Key_SLOE=11!'
+          call Warning_Message('S',Keywords_Blank)
+      endif
+  endif  
+  
+  !2026-02-27. NEWFTU-2026022701. 
+  if (Key_3D_Slip_HF_Keep_Pressure  ==1) then
+      if (Key_Dimension /= 3)then
+          print *,'    Error :: *Key_3D_Slip_HF_Keep_Pressure=1 is valid only when *Key_Dimension = 3!'
+          call Warning_Message('S',Keywords_Blank)
+      endif
+      if(Key_Analysis_Type/= 4) then
+          print *,'    Error :: *Key_3D_Slip_HF_Keep_Pressure=1 is valid only when *Key_Analysis_Type = 4!'
+          call Warning_Message('S',Keywords_Blank)
+      endif
+      if(Key_3D_HF_Time_Step_Method/=1) then
+          print *,'    Error :: *Key_3D_Slip_HF_Keep_Pressure=1 is valid only when *Key_3D_HF_Time_Step_Method = 1!'
+          call Warning_Message('S',Keywords_Blank)
+      endif
+  endif  
+  
+  
 print *, "    Pre-Process done!"
 
 RETURN

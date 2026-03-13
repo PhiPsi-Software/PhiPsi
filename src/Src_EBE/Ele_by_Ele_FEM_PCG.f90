@@ -30,130 +30,212 @@ integer cg_iters,i_PCG
 real(kind=FT) alpha,beta,up,Tol,c_thick
 integer c_loca
 integer i_Thread,c_Thread,max_threads
-real(kind=FT),ALLOCATABLE::u_thread(:,:) 
+real(kind=FT),ALLOCATABLE::u_thread(:,:)
+real(kind=FT),ALLOCATABLE::diag_precon_thread(:,:)
 real(kind=FT) tem_value
 
+real(kind=FT) initial_residual_norm, current_residual_norm
+real(kind=FT),ALLOCATABLE::temp_p(:), temp_u(:)
+
+101 FORMAT(13X,'Number of iterations to convergence is ',I5)  
+102 FORMAT(13X,'Convergence factor is ',E12.5,' / ',E12.5)  
+103 FORMAT(13X,'CG_Iters:',I5, ' -> Residual:', E12.5,' / ',E12.5)
+
 print *, "    >>>> Start of element by element PCG solver <<<<"
+
 print *, "    Step 1: prepare data..."
 ALLOCATE(p(0:c_num_FreeD),loads(0:c_num_FreeD), &
          x(0:c_num_FreeD),xnew(0:c_num_FreeD),u(0:c_num_FreeD), &
          diag_precon(0:c_num_FreeD),pcg_d(0:c_num_FreeD))   
-diag_precon= ZR
+diag_precon = ZR
+
 c_Total_Num_G_P = 0
-do i_E = 1,Num_Elem    
+do i_E = 1, Num_Elem    
   Ele_GP_Start_Num(i_E) = c_Total_Num_G_P + 1
-  c_Total_Num_G_P = c_Total_Num_G_P +Num_Gauss_P_FEM
+  c_Total_Num_G_P = c_Total_Num_G_P + Num_Gauss_P_FEM
 enddo
 
 max_threads = omp_get_max_threads()
 if (allocated(u_thread)) deallocate(u_thread)
-ALLOCATE(u_thread(0:c_num_FreeD,max_threads))
-  
+ALLOCATE(u_thread(0:c_num_FreeD, max_threads))
+ALLOCATE(diag_precon_thread(0:c_num_FreeD, max_threads))
+diag_precon_thread = ZR
+
 print *, "    Step 2: get and store element stiffness matrix..."  
-call Cal_Gauss_Points_QUAD(Num_Gauss_P_FEM,kesi,yita,weight)
+call Cal_Gauss_Points_QUAD(Num_Gauss_P_FEM, kesi, yita, weight)
 
+all_local(1:ndof, 1:Num_Elem) = 0
 
-all_local(1:ndof,1:Num_Elem) = 0
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_E,mat_num,c_D, &
-!$OMP            c_X_NODES,c_Y_NODES,c_NN, &
-!$OMP            a_local,c_loca,k,j,localK,local,c_thick)    
-do i_E=1,Num_Elem
+!$OMP PARALLEL DEFAULT(SHARED) PRIVATE(i_E,mat_num,c_D, &
+!$OMP            c_X_NODES,c_Y_NODES,c_NN,c_thread, &
+!$OMP            a_local,c_loca,k,j,localK,local,c_thick)
+c_thread = omp_get_thread_num() + 1
+!$OMP DO SCHEDULE(static)
+do i_E = 1, Num_Elem
   mat_num = Elem_Mat(i_E)
   c_thick = thick(Elem_Mat(i_E))
   
-  c_D(1:3,1:3)     = D(Elem_Mat(i_E),1:3,1:3)         
+  c_D(1:3, 1:3) = D(Elem_Mat(i_E), 1:3, 1:3)
   
-  if(Flag_Weibull_E)then
-      if (Key_Weibull_E(Elem_Mat(i_E)) ==1)then
-          c_D = Weibull_Elements_D_Matrix(i_E,1:3,1:3)
+  if(Flag_Weibull_E) then
+      if (Key_Weibull_E(Elem_Mat(i_E)) == 1) then
+          c_D = Weibull_Elements_D_Matrix(i_E, 1:3, 1:3)
       endif
   endif
           
-  c_NN    = G_NN(1:4,i_E)
-  c_X_NODES = G_X_NODES(1:4,i_E)
-  c_Y_NODES = G_Y_NODES(1:4,i_E) 
-  a_local =[c_NN(1)*2-1,c_NN(1)*2,c_NN(2)*2-1,c_NN(2)*2,c_NN(3)*2-1,c_NN(3)*2,c_NN(4)*2-1,c_NN(4)*2]
+  c_NN = G_NN(1:4, i_E)
+  c_X_NODES = G_X_NODES(1:4, i_E)
+  c_Y_NODES = G_Y_NODES(1:4, i_E)
+  
+  a_local = [c_NN(1)*2-1, c_NN(1)*2, c_NN(2)*2-1, c_NN(2)*2, &
+             c_NN(3)*2-1, c_NN(3)*2, c_NN(4)*2-1, c_NN(4)*2]
+  
   local(1:ndof) = 0
-  DO k=1,ndof 
-      if (any(c_freeDOF(1:c_num_FreeD)== a_local(k)))then
-          c_loca =minloc(c_freeDOF(1:c_num_FreeD),1,MASK=(c_freeDOF(1:c_num_FreeD).eq.a_local(k)))
+  DO k = 1, ndof
+      if (any(c_freeDOF(1:c_num_FreeD) == a_local(k))) then
+          c_loca = minloc(c_freeDOF(1:c_num_FreeD), 1, &
+                         MASK=(c_freeDOF(1:c_num_FreeD).eq.a_local(k)))
       else
-          c_loca =0
+          c_loca = 0
       endif     
       local(k) = c_loca
   enddo
-  all_local(1:ndof,i_E) = local(1:ndof)
-  localK(1:ndof,1:ndof) = ZR
-    call Cal_Ele_Stiffness_Matrix_N4(c_X_NODES,c_Y_NODES,c_thick,c_D,kesi,yita,weight,localK)     
-  storK(1:ndof,1:ndof,i_E)=localK(1:ndof,1:ndof)       
-  DO j=1,ndof 
-      diag_precon(local(j))=diag_precon(local(j))+localK(j,j) 
+  
+  all_local(1:ndof, i_E) = local(1:ndof)
+  localK(1:ndof, 1:ndof) = ZR
+  
+  call Cal_Ele_Stiffness_Matrix_N4(c_X_NODES, c_Y_NODES, c_thick, &
+                                    c_D, kesi, yita, weight, localK)
+  storK(1:ndof, 1:ndof, i_E) = localK(1:ndof, 1:ndof)
+  
+  DO j = 1, ndof
+      c_loca = local(j)
+      if(c_loca > 0) then
+          diag_precon_thread(c_loca, c_thread) = &
+              diag_precon_thread(c_loca, c_thread) + localK(j, j)
+      endif
   END DO
 enddo
-!$omp end parallel do   
+!$omp end do
+!$omp end parallel
 
+DO i_Thread = 1, max_threads
+    diag_precon(0:c_num_FreeD) = diag_precon(0:c_num_FreeD) + &
+                                  diag_precon_thread(0:c_num_FreeD, i_Thread)
+ENDDO
 
 print *, "    Step 3: Invert the preconditioner and get starting loads..."
-loads=ZR 
+loads = ZR 
 loads(1:c_num_FreeD) = c_F(1:c_num_FreeD)
-diag_precon(1:)=ONE/diag_precon(1:) 
-diag_precon(0)=ZR 
 
-pcg_d   =diag_precon*loads 
-p       =pcg_d
-x       =ZR
-cg_iters=0
+diag_precon(1:c_num_FreeD) = ONE / diag_precon(1:c_num_FreeD)
+diag_precon(0) = ZR 
+
+tem_value = MINVAL(diag_precon(1:c_num_FreeD))
+if(tem_value <= 0.0_FT) then
+    write(*,*) '    ERROR: Preconditioner has non-positive entries!'
+    write(*,*) '    Min value:', tem_value
+    stop
+endif
+
+pcg_d = diag_precon * loads 
+p = pcg_d
+x = ZR
+cg_iters = 0
 
 print *, "    Step 4: pcg equation solution..."
-do i_PCG =1,c_max_num_PCG
-  cg_iters=cg_iters+1 
-  u=ZR
 
-  u_thread(0:c_num_FreeD,1:max_threads)= ZR  
-  !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(c_thread,i_E,local,localK) 
-  c_thread = omp_get_thread_num()+1
+initial_residual_norm = SQRT(DOT_PRODUCT(loads(1:c_num_FreeD), loads(1:c_num_FreeD)))
+if (initial_residual_norm<Tol_20) initial_residual_norm = Tol_20
+
+ALLOCATE(temp_p(ndof), temp_u(ndof))
+
+do i_PCG = 1, c_max_num_PCG
+  cg_iters = cg_iters + 1
+  u = ZR
+
+  u_thread(0:c_num_FreeD, 1:max_threads) = ZR
+  
+  !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(c_thread,i_E,local,localK,temp_p,temp_u,j)
+  c_thread = omp_get_thread_num() + 1
   !$OMP DO         
-  do i_E=1,Num_Elem
-      local=all_local(1:ndof,i_E) 
-      localK=storK(1:ndof,1:ndof,i_E) 
-      u_thread(local,c_thread)=u_thread(local,c_thread)+MATMUL(localK,p(local)) 
-  enddo  
+  do i_E = 1, Num_Elem
+      local = all_local(1:ndof, i_E)
+      localK = storK(1:ndof, 1:ndof, i_E)
+      
+      do j = 1, ndof
+          if(local(j) > 0) then
+              temp_p(j) = p(local(j))
+          else
+              temp_p(j) = 0.0_FT
+          endif
+      enddo
+      
+      temp_u = MATMUL(localK, temp_p)
+      
+      do j = 1, ndof
+          if(local(j) > 0) then
+              u_thread(local(j), c_thread) = u_thread(local(j), c_thread) + temp_u(j)
+          endif
+      enddo
+  enddo
   !$omp end do
-  !$omp end parallel       
+  !$omp end parallel
   
-  DO i_Thread = 1,omp_get_max_threads()
-      u  =  u  + u_thread(:,i_Thread)
-  ENDDO      
-         
-  up=DOT_PRODUCT(loads,pcg_d)
-  alpha=up/DOT_PRODUCT(p,u) 
-  xnew=x+p*alpha 
-  loads=loads-u*alpha
-  pcg_d=diag_precon*loads 
-  beta=DOT_PRODUCT(loads,pcg_d)/up 
-  p=pcg_d+p*beta
+  DO i_Thread = 1, max_threads
+      u = u + u_thread(:, i_Thread)
+  ENDDO
   
+  up = DOT_PRODUCT(loads(1:c_num_FreeD), pcg_d(1:c_num_FreeD))
+  alpha = up / DOT_PRODUCT(p(1:c_num_FreeD), u(1:c_num_FreeD))
+  xnew = x + p * alpha
+  loads = loads - u * alpha
   
-  tem_value = MAXVAL(ABS(x(0:c_num_FreeD)))
-  if(tem_value==ZR) tem_value = Tol_20
-  Tol = MAXVAL(ABS(x(0:c_num_FreeD)-xnew(0:c_num_FreeD)))/tem_value
+  current_residual_norm = SQRT(DOT_PRODUCT(loads(1:c_num_FreeD), loads(1:c_num_FreeD)))
+  Tol = current_residual_norm / initial_residual_norm
   
-  x=xnew
-  if(Tol<c_cg_tol.OR.cg_iters==c_max_num_PCG)then
+  pcg_d(1:c_num_FreeD) = diag_precon(1:c_num_FreeD) * loads(1:c_num_FreeD)
+  pcg_d(0) = ZR
+  
+  beta = DOT_PRODUCT(loads(1:c_num_FreeD), pcg_d(1:c_num_FreeD)) / up
+  p = pcg_d + p * beta
+  x = xnew
+  
+  if(cg_iters <= 300) then
+      if(mod(cg_iters, 50) == 0 .OR. cg_iters == 1) then
+          write(*,103) cg_iters, Tol, c_cg_tol
+      endif
+  else
+      if(mod(cg_iters, 100) == 0) then
+          write(*,103) cg_iters, Tol, c_cg_tol
+      endif
+  endif
+  
+  if(Tol < c_cg_tol) then
       exit
   endif
   
+  if(cg_iters == c_max_num_PCG) then
+      print *, '    -------------------------------------'
+      print *, '        Warning :: PCG-EBE failed!       '
+      print *, '    -------------------------------------'
+      exit
+  endif
 enddo
-print *, "    Number of CG iterations to convergence was",cg_iters
 
-loads=xnew
-c_disp = ZR
+DEALLOCATE(temp_p, temp_u)
+
+write(*,101) cg_iters
+write(*,102) Tol, c_cg_tol
 
 print *, "    Step 5: retrive nodal displacement..." 
-     
-c_disp(c_freeDOF(1:c_num_FreeD)) =loads(1:c_num_FreeD)
+loads = xnew
+c_disp = ZR
+c_disp(c_freeDOF(1:c_num_FreeD)) = loads(1:c_num_FreeD)
 
-DEALLOCATE(p,loads,x,xnew,u,diag_precon,pcg_d)  
+DEALLOCATE(p, loads, x, xnew, u, diag_precon, pcg_d)
+if(allocated(u_thread)) deallocate(u_thread)
+if(allocated(diag_precon_thread)) deallocate(diag_precon_thread)
 
 print *, "    >>>>  End of element by element PCG solver  <<<<"
 RETURN

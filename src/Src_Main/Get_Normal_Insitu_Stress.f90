@@ -40,65 +40,29 @@
 !        2017, 173: 64-90.                              !
 !     ------------------------------------------------- !
  
-      subroutine D3_Get_Max_Min_Ave_KIeq_of_HF_Cracks(
-     &                    Max_KI_eq_3D,Min_KI_eq_3D,Ave_KI_eq_3D,
-     &                    c_Crack_Max_Num,c_Vertex_Max_Num)
-      ! Extract the maximum, minimum, and average equivalent stress intensity factors of the HF fracture.
-      ! Called by the main program PhiPsi3D_Static_HF_SlipWater.f.
-      !2022-07-05.   
-      !Updated 2023-05-16.
-      
-c     ============================
-c     Read public variable module
-c     ============================
-      use Global_Float_Type                                                                
-      use Global_Crack_Common
-      use Global_Crack_3D
-      use Global_Ragged_Array_Real_Classs
-      
-c     =====================
-c     Variable Declaration
-c     =====================
-      implicit none
-      real(kind=FT),intent(out)::Max_KI_eq_3D,Min_KI_eq_3D,Ave_KI_eq_3D
-      integer,intent(out)::c_Crack_Max_Num,c_Vertex_Max_Num
-      integer i_C
-      integer num_Cr_Edges
-      real(kind=FT) c_Max,c_Min, Sum_KIeq
-      integer Ver_Count
-      integer c_Max_location
-      
-c     ===============
-c     Fracture cycle
-c     ===============
-      Max_KI_eq_3D = -Con_Big_15   
-      Min_KI_eq_3D =  Con_Big_15
-      Ver_Count = 0
-      Sum_KIeq  = ZR
-      
-      do i_C = 1,num_Crack
-          num_Cr_Edges = Crack3D_Meshed_Outline_num(i_C)
-          ! If it is an HF crack
-          if(Crack_Type_Status_3D(i_C,1)==1) then 
-              c_Max = maxval(KI_eq_3D(i_C)%row(1:num_Cr_Edges))
-              c_Max_location=MAXLOC(KI_eq_3D(i_C)%row(1:num_Cr_Edges),1)
-              c_Min = minval(KI_eq_3D(i_C)%row(1:num_Cr_Edges))
-              
-              if(c_Max > Max_KI_eq_3D) then 
-                  Max_KI_eq_3D = c_Max
-                  c_Crack_Max_Num = i_C
-                  c_Vertex_Max_Num= c_Max_location
-              endif
-              if(c_Min < Min_KI_eq_3D) then 
-                  Min_KI_eq_3D = c_Min
-              endif
-              Ver_Count = Ver_Count +num_Cr_Edges
-              Sum_KIeq  = Sum_KIeq + 
-     &                    sum(KI_eq_3D(i_C)%row(1:num_Cr_Edges))
-          endif
-      enddo
-      
-      Ave_KI_eq_3D = Sum_KIeq/Ver_Count
-      
-      return 
-      end SUBROUTINE D3_Get_Max_Min_Ave_KIeq_of_HF_Cracks
+
+subroutine Get_Normal_Insitu_Stress(c_ELE,ori_n,Normal_Stress)
+! Obtain the ground stress in the normal direction of the crack surface. 2026-01-23.
+
+use Global_Float_Type
+use Global_Stress
+use Global_Common, only: Key_InSitu_Strategy
+
+implicit none
+integer, intent(in) :: c_ELE
+real(kind=FT), intent(in) :: ori_n(3)
+real(kind=FT), intent(out) :: Normal_Stress
+real(kind=FT) :: c_Insitu_Stress(6)       
+
+if(Key_InSitu_Strategy == 4 )then
+    ! Obtained in-situ stress tensor c_Insitu_Stress
+    c_Insitu_Stress(1) =InSitu_Strs_Gaus_xx(c_ELE,1)
+    c_Insitu_Stress(2) =InSitu_Strs_Gaus_yy(c_ELE,1)                    
+    c_Insitu_Stress(3) =InSitu_Strs_Gaus_zz(c_ELE,1)                    
+    c_Insitu_Stress(4) =InSitu_Strs_Gaus_xy(c_ELE,1)                    
+    c_Insitu_Stress(5) =InSitu_Strs_Gaus_yz(c_ELE,1)                    
+    c_Insitu_Stress(6) =InSitu_Strs_Gaus_xz(c_ELE,1)                    
+    ! Calculate the normal stress on the fracture surface
+    call Tool_Get_Normal_Stress_on_Plane_by_Stress_Tensor(c_Insitu_Stress,ori_n,Normal_Stress)
+endif
+end subroutine Get_Normal_Insitu_Stress

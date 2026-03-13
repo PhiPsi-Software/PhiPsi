@@ -101,6 +101,13 @@ c     Assemble the stiffness matrix (3D problem).
               Rot_c_D_Comp = MATMUL(Rot_c_D_Comp,T_Matrix)
               c_D =(ONE-Volume_Ratio)*c_D + Volume_Ratio*Rot_c_D_Comp
           endif
+          
+          ! Damage element processing: weakening D matrix (elastic modulus). 2026-02-02. NEWFTU-2026020201.
+          if(Key_Element_Break==1 .and. Elem_Break(i_E))then
+              !c_D= c_D*Tol_3
+              c_D= c_D*Tol_6
+          endif  
+          
           c_NN    = G_NN(1:8,i_E)
           c_X_NODES = G_X_NODES(1:8,i_E)
           c_Y_NODES = G_Y_NODES(1:8,i_E)    

@@ -70,7 +70,7 @@ SUBROUTINE D3_Mesh_Initial_Crack
 ! crack elements after discretization
 ! real(kind=FT) Crack3D_Meshed_Node_Nor_Vector(Max_Num_Cr_3D,Max_N_Node_3D,3) !3D crack node outward
 ! normal vector after discretization
-! integer Crack3D_Meshed_Ele_num(Max_Num_Cr_3D)                            !Number of 3D crack elements after discretization
+! integer Crack3D_Meshed_Ele_num(Max_Num_Cr_3D)      !Number of 3D crack elements after discretization
 ! integer Crack3D_Meshed_Outline(Max_Num_Cr_3D, Max_N_Node_3D, 4) !3D crack outer boundary after
 ! discretization
 ! !Data 1 is the first point on the boundary line of the crack front
@@ -484,33 +484,53 @@ do i_C=1,num_Crack
       enddo
       
       
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
     !################################
+    !
+    !
     ! Case 2: Circular crack surface
+    !
+    !
     !################################
     elseif(sum(abs(Crack3D_Cir_Coor(i_C,1:7)))>Tol_20)then 
-       cir_center(1:3)= Crack3D_Cir_Coor(i_C,1:3)
-       ! Length of the element containing the center
-       call Cal_Ele_Num_by_Coors_3D(cir_center(1),cir_center(2),cir_center(3),Ele_Num_Cache,Circle_Elem)
-       if(Circle_Elem==0) then
-           print *,'    ERROR-2022110101 :: Circle_Elem=0 in D3_Mesh_Initial_Crack.f90!'
-           print *,'                        Crack number:',i_C
-           print *,'                        cir_center:',cir_center(1:3)
-           print *,"                        Maybe outside the model!"
-           call Warning_Message('S',Keywords_Blank)
-       endif
-       Cricle_Elem_L = (Elem_Vol(Circle_Elem))**(ONE/THR)
-       ! Normal vector of a circle
-       cir_vec(1:3)= Crack3D_Cir_Coor(i_C,4:6)
-       ! Normalize the vector
-       leg=sqrt(sum(cir_vec**2))
-       cir_vec = cir_vec/leg
+        cir_center(1:3)= Crack3D_Cir_Coor(i_C,1:3)
+        ! Length of the element containing the center
+        call Cal_Ele_Num_by_Coors_3D(cir_center(1),cir_center(2),cir_center(3),Ele_Num_Cache,Circle_Elem)
+        if(Circle_Elem==0 .and. Key_Warning_Level>=3) then
+           print *,'    WARNING-2022110101 :: Circle_Elem=0 in D3_Mesh_Initial_Crack.f90!'
+           print *,'                          Crack number:',i_C
+           print *,'                          cir_center:',cir_center(1:3)
+           print *,"                          Maybe outside the model!"
+           !call Warning_Message('S',Keywords_Blank)
+           Cricle_Elem_L = (Elem_Vol(1))**(ONE/THR)
+        else
+           Cricle_Elem_L = (Elem_Vol(Circle_Elem))**(ONE/THR)
+        endif
        
-       radius = Crack3D_Cir_Coor(i_C,7)
-       circumference =  TWO*pi*radius
-       num_divison =  int(circumference/Cricle_Elem_L)
+        ! Normal vector of a circle
+        cir_vec(1:3)= Crack3D_Cir_Coor(i_C,4:6)
        
-       !2024-03-13.
-       if(num_divison<=2)then
+        ! Normalize the vector
+        leg=sqrt(sum(cir_vec**2))
+        cir_vec = cir_vec/leg
+       
+        radius = Crack3D_Cir_Coor(i_C,7)
+       
+       
+        circumference =  TWO*pi*radius
+        num_divison =  int(circumference/Cricle_Elem_L)
+       
+        !2024-03-13.
+        if(num_divison<=2)then
            print *,'    ERROR-2024031301 :: illegal num_divison in D3_Mesh_Initial_Crack.f90!'
            print *,'                        Num_divison:',num_divison
            print *,'                        Radius:',radius
@@ -518,109 +538,133 @@ do i_C=1,num_Crack
            print *,'                        Cricle_Elem_L:',Cricle_Elem_L           
            print *,"                        Maybe caused by too small cracks compared to element size!"
            call Warning_Message('S',Keywords_Blank)
-       endif
+        endif
        
-       allocate(c_xyz(num_divison,3))
-       c_xyz(1:num_divison,1:3) = ZR
-       ! Discretize the circle
-       ! Reference: http://blog.sina.com.cn/s/blog_622fbc040102wt9o.html
-       do i_theta = 1,num_divison
-           theta = (i_theta-1)*TWO*pi/num_divison
-           ! a = cross(n, [1 0 0]); % cross n with i to get the vector a
-           call Vector_Cross_Product_3(cir_vec,[ONE,ZR,ZR],a)   
-           ! if ~any(a) % If a is a zero vector, cross n with j
-           !   a=cross(n,[0 1 0]);
-           !end                
-           if(sum(abs(a))<=Tol_20) then
-              call Vector_Cross_Product_3(cir_vec,[ZR,ONE,ZR],a)   
-           endif
-           ! b = cross(n, a)! Calculate the b vector
-           call Vector_Cross_Product_3(cir_vec,a,b)   
-           ! a = a / norm(a)! Normalize the vector a
-           ! b = b / norm(b)! Normalizing the b vector
-           call Vector_Norm2(3,a,norm_a)   
-           call Vector_Norm2(3,b,norm_b)  
-           a=a/norm_a
-           b=b/norm_b
- 
-           c_xyz(i_theta,1)=cir_center(1)+radius*a(1)*cos(theta)+radius*b(1)*sin(theta)
-           c_xyz(i_theta,2)=cir_center(2)+radius*a(2)*cos(theta)+radius*b(2)*sin(theta)
-           c_xyz(i_theta,3)=cir_center(3)+radius*a(3)*cos(theta)+radius*b(3)*sin(theta)
-      enddo
-      ! Number of 3D fracture nodes after discretization
-      num_of_nodes = num_divison + 1   
-           
-      c_Max_N_Node_3D = size(Crack3D_Meshed_Node(i_C)%row,1)
-      if(num_of_nodes > c_Max_N_Node_3D) then
-          ! Expand memory. NEWFTU2022110501.
-          call D3_Allocate_Crack_Memory(i_C,1,1)
-          !c_Max_N_Node_3D = size(Crack3D_Meshed_Node(i_C)%row,1)
-      endif 
-              
-      Crack3D_Meshed_Node_num(i_C) = num_of_nodes
-      ! Number of 3D crack elements after discretization
-      num_of_ele = num_divison  
-      Crack3D_Meshed_Ele_num(i_C)  = num_of_ele        
-      ! Coordinates of 3D fracture nodes after discretization, with each fracture consisting of up to
-      ! 1,000 points
-      Crack3D_Meshed_Node(i_C)%row(1,1:3) = cir_center(1:3)  
-      do i_node = 1,num_divison
-          Crack3D_Meshed_Node(i_C)%row(i_node+1,1:3)=c_xyz(i_node,1:3)  
-      enddo
-      deallocate(c_xyz)
-                
-      ! Determine the element number where the discrete node of the crack surface 
-      ! is located and store it in Cr3D_Meshed_Node_in_Ele_Num(i_C, i_Cr_Node)
-      ! If the element number is 0, it indicates that the crack surface node 
-      ! is outside the model.
-      do i_Cr_Node =1,num_divison + 1  
-          call Cal_Ele_Num_by_Coors_3D(   &
-                        Crack3D_Meshed_Node(i_C)%row(i_Cr_Node,1), &
-                        Crack3D_Meshed_Node(i_C)%row(i_Cr_Node,2), &
-                        Crack3D_Meshed_Node(i_C)%row(i_Cr_Node,3), &
-                        Ele_Num_Cache,in_Elem_num)      
-          if(in_Elem_num==0) then
-               print *,'    WARN-2022110106 :: in_Elem_num=0 in D3_Mesh_Initial_Crack.f90!'
-               print *,'                        Crack number:',i_C
-               print *,"                        Coors:",Crack3D_Meshed_Node(i_C)%row(i_Cr_Node,1:3)
-               print *,"                        Maybe outside the model!"
-               !call Warning_Message('S',Keywords_Blank)
-          endif                         
-          Cr3D_Meshed_Node_in_Ele_Num(i_C)%row(i_Cr_Node) = in_Elem_num
-          ! Determine the local coordinates of the elements containing the discrete nodes
-          ! on the crack surface, and store them in Cr3D_Meshed_Node_in_Ele_Local(Max_Num_Cr,1000,3)
-          if (in_Elem_num>0)then
-              call Cal_KesiYita_by_Coor_3D(Crack3D_Meshed_Node(i_C)%row(i_Cr_Node,1:3),in_Elem_num,c_Kesi,c_Yita,c_Zeta)
-              Cr3D_Meshed_Node_in_Ele_Local(i_C)%row(i_Cr_Node,1:3)=[c_Kesi,c_Yita,c_Zeta] 
-          endif
-      enddo
-      ! Node numbering of discrete fracture elements
-      do i_Ele =1,num_of_ele-1 
+        !....................................
+        !            OLD SIMPLE RUDE SCHEME.
+        !....................................
+        if (Key_3D_Circular_Crack_Meshing_Scheme==2) then
+           allocate(c_xyz(num_divison,3))
+           c_xyz(1:num_divison,1:3) = ZR
+           ! Discretize the circle
+           ! Reference: http://blog.sina.com.cn/s/blog_622fbc040102wt9o.html
+           do i_theta = 1,num_divison
+               theta = (i_theta-1)*TWO*pi/num_divison
+               ! a = cross(n, [1 0 0]); % cross n with i to get the vector a
+               call Vector_Cross_Product_3(cir_vec,[ONE,ZR,ZR],a)   
+               ! if ~any(a) % If a is a zero vector, cross n with j
+               !   a=cross(n,[0 1 0]);
+               !end                
+               if(sum(abs(a))<=Tol_20) then
+                  call Vector_Cross_Product_3(cir_vec,[ZR,ONE,ZR],a)   
+               endif
+               ! b = cross(n, a)! Calculate the b vector
+               call Vector_Cross_Product_3(cir_vec,a,b)   
+               ! a = a / norm(a)! Normalize the vector a
+               ! b = b / norm(b)! Normalizing the b vector
+               call Vector_Norm2(3,a,norm_a)   
+               call Vector_Norm2(3,b,norm_b)  
+               a=a/norm_a
+               b=b/norm_b
+    
+               c_xyz(i_theta,1)=cir_center(1)+radius*a(1)*cos(theta)+radius*b(1)*sin(theta)
+               c_xyz(i_theta,2)=cir_center(2)+radius*a(2)*cos(theta)+radius*b(2)*sin(theta)
+               c_xyz(i_theta,3)=cir_center(3)+radius*a(3)*cos(theta)+radius*b(3)*sin(theta)
+          enddo
+          ! Number of 3D fracture nodes after discretization
+          num_of_nodes = num_divison + 1   
+               
+          c_Max_N_Node_3D = size(Crack3D_Meshed_Node(i_C)%row,1)
+          if(num_of_nodes > c_Max_N_Node_3D) then
+              ! Expand memory. NEWFTU2022110501.
+              call D3_Allocate_Crack_Memory(i_C,1,1)
+              !c_Max_N_Node_3D = size(Crack3D_Meshed_Node(i_C)%row,1)
+          endif 
+                  
+          Crack3D_Meshed_Node_num(i_C) = num_of_nodes
+          
+          ! Number of 3D crack elements after discretization
+          num_of_ele = num_divison  
+          Crack3D_Meshed_Ele_num(i_C)  = num_of_ele        
+          ! Coordinates of 3D fracture nodes after discretization, with each fracture consisting of up to
+          ! 1,000 points
+          Crack3D_Meshed_Node(i_C)%row(1,1:3) = cir_center(1:3)  
+          do i_node = 1,num_divison
+              Crack3D_Meshed_Node(i_C)%row(i_node+1,1:3)=c_xyz(i_node,1:3)  
+          enddo
+          deallocate(c_xyz)
+                    
+          ! Determine the element number where the discrete node of the crack surface 
+          ! is located and store it in Cr3D_Meshed_Node_in_Ele_Num(i_C, i_Cr_Node)
+          ! If the element number is 0, it indicates that the crack surface node 
+          ! is outside the model.
+          do i_Cr_Node =1,num_divison + 1  
+              call Cal_Ele_Num_by_Coors_3D(   &
+                            Crack3D_Meshed_Node(i_C)%row(i_Cr_Node,1), &
+                            Crack3D_Meshed_Node(i_C)%row(i_Cr_Node,2), &
+                            Crack3D_Meshed_Node(i_C)%row(i_Cr_Node,3), &
+                            Ele_Num_Cache,in_Elem_num)      
+              if(in_Elem_num==0 .and. Key_Warning_Level>=3) then
+                   print *,'    WARN-2022110106 :: in_Elem_num=0 in D3_Mesh_Initial_Crack.f90!'
+                   print *,'                        Crack number:',i_C
+                   print *,"                        Coors:",Crack3D_Meshed_Node(i_C)%row(i_Cr_Node,1:3)
+                   print *,"                        Maybe outside the model!"
+                   !call Warning_Message('S',Keywords_Blank)
+              endif                         
+              Cr3D_Meshed_Node_in_Ele_Num(i_C)%row(i_Cr_Node) = in_Elem_num
+              ! Determine the local coordinates of the elements containing the discrete nodes
+              ! on the crack surface, and store them in Cr3D_Meshed_Node_in_Ele_Local(Max_Num_Cr,1000,3)
+              if (in_Elem_num>0)then
+                  call Cal_KesiYita_by_Coor_3D(Crack3D_Meshed_Node(i_C)%row(i_Cr_Node,1:3),in_Elem_num,c_Kesi,c_Yita,c_Zeta)
+                  Cr3D_Meshed_Node_in_Ele_Local(i_C)%row(i_Cr_Node,1:3)=[c_Kesi,c_Yita,c_Zeta] 
+              endif
+          enddo
+          ! Node numbering of discrete fracture elements
+          do i_Ele =1,num_of_ele-1 
+              node_1 = 1
+              node_2 = i_Ele + 1
+              node_3 = i_Ele + 2
+              Crack3D_Meshed_Ele(i_C)%row(i_Ele,1:3)=[node_1,node_2,node_3]  
+          enddo          
           node_1 = 1
-          node_2 = i_Ele + 1
-          node_3 = i_Ele + 2
-          Crack3D_Meshed_Ele(i_C)%row(i_Ele,1:3)=[node_1,node_2,node_3]  
-      enddo          
-      node_1 = 1
-      node_2 = num_divison + 1
-      node_3 = 2
-      Crack3D_Meshed_Ele(i_C)%row(num_of_ele,1:3)=[node_1,node_2,node_3]  
-      ! Determine the outer boundary of the fracture surface discretization elements, 
-      ! and store the results in the following two global variables:
-      ! integer Crack3D_Meshed_Outline(Max_Num_Cr, Max_N_Node_3D, 4) !3D crack outer boundary after
-      ! discretization (data 3 corresponds to the discrete crack element number)
-      ! integer Crack3D_Meshed_Outline_num(Max_Num_Cr) !Number of 3D crack boundary lines after
-      ! discretization
-      call D3_Find_Crack_Mesh_Outline(i_C,num_of_ele,num_of_nodes,Crack3D_Meshed_Ele(i_C)%row(1:num_of_ele,1:3))          
+          node_2 = num_divison + 1
+          node_3 = 2
+          Crack3D_Meshed_Ele(i_C)%row(num_of_ele,1:3)=[node_1,node_2,node_3]  
+          ! Determine the outer boundary of the fracture surface discretization elements, 
+          ! and store the results in the following two global variables:
+          ! integer Crack3D_Meshed_Outline(Max_Num_Cr, Max_N_Node_3D, 4) !3D crack outer boundary after
+          ! discretization (data 3 corresponds to the discrete crack element number)
+          ! integer Crack3D_Meshed_Outline_num(Max_Num_Cr) !Number of 3D crack boundary lines after
+          ! discretization
+          call D3_Find_Crack_Mesh_Outline(i_C,num_of_ele,num_of_nodes,Crack3D_Meshed_Ele(i_C)%row(1:num_of_ele,1:3))      
+      
+        !....................................................
+        !Concentric circular ring mesh generation algorithm. 
+        !2026-02-14. NEWFTU-2026021401.
+        !....................................................
+        elseif (Key_3D_Circular_Crack_Meshing_Scheme==1) then
+            ! Improve the mesh quality by using a multi-ring triangulation instead of
+            ! a pure fan triangulation (center connected to boundary).
+            ! The mesh density is controlled by Cricle_Elem_L.
+            call D3_Mesh_Circle_By_Rings( &
+                i_C, cir_center, cir_vec, radius, Cricle_Elem_L, Ele_Num_Cache)
+        endif
+      
+      
+      
     !#####################################
+    !
+    !
     ! Case 3: Elliptical Fracture Surface
+    !
+    !
     !#####################################
     elseif(sum(abs(Crack3D_Ellip_Coor(i_C,1:8)))>Tol_20)then 
        cir_center(1:3)= Crack3D_Ellip_Coor(i_C,1:3)
        cir_vec(1:3)= Crack3D_Ellip_Coor(i_C,4:6)
        ! Length of the element containing the ellipse
        call Cal_Ele_Num_by_Coors_3D(cir_center(1),cir_center(2),cir_center(3),Ele_Num_Cache,Circle_Elem)
-       if(Circle_Elem==0) then
+       if(Circle_Elem==0  .and. Key_Warning_Level>=3) then
            print *,'    WARN-2022110107 :: Circle_Elem=0 in D3_Mesh_Initial_Crack.f90!'
            print *,'                        Crack number:',i_C
            print *,'                        cir_center:',cir_center(1:3)
@@ -628,7 +672,7 @@ do i_C=1,num_Crack
            !call Warning_Message('S',Keywords_Blank)
        endif          
        Cricle_Elem_L = (Elem_Vol(Circle_Elem))**(ONE/THR)
-       ! Normal of the circle?
+       ! Normal of the circle
        ! Normalize the vector
        leg=sqrt(sum(cir_vec**2))
        cir_vec = cir_vec/leg
@@ -695,7 +739,7 @@ do i_C=1,num_Crack
                         Crack3D_Meshed_Node(i_C)%row(i_Cr_Node,2), &
                         Crack3D_Meshed_Node(i_C)%row(i_Cr_Node,3), &
                         Ele_Num_Cache,in_Elem_num)          
-          if(in_Elem_num==0) then
+          if(in_Elem_num==0  .and. Key_Warning_Level>=3) then
                print *,'    ERROR-2022110108 :: in_Elem_num=0 in D3_Mesh_Initial_Crack.f90!'
                call Warning_Message('S',Keywords_Blank)
           endif                          

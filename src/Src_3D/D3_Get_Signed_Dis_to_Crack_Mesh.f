@@ -129,6 +129,7 @@ c     --------------------------------------------------------
       c_Check_z_max = c_Crack_z_max + Check_Ball_R * TWO
       if(Point(3) > c_Check_z_max) return
       
+      
 c     ------------
 C     Loop search
 c     ------------
@@ -158,19 +159,21 @@ c     ------------
           endif
           
           ! Calculate the signed distance from the current node to the fracture element and determine the
-          ! foot-of-perpendicular location
+          ! foot-of-perpendicular location.
           call Tool_Dis_Point_to_3D_Tri
      &           (Point,Point1,Point2,Point3,
      &            Tri123_Distance,Tri123_PER,
      &            Tri123_Yes_PER_in,Tri123_Yes_PER_on)
           
-          ! If the perpendicular foot lies within the element surface
+          ! If the perpendicular foot lies within the element surface.
           if (Tri123_Yes_PER_in .or. Tri123_Yes_PER_on)then
-            ! Find the minimum symbol distance
+            ! Find the minimum symbol distance.
             if(abs(Tri123_Distance) < c_Min_Signed_Dis)then
               Signed_Dis     = Tri123_Distance
               c_Min_Signed_Dis = abs(Tri123_Distance) 
+              
               c_Yes_Node_PER_in_FS  = .True.
+              
               c_PER_Node_to_FS(1:3)  = Tri123_PER
               Yes_Found_Min_Signed_Dis = .True.
               

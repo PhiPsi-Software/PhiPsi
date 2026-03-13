@@ -19,7 +19,7 @@ real(kind=FT),intent(in)::c_DISP(Total_FD)
 integer,intent(in)::Crack_Number
 real(kind=FT),intent(in)::Crack_Point(3)
 real(kind=FT),intent(out)::Crack_Point_Aperture(3)
-integer Fluid_element_number,Fluid_node_number,Crack_mesh_ele_number,Crack_mesh_node_number
+integer,intent(in)::Fluid_element_number,Fluid_node_number,Crack_mesh_ele_number,Crack_mesh_node_number
 
 integer Solid_Element
 real(kind=FT) c_mesh_element_points(3,3)
@@ -51,7 +51,7 @@ integer P1_CalP_num,P2_CalP_num,P3_CalP_num
 integer i_FluidEle
 real(kind=FT) c_P1(3),c_P2(3),c_P3(3)
 real(kind=FT) Yes_Point_on_3D_Triangle_Tol
-
+real(kind=FT) Normal_component
 
 Crack_Point_Aperture(1:3) = ZR
 Yes_Point_on_3D_Triangle_Tol = 1.0D-3
@@ -88,6 +88,7 @@ call Tool_ThetaX_ThetaY_ThetaZ_3D_rotation(1,                       &
     
 Ele_Num_Cache = 1
 call Cal_Ele_Num_by_Coors_3D(Crack_Point(1),Crack_Point(2),Crack_Point(3),Ele_Num_Cache,Solid_Element) 
+
 if(Solid_Element==0)then
   if (Key_Stop_Outside_Crack ==1) then
       print *,'       WARN-2023081201 :: Solid_Element=0 in Cal_Crack_Point_Aperture_3D.f90!'
@@ -173,16 +174,20 @@ endif
 100 continue 
 
 if(yes_found_Nor_Vector .eqv. .False.) then
-  print *,"    ERROR-2023081203 :: point is not on the crack surface, in Cal_Crack_Point_Aperture_3D.f90!"
-  print *,'                        Crack_Number:',Crack_Number  
-  print *,'                        Crack_Point:',Crack_Point(1:3)   
-  call Warning_Message('S',Keywords_Blank)  
+  if (Key_Warning_Level >= 3) then
+    print *,"    WARNING-2023081203 :: point is not on the crack surface, in Cal_Crack_Point_Aperture_3D.f90!"
+    print *,'                          Crack_Number:',Crack_Number  
+    print *,'                          Crack_Point:',Crack_Point(1:3)   
+    call Warning_Message('S',Keywords_Blank)  
+  endif
 endif
 
 if(sum(c_POS_3D(NODES_iE,Crack_Number))==0) then
-  print *,"     ERROR-2023081201 :: in Cal_Crack_Point_Aperture_3D.f90."
-  print *,"                         sum(c_POS_3D(NODES_iE,Crack_Number))==0!"
-  call Warning_Message('S',Keywords_Blank)  
+  if (Key_Warning_Level >= 3) then
+    print *,"     ERROR-2023081201 :: in Cal_Crack_Point_Aperture_3D.f90."
+    print *,"                         sum(c_POS_3D(NODES_iE,Crack_Number))==0!"
+    call Warning_Message('S',Keywords_Blank)  
+  endif
 endif
 
 do i_N = 1,8
@@ -200,7 +205,6 @@ do i_N = 1,8
       Point_Coor_Local = MATMUL(c_T_Matrx,Crack_Point(1:3) - Nearest_Point(1:3))
       F_funtion_r = sqrt(Point_Coor_Local(1)**2 + Point_Coor_Local(2)**2)
       
-      
       do i_F =1,1
           Num_Enri_Node=c_POS_3D(NODES_iE(i_N),Crack_Number)+i_F-1 
           Crack_Point_Aperture(1) = Crack_Point_Aperture(1) + sqrt(F_funtion_r)*c_N(i_N)*c_DISP(Num_Enri_Node*3-2)
@@ -211,11 +215,8 @@ do i_N = 1,8
   end if
 end do
 
-tem_vector(1:3) = Crack_Point_Aperture(1:3)
-Crack_Point_Aperture(1) = TWO*(Nor_Vector(1)*tem_vector(1))
-Crack_Point_Aperture(2) = TWO*(Nor_Vector(2)*tem_vector(2))
-Crack_Point_Aperture(3) = TWO*(Nor_Vector(3)*tem_vector(3))
 
+Crack_Point_Aperture = TWO*Crack_Point_Aperture                        
 
 return 
 end SUBROUTINE Cal_Crack_Point_Aperture_3D      

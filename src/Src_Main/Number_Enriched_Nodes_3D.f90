@@ -116,9 +116,9 @@ end do
 
 ! Maximum enhancement node number (of the crack)
 if(num_Crack >=1)then
-      max_Cr_Node = maxval(c_POS_3D(1:Num_Node,1:num_Crack))
+    max_Cr_Node = maxval(c_POS_3D(1:Num_Node,1:num_Crack))
 else
-      max_Cr_Node = Num_Node
+    max_Cr_Node = Num_Node
 endif
 
 !Total degrees of freedom. 

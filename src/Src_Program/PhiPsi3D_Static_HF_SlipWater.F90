@@ -58,8 +58,8 @@ SUBROUTINE PhiPsi3D_Static_HF_SlipWater
 ! Note: Natural fractures and after-pressurized hydraulic fractures may potentially turn into HF
 ! fractures.
 ! Column 2 (Fracture Status): =1, HF fracturing not completed; =2, HF fracturing completed
-! Column 3 (Can the crack continue to propagate): =1, yes; =0, no
-! Column 4 (Whether the fracture has obtained a fluid node): =1, Yes; =0, No
+! Column 3 (Can the crack continue to propagate?): =1, yes; =0, no
+! Column 4 (Whether the fracture has obtained a fluid node?): =1, Yes; =0, No
 ! Column 5 (Did the crack propagate in the previous step?): =1, Yes; =0, No
 ! The global variable Cracks_Stages_Wellbores(i_WB, i_Stage, i_C) is used for the crack numbers
 ! corresponding to each segment of each wellbore.
@@ -80,8 +80,6 @@ use Global_HF
 use Global_Stress
 use Global_Strain
 use Global_POST
-      
-! For testing
 use Global_Ragged_Array_Real_Classs
 
 !---------------------------------------------------------------------------------------------
@@ -150,6 +148,12 @@ integer Total_Num_G_P
 ! Initial value of the temporary variable.
 !------------------------------------------
 Yes_Last_Growth = .False.
+!NEWFTU-2026022701. 
+WBPT_3D_Slip_HF_Convergent_Pressure = ZR
+if (Key_3D_Slip_HF_Keep_Pressure==1)then
+    allocate(WBPT_3D_Slip_HF_Crack_Convergent_Pressure(Max_Num_Cr_3D))
+    WBPT_3D_Slip_HF_Crack_Convergent_Pressure= ZR
+endif
       
 !-----------------------------
 ! Formatted output statement.
@@ -343,7 +347,10 @@ do i_WB = 1,num_Wellbore
         ! IMPROV2022091001.
         elseif(Max_Model_Range>=100.0D0) then
             Time_Initial_Guess =  1.0D0
-            Pres_Initial_Guess =  9.87654321D6
+            !Pres_Initial_Guess = 9.87654321D6 ! Initial pressure value. Prevent it from being the same as the
+            !ground stress, which would cause F=0 during the initial step calculation, making it impossible to
+            !compute. BUGFIX2022091802.
+            Pres_Initial_Guess =  100.11D6
             Max_Prop_Steps     =  1000
             ! SlipWater_Max_Time_Steps_3D     =  20      ! Maximum time step iterations, global variable.
             ! SlipWater_Max_Pres_Steps_3D     =  10       !Maximum pressure step iterations, global variable.
@@ -537,7 +544,7 @@ do i_WB = 1,num_Wellbore
       do i_C=1,Num_Crack
         ! If it is an HF fracture
         if(Crack_Type_Status_3D(i_C,1) == 1) then
-            num_Tol_CalP_Water= num_Tol_CalP_Water +Cracks_Real_CalP_Num_3D(i_C)        
+            num_Tol_CalP_Water= num_Tol_CalP_Water +Cracks_Real_CalP_Num_3D(i_C) 
         endif
       end do 
       
@@ -725,7 +732,15 @@ do i_WB = 1,num_Wellbore
           
             ! Calculate the stress intensity factor (including the equivalent stress intensity factor).
             print *,'       Calculating stress intensity factors...'   
-            call Cal_SIFs_DIM_3D(isub,DISP,8)
+            !call Cal_SIFs_DIM_3D(isub,DISP,8) ! DIM, the Displacement Interpolation Method, the final 8
+            !indicates the number of tab spaces for screen output
+            if (Key_SIFs_Method==1) then      
+                call Cal_SIFs_DIM_3D(isub,DISP,8)
+            elseif(Key_SIFs_Method==2)then
+                Crack_Pressure(1:num_crack) = Output_Pres
+                call Cal_SIFs_IIM_3D(isub,DISP,8)
+            endif
+                
             ! Extract the maximum, minimum, and average equivalent stress intensity factors of the HF fracture.
             call D3_Get_Max_Min_Ave_KIeq_of_HF_Cracks(Max_KI_eq_3D,Min_KI_eq_3D,Ave_KI_eq_3D,c_Crack_Max_Num,c_Vertex_Max_Num)
             print *,'       Max_KI_eq_3D (MPa*m^1/2):',Max_KI_eq_3D/1.0D6
@@ -760,7 +775,14 @@ do i_WB = 1,num_Wellbore
             print *,' '
             ! Calculate the stress intensity factor (including the equivalent stress intensity factor).
             print *,'       Calculating stress intensity factors...'   
-            call Cal_SIFs_DIM_3D(isub,DISP2,8)
+            !call Cal_SIFs_DIM_3D(isub,DISP2,8) ! DIM, the Displacement Interpolation Method, the final 8
+            !indicates the number of tab spaces for screen output
+            if (Key_SIFs_Method==1) then      
+                call Cal_SIFs_DIM_3D(isub,DISP2,8)
+            elseif(Key_SIFs_Method==2)then
+                Crack_Pressure(1:num_crack) = Output_Pres
+                call Cal_SIFs_IIM_3D(isub,DISP2,8)
+            endif
             ! Extract the maximum, minimum, and average equivalent stress intensity factors of the HF fracture.
             call D3_Get_Max_Min_Ave_KIeq_of_HF_Cracks(Max_KI_eq_3D,Min_KI_eq_3D,Ave_KI_eq_3D,c_Crack_Max_Num,c_Vertex_Max_Num)
             print *,'       Max_KI_eq_3D (MPa*m^1/2):',Max_KI_eq_3D/1.0D6
@@ -808,6 +830,11 @@ do i_WB = 1,num_Wellbore
                ! Update DISP. 2023-05-16. BUGFIX2023051602.
                DISP = DISP2
                
+               !2026-03-05.
+!               if (c_Time < Old_Time) then
+!                   c_Time = Old_Time + 1
+!               endif
+               
                print *,' '
                write(*,5005) i_Time
                write(*,*) '    .........................................'
@@ -825,12 +852,37 @@ do i_WB = 1,num_Wellbore
                call Save_HF_wbpt_File(i_WB,i_Stage,i_Prop,c_Pres,c_Time)
                exit
             endif
-             ! If convergence is not achieved after all steps are completed, an error message will be displayed.
+            
+            ! If convergence is not achieved after all steps are completed, an error message will be displayed.
             if(i_Time ==SlipWater_Max_Time_Steps_3D .and. SlipWater_Time_Step_Conv_Check==1) then
-               write(*,4007) 
-               write(*,4008) SlipWater_Max_Time_Steps_3D
-               write(*,4007) 
-               call Warning_Message('S',Keywords_Blank) 
+                if (KEY_WARNING_LEVEL==3) then
+                    write(*,4007) 
+                    write(*,4008) SlipWater_Max_Time_Steps_3D
+                    write(*,4007) 
+                    !call Warning_Message('S',Keywords_Blank) 
+                else
+                   !2026-03-05.
+!                   if (c_Time < Old_Time) then
+!                       c_Time = Old_Time + 1
+!                   endif
+               
+                    DISP = DISP2
+                    print *,' '
+                    write(*,5005) i_Time
+                    write(*,*) '    .........................................'
+                    !Yes_T_Convergent = .True.
+                    write(*,5001) c_Pres/1.0D6
+                    write(*,5000) c_Time
+                    write(*,5002) c_Time/60.0D0
+                    write(*,5003) Max_KI_eq_3D/1.0D6
+                    write(*,5006) Ave_KI_eq_3D/1.0D6
+                    write(*,5007) Min_KI_eq_3D/1.0D6
+                    write(*,5004) KIc/1.0D6
+                    write(*,*) '    .........................................'
+                    print *,' '
+                    ! Save pressure and time data to a *.wbpt file
+                    call Save_HF_wbpt_File(i_WB,i_Stage,i_Prop,c_Pres,c_Time)
+                endif
             endif
         enddo
       
@@ -887,7 +939,14 @@ do i_WB = 1,num_Wellbore
                 ! Calculate the stress intensity factor (including the equivalent 
                 ! stress intensity factor) corresponding to the Bisec_Start_Time time point.
                 !BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
-                call Cal_SIFs_DIM_3D(isub,DISP,8)
+                !call Cal_SIFs_DIM_3D(isub,DISP,8) ! DIM, the Displacement Interpolation Method, the final 8
+                !indicates the number of tab spaces for screen output
+                if (Key_SIFs_Method==1) then      
+                    call Cal_SIFs_DIM_3D(isub,DISP,8)
+                elseif(Key_SIFs_Method==2)then
+                    Crack_Pressure(1:num_crack) = Output_Pres
+                    call Cal_SIFs_IIM_3D(isub,DISP,8)
+                endif
                 ! Extract the maximum, minimum, and average equivalent stress intensity factors of the HF fracture.
                 call D3_Get_Max_Min_Ave_KIeq_of_HF_Cracks(Max_KI_eq_3D,Min_KI_eq_3D,Ave_KI_eq_3D,c_Crack_Max_Num,c_Vertex_Max_Num)
                 print *,'       Max_KI_eq_3D at start time (MPa*m^1/2):',Max_KI_eq_3D/1.0D6
@@ -933,7 +992,14 @@ do i_WB = 1,num_Wellbore
                 ! Calculate the stress intensity factor (including the equivalent
                 ! stress intensity factor) corresponding to the Bisec_End_Time point.
                 !BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
-                call Cal_SIFs_DIM_3D(isub,DISP2,8)
+                !call Cal_SIFs_DIM_3D(isub,DISP2,8) ! DIM, the Displacement Interpolation Method, the final 8
+                !indicates the number of tab spaces for screen output
+                if (Key_SIFs_Method==1) then      
+                    call Cal_SIFs_DIM_3D(isub,DISP2,8)
+                elseif(Key_SIFs_Method==2)then
+                    Crack_Pressure(1:num_crack) = Output_Pres
+                    call Cal_SIFs_IIM_3D(isub,DISP2,8)
+                endif
                 ! Extract the maximum, minimum, and average equivalent stress intensity factors of the HF fracture.
                 call D3_Get_Max_Min_Ave_KIeq_of_HF_Cracks(Max_KI_eq_3D,Min_KI_eq_3D,Ave_KI_eq_3D,c_Crack_Max_Num,c_Vertex_Max_Num)
                 print *,'       Max_KI_eq_3D at end time (MPa*m^1/2):',Max_KI_eq_3D/1.0D6
@@ -1000,7 +1066,14 @@ do i_WB = 1,num_Wellbore
                 ! Calculate the stress intensity factor (including the equivalent 
                 ! stress intensity factor) corresponding to the Bisec_Mid_Time time point.
                 !BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
-                call Cal_SIFs_DIM_3D(isub,DISP,8)
+                !call Cal_SIFs_DIM_3D(isub,DISP,8) ! DIM, the Displacement Interpolation Method, the final 8
+                !indicates the number of tab spaces for screen output
+                if (Key_SIFs_Method==1) then      
+                    call Cal_SIFs_DIM_3D(isub,DISP,8)
+                elseif(Key_SIFs_Method==2)then
+                    Crack_Pressure(1:num_crack) = Output_Pres
+                    call Cal_SIFs_IIM_3D(isub,DISP,8)
+                endif
                 ! Extract the maximum, minimum, and average equivalent stress intensity factors of the HF fracture.
                 call D3_Get_Max_Min_Ave_KIeq_of_HF_Cracks(Max_KI_eq_3D,Min_KI_eq_3D,Ave_KI_eq_3D,c_Crack_Max_Num,c_Vertex_Max_Num)
                 !KIc
@@ -1079,6 +1152,9 @@ do i_WB = 1,num_Wellbore
         enddo
       endif
       
+      !Save Convergent Pressure for D3_HF_Generate_Initial_Cracks_of_WB.f90. NEWFTU-2026022701. 
+      WBPT_3D_Slip_HF_Convergent_Pressure = c_Pres
+      
       
       !***********************************************************
       ! Save node payload (including enhanced nodes)
@@ -1113,6 +1189,12 @@ do i_WB = 1,num_Wellbore
       ! Save crack-related files (including enhanced node numbering c_POS).
       !*********************************************************************
       call Save_Files_Crack_3D(isub)    
+      
+      !*************************************************************************
+      !Cut and save 3D boundary cracks, only keep the surface inside the model.
+      !NEWFTU-2026020801.
+      !*************************************************************************
+      call Cut_and_Save_Boundary_Cracks_3D(isub,DISP)   
       
       !***************************************
       ! Save crack width related information.

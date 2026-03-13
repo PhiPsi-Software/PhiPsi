@@ -78,7 +78,6 @@ call Matrix_Inverse_3x3(J,Inverse_J)
 
 dNdx = MATMUL(dNdkesi,Inverse_J)
 
-
 B_FEM(1:6,1:24) = ZR
 if (EleGaus_yes_FEM_asemd(i_E,i_G).eqv. .False.) then
   B_FEM(1,1:24:3)   =  dNdx(:,1)
@@ -109,7 +108,6 @@ if(c_maxval_Enriched_Node_Type .gt. 0 .or. c_minval_Enriched_Node_Type .gt. 0)th
   Global_coor_Gauss(1) = DOT_PRODUCT(N(1,1:24:3),c_X_NODES(1:8))
   Global_coor_Gauss(2) = DOT_PRODUCT(N(1,1:24:3),c_Y_NODES(1:8))      
   Global_coor_Gauss(3) = DOT_PRODUCT(N(1,1:24:3),c_Z_NODES(1:8)) 
-
   
   if(Key_XA/=2) then
       mat_num    = Elem_Mat(i_E)
@@ -146,7 +144,6 @@ if(c_maxval_Enriched_Node_Type .gt. 0 .or. c_minval_Enriched_Node_Type .gt. 0)th
                  c_Distance_Node_to_FS = Dis_Node_to_FS(c_NN(i_N))%row(i_C)
                  
                  call Cal_Sign(c_Distance_Node_to_FS,H_i)
-                
 
                  if(Yes_Found_Min_Signed_Dis .eqv. .True.) then
                      call Cal_Sign(c_Distance,H_gp)
@@ -154,7 +151,6 @@ if(c_maxval_Enriched_Node_Type .gt. 0 .or. c_minval_Enriched_Node_Type .gt. 0)th
                      H_gp = H_i
                  endif
               end if
-                          
               
               BI_enr(1,1:3) = [dNdx(i_N,1)*(H_gp-H_i), ZR, ZR]
               BI_enr(2,1:3) = [ZR, dNdx(i_N,2)*(H_gp-H_i), ZR]
@@ -326,8 +322,7 @@ if(c_maxval_Enriched_Node_Type .gt. 0 .or. c_minval_Enriched_Node_Type .gt. 0)th
   else
       tem_B(1:6,1:num_B_XFEM) = B_XFEM(1:6,1:num_B_XFEM)
       num_tem_B = num_B_XFEM
-  end if 
-  
+  end if
   
   
 end if   

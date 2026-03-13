@@ -1,4 +1,3 @@
- 
 subroutine Cal_SIFs_DIM_3D(iter,c_DISP,Tab_Num)
 
 
@@ -91,6 +90,13 @@ integer up_Elem_num(30),dn_Elem_num(30)
 real(kind=FT) up_Kesi(30),up_Yita(30),up_Zeta(30),dn_Kesi(30),dn_Yita(30),dn_Zeta(30)
 real(kind=FT) up_Disp(30,3),dn_Disp(30,3)
 real(kind=FT) r_k
+logical logical_close
+1001 FORMAT(5X,'-- Calculating Vertex ',I4,' /',I4,' of crack',I4,'...')  
+1002 FORMAT(8X,'-- Calculating Vertex ',I4,' /',I4,' of crack',I4,'...')  
+1101 FORMAT(5X,'-- Calculating SIFs using DIM for crack',I4,' /',I4,'...')  
+1102 FORMAT(8X,'-- Calculating SIFs using DIM for crack',I4,' /',I4,'...')  
+
+2001 FORMAT(5X,'   SIFs of Vertex ',I4,' of crack ',I4, ':',F11.5,' / ', F11.5,' / ', F11.5, ' MPa.m^1/2.')  
 
 
       
@@ -169,10 +175,12 @@ do i_C =1,num_Crack
               if(c_Yes_Node_PER_in_FS) then
                   Offseted_Points(i_R_Point,1:3) =c_PER_Node_to_FS
               else
-                  print *,"    ERROR-2023081301 :: point on the crack surface not valid, in Cal_SIFs_DIM_3D.f90!"
-                  print *,'                        Crack_Number:',i_C  
-                  print *,'                        Offseted_Point:',Offseted_Points(i_R_Point,1:3)  
-                  call Warning_Message('S',Keywords_Blank)  
+                  if (Key_Warning_Level == 3) then
+                      print *,"    WARNING-2023081301 :: point on the crack surface not valid, in Cal_SIFs_DIM_3D.f90!"
+                      print *,'                          Crack_Number:',i_C  
+                      print *,'                          Offseted_Point:',Offseted_Points(i_R_Point,1:3)  
+                      call Warning_Message('S',Keywords_Blank)  
+                  endif
               endif
           enddo
       endif
@@ -198,9 +206,12 @@ do i_C =1,num_Crack
                       Crack_Type_Status_3D(i_C,3) = 0
                       goto 1037
                   else
-                      print *,'    ERROR-2022110704 :: up_Elem_num(i_R_Point)=0 in Cal_SIFs_DIM_3D.f90!'
-                      print *,'                        The coordinates of point:',Offseted_Points_Up(i_R_Point,1:3)       
-                      call Warning_Message('S',Keywords_Blank)  
+                      print *,'    WARN-2022110704 :: up_Elem_num(i_R_Point)=0 in Cal_SIFs_DIM_3D.f90!'
+                      print *,'                       The coordinates of point:',Offseted_Points_Up(i_R_Point,1:3)       
+                      KI_3D(i_C)%row(i_V)  = ZR
+                      KII_3D(i_C)%row(i_V) = ZR
+                      KIII_3D(i_C)%row(i_V)= ZR
+                      goto 1036
                   endif
               endif
               if(dn_Elem_num(i_R_Point)==0)then
@@ -211,9 +222,12 @@ do i_C =1,num_Crack
                       Crack_Type_Status_3D(i_C,3) = 0
                       goto 1037
                   else
-                      print *,'    ERROR-2022110701 :: dn_Elem_num(i_R_Point)=0 in Cal_SIFs_DIM_3D.f90!'
-                      print *,'             The coordinates of point:',Offseted_Points_Dn(i_R_Point,1:3)        
-                      call Warning_Message('S',Keywords_Blank)  
+                      print *,'    WARN-2022110701 :: dn_Elem_num(i_R_Point)=0 in Cal_SIFs_DIM_3D.f90!'
+                      print *,'                       The coordinates of point:',Offseted_Points_Dn(i_R_Point,1:3)        
+                      KI_3D(i_C)%row(i_V)  = ZR
+                      KII_3D(i_C)%row(i_V) = ZR
+                      KIII_3D(i_C)%row(i_V)= ZR
+                      goto 1036
                   endif
               endif
           enddo
@@ -238,6 +252,7 @@ do i_C =1,num_Crack
       endif 
       
       do i_R_Point = 1,Num_of_SIFs_R_Points
+         
           Relative_Disp_Cr_Sys(i_R_Point,1:3)=MATMUL(T_Matrx,Relative_Disp(i_R_Point,1:3))  
       enddo
       
@@ -273,6 +288,11 @@ do i_C =1,num_Crack
       KI_3D(i_C)%row(i_V)   = c_fit_line_k(1)*r_k + c_fit_line_b(1)
       KII_3D(i_C)%row(i_V)  = c_fit_line_k(2)*r_k + c_fit_line_b(2)
       KIII_3D(i_C)%row(i_V) = c_fit_line_k(3)*r_k + c_fit_line_b(3)
+      
+      1036 continue   
+      if (Key_3D_SIFs_Print==1) then
+          write(*,2001) i_V,i_C,KI_3D(i_C)%row(i_V)/1.0D6,KII_3D(i_C)%row(i_V)/1.0D6,KIII_3D(i_C)%row(i_V)/1.0D6
+      endif
     end do
     1037 continue
 enddo
@@ -305,7 +325,7 @@ if(Key_Save_Nothing  == 0) then
 endif
 
 if (Key_Denoise_Vertex_Value>=1)then
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_C,num_Cr_Edges,n_Sigma)  
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_C,num_Cr_Edges,n_Sigma,logical_close)  
   do i_C = 1,num_Crack   
       num_Cr_Edges = Crack3D_Meshed_Outline_num(i_C)
       if (i_C==1) then
@@ -316,15 +336,20 @@ if (Key_Denoise_Vertex_Value>=1)then
           endif                  
       endif
       n_Sigma =2 
-      call Tool_Denoise_Data(KI_3D(i_C)%row(1:num_Cr_Edges),num_Cr_Edges,Key_Denoise_Vertex_Value,n_Sigma,.True.) 
-      call Tool_Denoise_Data(KII_3D(i_C)%row(1:num_Cr_Edges),num_Cr_Edges,Key_Denoise_Vertex_Value,n_Sigma,.True.)       
-      call Tool_Denoise_Data(KIII_3D(i_C)%row(1:num_Cr_Edges),num_Cr_Edges,Key_Denoise_Vertex_Value,n_Sigma,.True.)      
+      
+      
+      logical_close = .True.
+      if (Boundary_Cracks(i_C) .eqv. .True.) logical_close = .False.
+      
+      call Tool_Denoise_Data(KI_3D(i_C)%row(1:num_Cr_Edges),num_Cr_Edges,Key_Denoise_Vertex_Value,n_Sigma,logical_close) 
+      call Tool_Denoise_Data(KII_3D(i_C)%row(1:num_Cr_Edges),num_Cr_Edges,Key_Denoise_Vertex_Value,n_Sigma,logical_close)       
+      call Tool_Denoise_Data(KIII_3D(i_C)%row(1:num_Cr_Edges),num_Cr_Edges,Key_Denoise_Vertex_Value,n_Sigma,logical_close)      
   enddo
 !$OMP END PARALLEL DO
 endif
       
 if (Key_Smooth_Vertex_Value>=1)then
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_C,num_Cr_Edges,n_Sigma)        
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_C,num_Cr_Edges,n_Sigma,logical_close)        
       do i_C = 1,num_Crack     
           num_Cr_Edges = Crack3D_Meshed_Outline_num(i_C)
           if (i_C==1) then
@@ -334,14 +359,21 @@ if (Key_Smooth_Vertex_Value>=1)then
                   print *,'       Smoothing vertex values...'   
               endif                
           endif
-          call Tool_Smooth_Data(KI_3D(i_C)%row(1:num_Cr_Edges),num_Cr_Edges,Key_Smooth_Vertex_Value,Smooth_Vertex_n,.True.)
-          call Tool_Smooth_Data(KII_3D(i_C)%row(1:num_Cr_Edges),num_Cr_Edges,Key_Smooth_Vertex_Value,Smooth_Vertex_n,.True.)   
-          call Tool_Smooth_Data(KIII_3D(i_C)%row(1:num_Cr_Edges),num_Cr_Edges,Key_Smooth_Vertex_Value,Smooth_Vertex_n,.True.)      
+          
+          logical_close = .True.
+          if (Boundary_Cracks(i_C) .eqv. .True.) logical_close = .False.
+          
+          call Tool_Smooth_Data(KI_3D(i_C)%row(1:num_Cr_Edges),num_Cr_Edges,&
+                  Key_Smooth_Vertex_Value,Smooth_Vertex_n, logical_close)
+          call Tool_Smooth_Data(KII_3D(i_C)%row(1:num_Cr_Edges),num_Cr_Edges,&
+                  Key_Smooth_Vertex_Value,Smooth_Vertex_n,logical_close)   
+          call Tool_Smooth_Data(KIII_3D(i_C)%row(1:num_Cr_Edges),num_Cr_Edges,&
+                  Key_Smooth_Vertex_Value,Smooth_Vertex_n,logical_close)      
       enddo
 !$OMP END PARALLEL DO 
              
       if (Key_Smooth_Vertex_Value2>=1)then
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_C,num_Cr_Edges,n_Sigma)           
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_C,num_Cr_Edges,n_Sigma,logical_close)           
           do i_C = 1,num_Crack     
               num_Cr_Edges = Crack3D_Meshed_Outline_num(i_C)
               if (i_C==1) then
@@ -351,9 +383,17 @@ if (Key_Smooth_Vertex_Value>=1)then
                       print *,'       Smoothing vertex values...'   
                   endif 
               endif
-              call Tool_Smooth_Data(KI_3D(i_C)%row(1:num_Cr_Edges),num_Cr_Edges,Key_Smooth_Vertex_Value2,Smooth_Vertex_n2,.True.) 
-              call Tool_Smooth_Data(KII_3D(i_C)%row(1:num_Cr_Edges),num_Cr_Edges,Key_Smooth_Vertex_Value2,Smooth_Vertex_n2,.True.) 
-              call Tool_Smooth_Data(KIII_3D(i_C)%row(1:num_Cr_Edges),num_Cr_Edges, Key_Smooth_Vertex_Value2,Smooth_Vertex_n2,.True.) 
+              
+             logical_close = .True.
+             if (Boundary_Cracks(i_C) .eqv. .True.) logical_close = .False.
+          
+          
+              call Tool_Smooth_Data(KI_3D(i_C)%row(1:num_Cr_Edges),num_Cr_Edges,&
+                                Key_Smooth_Vertex_Value2,Smooth_Vertex_n2,logical_close) 
+              call Tool_Smooth_Data(KII_3D(i_C)%row(1:num_Cr_Edges),num_Cr_Edges,&
+                                Key_Smooth_Vertex_Value2,Smooth_Vertex_n2,logical_close) 
+              call Tool_Smooth_Data(KIII_3D(i_C)%row(1:num_Cr_Edges),num_Cr_Edges,&
+                                Key_Smooth_Vertex_Value2,Smooth_Vertex_n2,logical_close) 
           enddo
 !$OMP END PARALLEL DO               
       endif           

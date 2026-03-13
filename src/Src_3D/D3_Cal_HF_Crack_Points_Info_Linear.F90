@@ -41,7 +41,7 @@
 !     ------------------------------------------------- !
  
 subroutine D3_Cal_HF_Crack_Points_Info_Linear(isub)
-! Calculate the fluid element calculation point numbers for cracks, the coordinates 
+! Calculate the fluid element calculation point for cracks, the coordinates 
 ! and directions of the calculation points, the crack segment numbers they belong to,
 ! and the element numbers they are in, for hydraulic fracturing linear HF elements.
 ! In addition, this subroutine also needs to specify the type of calculation point.
@@ -94,9 +94,9 @@ subroutine D3_Cal_HF_Crack_Points_Info_Linear(isub)
 ! Save the local information corresponding to the global fluid node numbers: 
 ! including fracture numbers, fluid element numbers, and the fluid node 
 ! numbers corresponding to the fluid elements. 2022-06-04.
-!Cracks_FluidEle_CalP_Glo_Info(Glo_location,1) = i_C
-!Cracks_FluidEle_CalP_Glo_Info(Glo_location,2) = i_FluidEle
-!Cracks_FluidEle_CalP_Glo_Info(Glo_location,3) = i_CalP
+! Cracks_FluidEle_CalP_Glo_Info(Glo_location,1) = i_C
+! Cracks_FluidEle_CalP_Glo_Info(Glo_location,2) = i_FluidEle
+! Cracks_FluidEle_CalP_Glo_Info(Glo_location,3) = i_CalP
       
 ! The in-situ stress at the globally numbered fluid nodes (perpendicular to the fracture surface), 
 ! that is, the initial in-situ stress in the direction normal to the fracture surface. 2022-06-04.
@@ -238,7 +238,7 @@ do i_C = 1,num_Crack
     !########################################################################################### 
     ! If the fluid calculation point has already been computed, and the fracture did 
     ! not propagate in the previous step or is a wellbore HF-induced fracture,
-    ! Then there is no need to calculate further. IMPROV2022060202.
+    ! then there is no need to calculate further. IMPROV2022060202.
     ! The global variable Crack_Type_Status_3D(i_C,10) is used to indicate the type and 
     ! status of cracks.
     ! Column 1 (Fracture Type): =1, HF Fracture; =2, Natural Fracture; 
@@ -411,9 +411,9 @@ do i_C = 1,num_Crack
             endif
             tmp_ele_CalP(Eles_Has_CalP_Location(c_Elem),c_ele_num_CalP(c_Elem),1:3)=InterSection_P
             
-            !------------------------------------------
-            ! Check if the intersection already exists
-            !------------------------------------------
+            !-------------------------------------------
+            ! Check if the intersection already exists.
+            !-------------------------------------------
             call Vector_belongs_Matrix_Is_Dou(c_num_CalP,3,Cracks_CalP_Coors_3D(i_C)%row(1:c_num_CalP,1:3),&
                                               InterSection_P(1:3),c_Location,Yes_Exist)   
 
@@ -433,7 +433,7 @@ do i_C = 1,num_Crack
              Cracks_CalP_Coors_3D(i_C)%row(c_num_CalP,1:3)=InterSection_P
              !2022-09-27.
              if(sum(abs(InterSection_P))<=Tol_10)then
-                print *,'    ERROR-2022092704 :: illegal Cracks_CalP_Coors_3D in D3_Cal_HF_Crack_Points_Info_Linear.f'
+                print *,'    ERROR-2022092704 :: Illegal Cracks_CalP_Coors_3D in D3_Cal_HF_Crack_Points_Info_Linear.F90!'
                 call Warning_Message('S',Keywords_Blank)  
              endif     
              ! Calculate the outward normal vector of the element

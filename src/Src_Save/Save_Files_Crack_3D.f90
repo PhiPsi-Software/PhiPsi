@@ -21,6 +21,7 @@ logical c_write
 integer c_Cr_Location
 real(kind=FT) tem_crack_radius
 integer :: temp_Solid_El_Crs(Solid_El_Max_num_Crs)
+integer Num_CrMesh_Outlines
 
 if (Key_Save_Nothing==1) return
 
@@ -59,14 +60,21 @@ close(104)
 close(105)    
 close(106)    
 
+
 print *,'    Saving apertures of crack nodes...'
 write(temp,'(I5)') isub
 Filename_1=trim(Full_Pathname)//'.cmap'//'_'//ADJUSTL(temp)    
 open(101,file=Filename_1,status='unknown') 
 do i=1,num_Crack
-write(101,'(50000E20.12)')(Crack3D_Meshed_Node_Value(i)%row(j,1),j=1,Crack3D_Meshed_Node_num(i))
+    if (Key_Del_Neg_Aperture == 1) then
+        write(101,'(50000E20.12)')(max(0.0d0, Crack3D_Meshed_Node_Value(i)%row(j,1)), &
+                                   j=1,Crack3D_Meshed_Node_num(i))
+    else
+        write(101,'(50000E20.12)')(Crack3D_Meshed_Node_Value(i)%row(j,1), &
+                                   j=1,Crack3D_Meshed_Node_num(i))
+    endif
 end do
-close(101) 
+close(101)
 
 print *,'    Saving mesh of cracks...'
 write(temp,'(I5)') isub
@@ -138,56 +146,60 @@ do i=1,Num_Node
 end do
 close(110) 
 
-print *,'    Saving number of fluid elements of cracks...'
-write(temp,'(I5)') isub
-Filename_1 =trim(Full_Pathname)//'.cpfn'//'_'//ADJUSTL(temp)         
-open(101,file=Filename_1,status='unknown')     
-do i=1,num_Crack
-  write(101, '(I10)') Cracks_FluidEle_num_3D(i)  
-end do
-close(101)
-
-print *,'    Saving fluid node number of cracks...'
-write(temp,'(I5)') isub
-Filename_1 = trim(Full_Pathname)//'.cpno'//'_'//ADJUSTL(temp)        
-if (Key_Data_Format==1) then
-open(101,file=Filename_1,status='unknown')     
-do i=1,num_Crack
-  do j=1,Cracks_FluidEle_num_3D(i)
-      write(101, '(3I10)') Cracks_FluidEle_CalP_3D(i)%row(j,1:3)
-  enddo
-end do
-close(101)
-elseif(Key_Data_Format==2)then
-open(101,file=Filename_1,status='unknown',form='unformatted',access='stream')     
-do i=1,num_Crack
-  do j=1,Cracks_FluidEle_num_3D(i)
-      write(101) Cracks_FluidEle_CalP_3D(i)%row(j,1:3)
-  enddo
-end do
-close(101)          
+if (Key_Cal_HF_Crack_Points_Info_3D==1) then
+    print *,'    Saving number of fluid elements of cracks...'
+    write(temp,'(I5)') isub
+    Filename_1 =trim(Full_Pathname)//'.cpfn'//'_'//ADJUSTL(temp)         
+    open(101,file=Filename_1,status='unknown')     
+    do i=1,num_Crack
+    write(101, '(I10)') Cracks_FluidEle_num_3D(i)  
+    end do
+    close(101)
 endif
 
+if (Key_Cal_HF_Crack_Points_Info_3D==1) then
+    print *,'    Saving fluid node number of cracks...'
+    write(temp,'(I5)') isub
+    Filename_1 = trim(Full_Pathname)//'.cpno'//'_'//ADJUSTL(temp)        
+    if (Key_Data_Format==1) then
+        open(101,file=Filename_1,status='unknown')     
+        do i=1,num_Crack
+            do j=1,Cracks_FluidEle_num_3D(i)
+                  write(101, '(3I10)') Cracks_FluidEle_CalP_3D(i)%row(j,1:3)
+            enddo
+        end do
+        close(101)
+    elseif(Key_Data_Format==2)then
+        open(101,file=Filename_1,status='unknown',form='unformatted',access='stream')     
+        do i=1,num_Crack
+        do j=1,Cracks_FluidEle_num_3D(i)
+              write(101) Cracks_FluidEle_CalP_3D(i)%row(j,1:3)
+        enddo
+        end do
+        close(101)          
+    endif
+endif
+
+if (Key_Cal_HF_Crack_Points_Info_3D==1) then
+    print *,'    Saving fluid node coordinates of cracks...'
+    Filename_4   = trim(Full_Pathname)//'.ccpx_'//ADJUSTL(temp)     
+    Filename_5   = trim(Full_Pathname)//'.ccpy_'//ADJUSTL(temp)    
+    Filename_6   = trim(Full_Pathname)//'.ccpz_'//ADJUSTL(temp)  
+    open(701,file=Filename_4,status='unknown') 
+    open(702,file=Filename_5,status='unknown') 
+    open(703,file=Filename_6,status='unknown')            
+    do i=1,num_Crack
+    write(701, '(50000E20.12)') (Cracks_CalP_Coors_3D(i)%row(j,1),j=1,Cracks_CalP_Num_3D(i))       
+    write(702, '(50000E20.12)') (Cracks_CalP_Coors_3D(i)%row(j,2),j=1,Cracks_CalP_Num_3D(i))   
+    write(703, '(50000E20.12)') (Cracks_CalP_Coors_3D(i)%row(j,3),j=1,Cracks_CalP_Num_3D(i))        
+    end do
+    close(701)          
+    close(702)    
+    close(703)   
+endif  
 
 
-print *,'    Saving fluid node coordinates of cracks...'
-Filename_4   = trim(Full_Pathname)//'.ccpx_'//ADJUSTL(temp)     
-Filename_5   = trim(Full_Pathname)//'.ccpy_'//ADJUSTL(temp)    
-Filename_6   = trim(Full_Pathname)//'.ccpz_'//ADJUSTL(temp)  
-open(701,file=Filename_4,status='unknown') 
-open(702,file=Filename_5,status='unknown') 
-open(703,file=Filename_6,status='unknown')            
-do i=1,num_Crack
-  write(701, '(50000E20.12)') (Cracks_CalP_Coors_3D(i)%row(j,1),j=1,Cracks_CalP_Num_3D(i))       
-  write(702, '(50000E20.12)') (Cracks_CalP_Coors_3D(i)%row(j,2),j=1,Cracks_CalP_Num_3D(i))   
-  write(703, '(50000E20.12)') (Cracks_CalP_Coors_3D(i)%row(j,3),j=1,Cracks_CalP_Num_3D(i))        
-end do
-close(701)          
-close(702)    
-close(703)     
-
-
-print *,'    Saving vertex of cracks...'
+print *,'    Saving vertex nodes of cracks...'
 write(temp,'(I5)') isub
 Filename_1  =trim(Full_Pathname)//'.cmso'//'_'//ADJUSTL(temp)         
 open(101,file=Filename_1,status='unknown')     
@@ -228,6 +240,31 @@ do i=1,num_Crack
   write(103, '(50000E20.12)')(Cr3D_Meshed_Node_in_Ele_Local(i)%row(j,3),j=1,Crack3D_Meshed_Node_num(i))        
 end do
 close(103) 
+
+
+print *,'    Saving *.cvpx and other files...'
+Filename_1=trim(Full_Pathname)//'.cvpx_'//ADJUSTL(temp)     
+Filename_2=trim(Full_Pathname)//'.cvpy_'//ADJUSTL(temp)    
+Filename_3=trim(Full_Pathname)//'.cvpz_'//ADJUSTL(temp)             
+open(701,file=Filename_1,status='unknown') 
+do i=1,num_Crack
+    Num_CrMesh_Outlines = Crack3D_Meshed_Outline_num(i) 
+    write(701, '(50000E20.12)') Crack3D_Meshed_Node(i)%row(Crack3D_Meshed_Outline(i)%row(1:Num_CrMesh_Outlines,1),1)     
+end do
+close(701)             
+open(702,file=Filename_2,status='unknown') 
+do i=1,num_Crack     
+    Num_CrMesh_Outlines = Crack3D_Meshed_Outline_num(i) 
+    write(702, '(50000E20.12)') Crack3D_Meshed_Node(i)%row(Crack3D_Meshed_Outline(i)%row(1:Num_CrMesh_Outlines,1),2)    
+end do          
+close(702)  
+open(703,file=Filename_3,status='unknown')  
+do i=1,num_Crack
+    Num_CrMesh_Outlines = Crack3D_Meshed_Outline_num(i) 
+    write(703, '(50000E20.12)') Crack3D_Meshed_Node(i)%row(Crack3D_Meshed_Outline(i)%row(1:Num_CrMesh_Outlines,1),3)    
+end do
+close(703)          
+
 
 print *,'    Saving *.cvxx and other files...'
 Filename_1=trim(Full_Pathname)//'.cvxx_'//ADJUSTL(temp)     

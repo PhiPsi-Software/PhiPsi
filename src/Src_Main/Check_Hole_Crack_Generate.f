@@ -75,26 +75,37 @@ c     *********************
       real(kind=FT) Search_R,a_Weight,l_Ordina
       real(kind=FT) WA_S_xx,WA_S_yy,WA_S_xy
       real(kind=FT) WA_S_1,WA_S_3,WA_angle
-      real(kind=FT) Max_WA_S_1,WA_angle_of_Max,i_fine_of_Max
+      real(kind=FT) Max_WA_S_1,WA_angle_of_Max
+      integer i_fine_of_Max
       real(kind=FT) St_tem,St_Critical
       logical Yes_Generated
       real(kind=FT) c_fine_alpha,c_fine_x,c_fine_y
       real(kind=FT) Point_A(2),Point_B(2)
       real(kind=FT) Crack_P1(2),Crack_P2(2),
      &              Line_AB(2,2),new_Line_AB(2,2)
+      real(kind=FT) c_Dis,Tool_Function_2Point_Dis
       
 c     ********************
 c     Interactive display
 c     ********************
       print *,'    Checking crack generation of each hole......'
- 1001 FORMAT(7X,'-- Crack ',I3,' generated form hole ',I3,'.')  
-      
-      L_New_Crack        = 3.5D0*Ave_Elem_L_Enrich
+ 1001 FORMAT(7X,'-- Crack ',I3,' generated form hole ',I3,'.')     
+ 
+ 1002 FORMAT(7X,'-- Tensile Stress of hole ',I3,': ',F8.3,' MPa.') 
+ 
+      L_New_Crack       = 3.5D0*Ave_Elem_L_Enrich
       Yes_Generated_out = .False.
+      
 c     *****************************
 c     Circulation between cavities
 c     *****************************
       do i_Hole =1,num_Hole
+          
+          ! 2025-01-06. IMPROV-2026010601.
+          if (Falg_Holes_Cut_by_Cracks(i_Hole) == 1) then
+              cycle
+          endif
+          
           ! The premise is that the number of cracks already generated in the current hole is less than the
           ! allowed number.
           if(num_Hole_Crack_Generated(i_Hole)<=
@@ -147,7 +158,8 @@ c     *****************************
                           WA_angle_of_Max = WA_angle
                           i_fine_of_Max = i_fine
                       endif
-                  endif             
+                  endif
+                  !write(*,1002) i_Hole,St_tem/1.0D6          
               enddo
               !......................
               ! Generate a new crack
@@ -159,11 +171,35 @@ c     *****************************
                   c_fine_alpha = TWO*pi/num_fineness*(i_fine_of_Max-1)
                   c_fine_x = c_Hole_x + c_Hole_r*cos(c_fine_alpha)
                   c_fine_y = c_Hole_y + c_Hole_r*sin(c_fine_alpha)
-                  Line_AB(1,1:2) = [c_Hole_x,c_Hole_y]
-                  Line_AB(2,1:2) = [c_fine_x,c_fine_y]
-                  call Tool_Shorten_or_Extend_Line(Line_AB,L_New_Crack,
-     &                                          'B',
-     &                                          new_Line_AB,Crack_P2)     
+                  
+                  ! OPTION - 1: The crack is located along the radius of the hole.
+C                 Line_AB(1,1:2) = [c_Hole_x,c_Hole_y]
+C                 Line_AB(2,1:2) = [c_fine_x,c_fine_y]
+C                 call Tool_Shorten_or_Extend_Line(Line_AB,L_New_Crack,
+C    &                                          'B',
+C    &                                          new_Line_AB,Crack_P2)     
+     
+                  
+                  ! OPTION - 2: The crack is perpendicular to the direction of the maximum principal stress.
+                  Crack_P2(1)=c_fine_x+L_New_Crack*cos(WA_angle_of_Max)
+                  Crack_P2(2)=c_fine_y+L_New_Crack*sin(WA_angle_of_Max)
+                  !Check if Crack_P2 inside or outside the hole. Crack_P2 must be outside the hole.
+                  c_Dis    = Tool_Function_2Point_Dis(Crack_P2,
+     &                              [c_Hole_x,c_Hole_y])
+                  if(c_Dis > c_Hole_r)then
+                      Crack_P2(1)=c_fine_x+L_New_Crack*
+     &                                     cos(WA_angle_of_Max)
+                      Crack_P2(2)=c_fine_y+L_New_Crack*
+     &                                     sin(WA_angle_of_Max)
+                  else
+                      Crack_P2(1)=c_fine_x-L_New_Crack*
+     &                                     cos(WA_angle_of_Max)
+                      Crack_P2(2)=c_fine_y-L_New_Crack*
+     &                                     sin(WA_angle_of_Max)
+                  endif
+                  
+                  
+                  
                   Crack_Coor(num_Crack,1,1:2) = [c_fine_x,c_fine_y]
                   Crack_Coor(num_Crack,2,1:2) = Crack_P2
                   Each_Cr_Poi_Num(num_Crack)  = 2

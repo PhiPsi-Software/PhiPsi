@@ -1,5 +1,5 @@
  
-subroutine Tool_Fit_3D_Points_Taubin(i_C,num_Point,In_Points,Out_Points)
+subroutine Tool_Fit_3D_Points_Taubin(i_C,num_Point,In_Points,Points_Flag_Inside,Out_Points)
 
 use Global_Float_Type     
 use Global_Model
@@ -7,6 +7,7 @@ use Global_Model
 implicit none
 integer,intent(in)::i_C,num_Point
 real(kind=FT),intent(in)::In_Points(num_Point,3)
+logical,intent(in)::Points_Flag_Inside(num_Point)
 real(kind=FT),intent(out)::Out_Points(num_Point,3)
 real(kind=FT) point(num_Point+1,3)
 integer n_Loops,i_Loop,i_point
@@ -29,6 +30,8 @@ L2_vector(1:num_Point,1:3) = ZR
       
 do i_Loop=1,n_Loops
     do i_point=1,num_point
+        if (.not. Points_Flag_Inside(i_point)) cycle
+        
         c_point = point(i_point,1:3)
         nex_point = point(i_point+1,1:3)
         if (i_point>=2) then
@@ -46,11 +49,15 @@ do i_Loop=1,n_Loops
     enddo
     
     do i_point=1,num_point
+        if (.not. Points_Flag_Inside(i_point)) cycle
+        
         point(i_point,1:3) = point(i_point,1:3) + lambda*L1_vector(i_point,1:3)
     enddo
     point(num_point+1,1:3) = point(1,1:3)
     
     do i_point=1,num_point
+        if (.not. Points_Flag_Inside(i_point)) cycle
+        
         c_point = point(i_point,1:3)
         nex_point = point(i_point+1,1:3)
         if (i_point>=2) then
@@ -70,6 +77,8 @@ do i_Loop=1,n_Loops
     enddo
     
     do i_point=1,num_point
+        if (.not. Points_Flag_Inside(i_point)) cycle
+        
         point(i_point,1:3) = point(i_point,1:3)  + mu*L2_vector(i_point,1:3)
     enddo
     point(num_point+1,1:3) = point(1,1:3)

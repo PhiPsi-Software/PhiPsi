@@ -1333,3 +1333,174 @@ module module_INTERFACE_coocsr
     END subRoutine coocsr
     END INTERFACE
 end module module_INTERFACE_coocsr
+
+!-----------------------------------------------------------------------------------
+! 46. Cal_JDomain_Element_of_Point_3D_Simple_HEX8 subroutine INTERFACE. 2026-01-12.
+!-----------------------------------------------------------------------------------
+module module_Cal_JDomain_Element_of_Point_3D_Simple_HEX8
+    INTERFACE
+    subroutine Cal_JDomain_Element_of_Point_3D_Simple_HEX8(TipCoor, rJ, J_Elem,Max_J_Elem, num_J_Elem, Q_Elem_Nodes)
+    use Global_Float_Type
+    use Global_Model
+    implicit none
+    integer,intent(in) :: Max_J_Elem
+    real(kind=FT),intent(in) :: TipCoor(3), rJ
+    integer,intent(out) :: J_Elem(Max_J_Elem), num_J_Elem
+    real(kind=FT),intent(out) :: Q_Elem_Nodes(num_Elem,8)
+    end subroutine Cal_JDomain_Element_of_Point_3D_Simple_HEX8
+    END INTERFACE
+end module module_Cal_JDomain_Element_of_Point_3D_Simple_HEX8
+
+
+!--------------------------------------------------------------
+! 47. Cal_HF_Matrix_H_Linear subroutine INTERFACE. 2026-01-15.
+!--------------------------------------------------------------
+module module_Cal_HF_Matrix_H_Linear
+    INTERFACE
+      subroutine Cal_HF_Matrix_H_Linear(ifra,Counter,Matrix_H,Last_Cr_CalP_Aper,total_time)
+      use Global_Float_Type
+      use Global_Crack
+      use Global_Crack_Common
+      use Global_HF
+      implicit none
+      
+      integer,intent(in)::ifra,Counter
+      real(kind=FT),intent(in)::total_time
+      real(kind=FT),intent(in)::Last_Cr_CalP_Aper(Max_Num_Cr,Max_Num_Cr_CalP)
+      real(kind=FT),intent(out)::Matrix_H(num_Tol_CalP_Water,num_Tol_CalP_Water)
+    end subroutine Cal_HF_Matrix_H_Linear
+    END INTERFACE
+end module module_Cal_HF_Matrix_H_Linear
+
+!-------------------------------------------------------------------
+! 48. Cal_3D_SIFs_IIM_Auxiliary_Fields_Part2 INTERFACE. 2026-01-28.
+!-------------------------------------------------------------------
+module module_Cal_3D_SIFs_IIM_Auxiliary_Fields_Part2
+    INTERFACE
+    subroutine Cal_3D_SIFs_IIM_Auxiliary_Fields_Part2(Mode, r_in, theta, G, nu, kappa, &
+                         Aux_dSig11_dX1, Aux_dSig12_dX2, Aux_dSig13_dX3,    &
+                         Aux_dSig12_dX1, Aux_dSig22_dX2, Aux_dSig23_dX3,    &
+                         Aux_dSig13_dX1, Aux_dSig23_dX2, Aux_dSig33_dX3,    &
+                         Aux_dEps11_dX1, Aux_dEps12_dX1, Aux_dEps13_dX1,    &
+                         Aux_dEps22_dX1, Aux_dEps23_dX1, Aux_dEps33_dX1,    &
+                         Aux_ddu1_dX1dX1, Aux_ddu2_dX1dX1, Aux_ddu3_dX1dX1, &
+                         Aux_ddu1_dX2dX1, Aux_ddu2_dX2dX1, Aux_ddu3_dX2dX1, & 
+                         Aux_ddu1_dX3dX1, Aux_ddu2_dX3dX1, Aux_ddu3_dX3dX1) 
+    !-------------------------------------------------------------------------------
+    use Global_Float_Type
+    integer, intent(in) :: Mode
+    real(kind=FT), intent(in) :: r_in, theta, G, nu, kappa
+    real(kind=FT), intent(out) :: Aux_dSig11_dX1, Aux_dSig12_dX2, Aux_dSig13_dX3
+    real(kind=FT), intent(out) :: Aux_dSig12_dX1, Aux_dSig22_dX2, Aux_dSig23_dX3
+    real(kind=FT), intent(out) :: Aux_dSig13_dX1, Aux_dSig23_dX2, Aux_dSig33_dX3
+    real(kind=FT), intent(out) :: Aux_dEps11_dX1, Aux_dEps12_dX1, Aux_dEps13_dX1
+    real(kind=FT), intent(out) :: Aux_dEps22_dX1, Aux_dEps23_dX1, Aux_dEps33_dX1
+    real(kind=FT), intent(out) :: Aux_ddu1_dX1dX1, Aux_ddu2_dX1dX1, Aux_ddu3_dX1dX1
+    real(kind=FT), intent(out) :: Aux_ddu1_dX2dX1, Aux_ddu2_dX2dX1, Aux_ddu3_dX2dX1 
+    real(kind=FT), intent(out) :: Aux_ddu1_dX3dX1, Aux_ddu2_dX3dX1, Aux_ddu3_dX3dX1
+    end subroutine Cal_3D_SIFs_IIM_Auxiliary_Fields_Part2
+    END INTERFACE
+end module module_Cal_3D_SIFs_IIM_Auxiliary_Fields_Part2
+
+!-------------------------------------------------------------------
+! 49. Cal_3D_SIFs_IIM_Auxiliary_Fields_Part1 INTERFACE. 2026-01-28.
+!-------------------------------------------------------------------
+module module_Cal_3D_SIFs_IIM_Auxiliary_Fields_Part1
+    INTERFACE
+    subroutine Cal_3D_SIFs_IIM_Auxiliary_Fields_Part1(Mode, r, theta, G, nu, kappa, Aux_Sig, Aux_Eps, Aux_Grad_u)
+    use Global_Float_Type
+    integer, intent(in) :: Mode
+    real(kind=FT), intent(in) :: r, theta, G, nu, kappa
+    real(kind=FT), intent(out) :: Aux_Sig(3,3), Aux_Eps(3,3), Aux_Grad_u(3,3)
+    end subroutine Cal_3D_SIFs_IIM_Auxiliary_Fields_Part1
+    END INTERFACE
+end module module_Cal_3D_SIFs_IIM_Auxiliary_Fields_Part1
+
+!-------------------------------------------------------
+! 50. Cal_3D_SIFs_IIM_q_Function INTERFACE. 2026-01-28.
+!-------------------------------------------------------
+module module_Cal_3D_SIFs_IIM_q_Function
+    INTERFACE
+    subroutine Cal_3D_SIFs_IIM_q_Function(Elem_ID, q_nodal, N, dN_dx, dN_dy, dN_dz, &
+                                      GP_coords, Tip_Coords, e1, e2, e3, &
+                                      R_in, R_out, L_f, q_val, grad_q)
+    use Global_Float_Type
+    implicit none
+    integer, intent(in) :: Elem_ID
+    real(kind=FT), intent(in) :: q_nodal(:,:), N(8), dN_dx(8), dN_dy(8), dN_dz(8)
+    real(kind=FT), intent(in) :: GP_coords(3), Tip_Coords(3)
+    real(kind=FT), intent(in) :: e1(3), e2(3), e3(3)
+    real(kind=FT), intent(in) :: R_in, R_out, L_f
+    real(kind=FT), intent(out) :: q_val, grad_q(3)
+    end subroutine Cal_3D_SIFs_IIM_q_Function
+    END INTERFACE
+end module module_Cal_3D_SIFs_IIM_q_Function
+
+!---------------------------------------------------------------
+! 51. Cal_3D_SIFs_IIM_Integration_Domain INTERFACE. 2026-01-28.
+!---------------------------------------------------------------
+module module_Cal_3D_SIFs_IIM_Integration_Domain
+    INTERFACE
+    subroutine Cal_3D_SIFs_IIM_Integration_Domain(Tip_Point, e1, e2, e3, R_in, R_out, L_f, &
+                                        Num_Elems, Elem_List, q_vals)
+    use Global_Float_Type
+    use Global_Model
+
+    implicit none
+    real(kind=FT), intent(in) :: Tip_Point(3), e1(3), e2(3), e3(3)
+    real(kind=FT), intent(in) :: R_in, R_out, L_f
+    integer, intent(out) :: Num_Elems
+    integer, allocatable, intent(out) :: Elem_List(:)
+    real(kind=FT), allocatable, intent(out) :: q_vals(:,:)
+    end subroutine Cal_3D_SIFs_IIM_Integration_Domain
+    END INTERFACE
+end module module_Cal_3D_SIFs_IIM_Integration_Domain
+
+!-------------------------------------------------------------------
+! 52. Cal_3D_SIFs_IIM_CrackFace_IntegralPoint_3_Points. 2026-01-28.
+!-------------------------------------------------------------------
+module module_Cal_3D_SIFs_IIM_CrackFace_IntegralPoint_3_Points
+    INTERFACE
+    subroutine Cal_3D_SIFs_IIM_CrackFace_IntegralPoint_3_Points(i_Crack, Elem_ID, nGP_face, GP_global, GP_w, GP_n_global)
+    !Compute integral points of the fluid element at the crack surface.
+    !2026-01-28.
+    use Global_Float_Type
+    use Global_Common
+    use Global_Crack_3D
+    use Global_Elem_Area_Vol
+    implicit none
+    integer, intent(in) :: i_Crack, Elem_ID
+    integer, intent(out) :: nGP_face
+    real(kind=FT), allocatable, intent(out) :: GP_global(:,:), GP_w(:), GP_n_global(:,:)
+    end subroutine Cal_3D_SIFs_IIM_CrackFace_IntegralPoint_3_Points
+    END INTERFACE
+end module module_Cal_3D_SIFs_IIM_CrackFace_IntegralPoint_3_Points
+
+!----------------------------------------------
+! 53. Cal_Crack_Point_Aperture_3D. 2026-02-09.
+!----------------------------------------------
+module module_Cal_Crack_Point_Aperture_3D
+    INTERFACE
+    subroutine Cal_Crack_Point_Aperture_3D(c_DISP,Crack_Number,Crack_Point,Crack_Point_Aperture,&
+                                       Fluid_element_number,Fluid_node_number,&
+                                       Crack_mesh_ele_number,Crack_mesh_node_number)
+    use Global_Float_Type
+    use Global_Common
+    use Global_Crack_Common
+    use Global_Crack_3D
+    use Global_Model
+    use Global_Elem_Area_Vol
+    use Global_DISP
+    use Global_Inter_Tool_Cal_Dis_Point_to_3D_Quad
+    use Global_INTERFACE_Tool_ThetaX_ThetaY_ThetaZ_3D_rotation
+
+    implicit none
+
+    real(kind=FT),intent(in)::c_DISP(Total_FD)
+    integer,intent(in)::Crack_Number
+    real(kind=FT),intent(in)::Crack_Point(3)
+    real(kind=FT),intent(out)::Crack_Point_Aperture(3)
+    integer,intent(in)::Fluid_element_number,Fluid_node_number,Crack_mesh_ele_number,Crack_mesh_node_number
+    end subroutine Cal_Crack_Point_Aperture_3D
+    END INTERFACE
+end module module_Cal_Crack_Point_Aperture_3D

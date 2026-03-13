@@ -41,7 +41,7 @@
 !     ------------------------------------------------- !
  
       SUBROUTINE Get_Gauss_Stress_FEM(isub)
-c     Computational Node Stress
+c     Computational Gauss Stress for 2D.
 C     Store in global variables: Stress_xx_Gauss, Stress_yy_Gauss, Stress_xy_Gauss, Stress_vm_Gauss
 
 c     ----------------------------
@@ -95,8 +95,9 @@ c     -----------------
       ! OpenMP multi-core computing
       !.............................
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_E,i_G,c_Stress,
-!$OMP&              c_D,c_NN,c_X_NODES,c_Y_NODES ,U,
-!$OMP&              c_kesi,c_yita,G_Counter) 
+!$OMP&              c_D,c_v,c_T_Alpha,c_NN,c_X_NODES,c_Y_NODES,U,
+!$OMP&              c_TStress,c_S_1,c_S_3,Yes_Killed_Ele,kesi,yita,
+!$OMP&              c_kesi,c_yita,G_Counter,c_Ele_Gauss,c_theta_stress) 
       do i_E = 1,Num_Elem
           c_D     = D(Elem_Mat(i_E),:,:)   
           
@@ -139,13 +140,13 @@ c     -----------------
      &                                 c_D,c_kesi,c_yita,U,
      &                                 c_Stress)   
               Stress_xx_Gauss(G_Counter) = c_Stress(1)
-            Stress_yy_Gauss(G_Counter) = c_Stress(2)
-            Stress_xy_Gauss(G_Counter) = c_Stress(3)
+              Stress_yy_Gauss(G_Counter) = c_Stress(2)
+              Stress_xy_Gauss(G_Counter) = c_Stress(3)
               ! Accumulation of stresses at each Gauss point of the current element (used to calculate the average
               ! Gauss stress of each element)
               c_Ele_Gauss(1) = c_Ele_Gauss(1)+c_Stress(1)
-              c_Ele_Gauss(2) = c_Ele_Gauss(2)+c_Stress(1)
-              c_Ele_Gauss(3) = c_Ele_Gauss(3)+c_Stress(1)
+              c_Ele_Gauss(2) = c_Ele_Gauss(2)+c_Stress(2)
+              c_Ele_Gauss(3) = c_Ele_Gauss(3)+c_Stress(3)
               
               ! Thermal stress, Theory: Equation 15.1.98 from the Finite Element Method Basic Tutorial (5th
               ! Edition), 2019-09-24
@@ -161,8 +162,8 @@ c     -----------------
      &                         MATMUL(c_D,[ONE,ONE,ZR])
                   endif
                   Stress_xx_Gauss(G_Counter) = c_Stress(1)-c_TStress(1)
-                Stress_yy_Gauss(G_Counter) = c_Stress(2)-c_TStress(2)
-                Stress_xy_Gauss(G_Counter) = c_Stress(3)-c_TStress(3)     
+                  Stress_yy_Gauss(G_Counter) =c_Stress(2)-c_TStress(2)
+                  Stress_xy_Gauss(G_Counter) = c_Stress(3)-c_TStress(3)   
                   ! Accumulation of stresses at each Gauss point of the current element (used to calculate the average
                   ! Gauss stress of each element)
                   c_Ele_Gauss(1) = c_Ele_Gauss(1)-c_TStress(1)

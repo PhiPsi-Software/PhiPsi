@@ -143,11 +143,20 @@ do i_C =1,num_Crack
               ! Check if the checkpoint is on the spatial triangle
               call Tool_Yes_Point_on_3D_Triangle([c_x,c_y,c_z],Point1,Point2,Point3,c_Yes_on)
               if(c_Yes_on)then
-                ! Vertex cell number
+                ! Vertex element number
                 El=Cr3D_Meshed_Node_in_Ele_Num(i_C)%row(c_Mesh_Node) 
-                !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                ! The center coordinates of the cell containing the vertex
-                !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                
+                !2026-02-07.
+                if (El==0) then
+                    if (Key_Warning_Level == 3) then  
+                        print *,"    WARNING-2026020701 :: Vertex element number not valid, in D3_Crack_Vertex_Adjust.f90!"
+                        !call Warning_Message('S',Keywords_Blank)  
+                    endif
+                    cycle
+                endif
+                !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                ! The center coordinates of the element containing the vertex
+                !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 c_X_NODES_El = G_X_NODES(1:8,El)
                 c_Y_NODES_El = G_Y_NODES(1:8,El)  
                 c_Z_NODES_El = G_Z_NODES(1:8,El)  
@@ -155,10 +164,10 @@ do i_C =1,num_Crack
                 mid_Ele_x = sum(c_X_NODES_El(1:8))/EIG
                 mid_Ele_y = sum(c_Y_NODES_El(1:8))/EIG
                 mid_Ele_z = sum(c_Z_NODES_El(1:8))/EIG                   
-                !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                ! Move c_x, c_y, c_z toward the center of the cell containing the vertex by one
-                ! ten-thousandth of the cell's average length
-                !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                ! Move c_x, c_y, c_z toward the center of the element containing the vertex by one
+                ! ten-thousandth of the element's average length
+                !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 Line_AB(1,1:3) = [c_x,c_y,c_z]
                 Line_AB(2,1:3) = [mid_Ele_x,mid_Ele_y,mid_Ele_z]
                 delta_L = Ave_Elem_L/1.0D4

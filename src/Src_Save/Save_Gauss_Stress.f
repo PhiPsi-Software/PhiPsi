@@ -25,31 +25,45 @@
       select case(Key_Data_Format)
       case(1)
           open(201,file=c_File_name_1,status='unknown') 
-          if(Key_Unit_System==1)then
-              do i=1,Total_Num_G_P
-                  write(201, '(I8,4E20.12)') i,Stress_xx_Gauss(i),
-     &                                         Stress_yy_Gauss(i),
-     &                                         Stress_xy_Gauss(i),
-     &                                         Stress_vm_Gauss(i)
-              end do   
-          elseif(Key_Unit_System==2)then
-              do i=1,Total_Num_G_P
+          if (Key_Dimension==2) then
+              if(Key_Unit_System==1)then
+                  do i=1,Total_Num_G_P
+                      write(201, '(I8,4E20.12)') i,Stress_xx_Gauss(i),
+     &                                             Stress_yy_Gauss(i),
+     &                                             Stress_xy_Gauss(i),
+     &                                             Stress_vm_Gauss(i)
+                  end do   
+              elseif(Key_Unit_System==2)then
+                  do i=1,Total_Num_G_P
                   write(201, '(I8,4E20.12)') i,Stress_xx_Gauss(i)*tem_2,
      &                                         Stress_yy_Gauss(i)*tem_2,
      &                                         Stress_xy_Gauss(i)*tem_2,
      &                                         Stress_vm_Gauss(i)*tem_2
+                  end do   
+              endif
+          elseif (Key_Dimension==3) then
+              do i=1,Total_Num_G_P
+                  write(201, '(I8,7E20.12)') i,Stress_xx_Gauss(i),
+     &                                         Stress_yy_Gauss(i),
+     &                                         Stress_zz_Gauss(i),
+     &                                         Stress_xy_Gauss(i),
+     &                                         Stress_yz_Gauss(i),
+     &                                         Stress_xz_Gauss(i),
+     &                                         Stress_vm_Gauss(i)
               end do   
           endif
    
           close(201)  
       case(2)
-          open(203,file=c_File_name_1,status='unknown',
-     &                            form='unformatted',access='stream')     
-          write(203) ( Stress_xx_Gauss(i),
-     &                 Stress_yy_Gauss(i),
-     &                 Stress_xy_Gauss(i),
-     &                 Stress_vm_Gauss(i),i=1,Total_Num_G_P)
-          close(203)      
+          if (Key_Dimension==2) then
+              open(203,file=c_File_name_1,status='unknown',
+     &                           form='unformatted',access='stream')     
+              write(203) ( Stress_xx_Gauss(i),
+     &                     Stress_yy_Gauss(i),
+     &                     Stress_xy_Gauss(i),
+     &                     Stress_vm_Gauss(i),i=1,Total_Num_G_P)
+              close(203)    
+          endif
       end select
      
       

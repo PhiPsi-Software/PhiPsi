@@ -262,6 +262,8 @@ endif
 Ori_delta_L_Growth = delta_L_Growth
 delta_L_Growth_Arc = ONEP5*delta_L_Growth
 
+Falg_Holes_Cut_by_Cracks(:) =  0
+
 !*******************
 ! Some preparations
 !*******************
@@ -2048,6 +2050,7 @@ loop_i_C:do i_C =1,num_Crack
                            Crack_Tip_Type(i_C,i_Tip) = 1 
                            write(*,1023) i_Tip,i_C,i_Hole
                            write(*,1024) i_Tip,i_C
+                           Falg_Holes_Cut_by_Cracks(i_Hole) =  1
                          elseif(i_Tip==2) then
                            ! Correct crack tip coordinates
                            num_pt = Each_Cr_Poi_Num(i_C)
@@ -2055,6 +2058,7 @@ loop_i_C:do i_C =1,num_Crack
                            Crack_Tip_Type(i_C,i_Tip) = 1 
                            write(*,1023) i_Tip,i_C,i_Hole
                            write(*,1024) i_Tip,i_C
+                           Falg_Holes_Cut_by_Cracks(i_Hole) =  1
                          end if  
                       endif
                       ! If there is no intersection, check if they are very close.
@@ -2094,6 +2098,7 @@ loop_i_C:do i_C =1,num_Crack
                                Crack_Tip_Type(i_C,i_Tip) = 1 
                                write(*,1023) i_Tip,i_C,i_Hole
                                write(*,1024) i_Tip,i_C
+                               Falg_Holes_Cut_by_Cracks(i_Hole) =  1
                              elseif(i_Tip==2) then
                                ! Correct crack tip coordinates
                                num_pt = Each_Cr_Poi_Num(i_C)
@@ -2101,6 +2106,7 @@ loop_i_C:do i_C =1,num_Crack
                                Crack_Tip_Type(i_C,i_Tip) = 1 
                                write(*,1023) i_Tip,i_C,i_Hole
                                write(*,1024) i_Tip,i_C
+                               Falg_Holes_Cut_by_Cracks(i_Hole) =  1
                              end if
                              exit
                             endif
@@ -2140,6 +2146,7 @@ loop_i_C:do i_C =1,num_Crack
                            Crack_Tip_Type(i_C,i_Tip) = 1 
                            write(*,1023) i_Tip,i_C,i_Hole
                            write(*,1024) i_Tip,i_C
+                           Falg_Holes_Cut_by_Cracks(i_Hole) =  1
                          elseif(i_Tip==2) then
                            ! Correct crack tip coordinates
                            num_pt = Each_Cr_Poi_Num(i_C)
@@ -2147,6 +2154,7 @@ loop_i_C:do i_C =1,num_Crack
                            Crack_Tip_Type(i_C,i_Tip) = 1 
                            write(*,1023) i_Tip,i_C,i_Hole
                            write(*,1024) i_Tip,i_C
+                           Falg_Holes_Cut_by_Cracks(i_Hole) =  1
                          end if  
                       endif
                       ! If there is no intersection, check if they are very close.
@@ -2195,6 +2203,7 @@ loop_i_C:do i_C =1,num_Crack
                                Crack_Tip_Type(i_C,i_Tip) = 1 
                                write(*,1023) i_Tip,i_C,i_Hole
                                write(*,1024) i_Tip,i_C
+                               Falg_Holes_Cut_by_Cracks(i_Hole) =  1
                              elseif(i_Tip==2) then
                                ! Correct crack tip coordinates
                                num_pt = Each_Cr_Poi_Num(i_C)
@@ -2202,6 +2211,7 @@ loop_i_C:do i_C =1,num_Crack
                                Crack_Tip_Type(i_C,i_Tip) = 1 
                                write(*,1023) i_Tip,i_C,i_Hole
                                write(*,1024) i_Tip,i_C
+                               Falg_Holes_Cut_by_Cracks(i_Hole) =  1
                              end if
                              exit
                             endif

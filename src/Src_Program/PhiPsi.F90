@@ -289,7 +289,9 @@ call PhiPsi_Read_Input
 ! Saved in the current_folder.dat file. *
 !                                       *
 !*****************************************
+#ifndef macos
 call Save_current_folder_dat_file
+#endif
 
 !*****************************************
 !                                       *
@@ -303,7 +305,7 @@ if (Key_Clear_All==1)  then
 
   ! OPTION 2: Using Python 3, suitable for all kinds of compilers. 2022-07-25.
   !          NEWFTU2022072501.
-#ifndef moacos
+#ifndef macos
   call Clear_All_Results_Files_v2
 #endif
 endif

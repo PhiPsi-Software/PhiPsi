@@ -75,6 +75,12 @@ real(kind=FT),ALLOCATABLE::localK_XFEM(:,:)
 integer date_time(8)
 integer(LIT) c_S_Time,F_time
 character*10  current_data
+real(kind=FT) initial_residual_norm, current_residual_norm
+real(kind=FT) temp_p_FEM(24), temp_u_FEM(24)
+integer k_dof
+real(kind=FT),ALLOCATABLE :: temp_p_XFEM(:), temp_u_XFEM(:)
+
+
 5003 FORMAT('     Elapsed CPU time of EBE-PCG solution - ',I8,' s, about ',F10.4,' mins')
 
 print *, "    >>>> Start of element by element PCG solver <<<<"
@@ -218,6 +224,9 @@ if (isub==1 .or. First_XFEM_Step==1) then
 endif
 
 
+
+
+
 if (isub>=2 .and. Num_Rollbacked_FEM_Elements >0) then      
     print *,'    PCG-EBE: Assembling K for rollbacked FEM elements...'
     ndof = 3*8
@@ -286,6 +295,10 @@ if (isub>=2 .and. Num_Rollbacked_FEM_Elements >0) then
                   enddo
               enddo
           endif
+          
+
+          
+          
     enddo
     !$omp end parallel do  
     
@@ -301,6 +314,9 @@ if (isub>=2 .and. Num_Rollbacked_FEM_Elements >0) then
     deallocate(weight)    
     deallocate(localK_FEM)
 endif
+
+
+
 
 
 print *,'    PCG-EBE: Assembling K for XFEM elements...'
@@ -327,6 +343,8 @@ do i_E = 1,num_XFEM_Elem
               Need_XFEM_Assem_Flag = .True.
           endif
       endif
+      
+      
       
 
       if(Key_XA/=2) then
@@ -463,6 +481,14 @@ do i_E = 1,num_XFEM_Elem
           endif
       endif
       
+      if(isub>=2)then
+          if(Elem_Topology_Markers_3D(c_Elem) /= Elem_Topology_Markers_3D_Old(c_Elem)) then
+              Need_XFEM_Assem_Flag =.True.
+          endif    
+      endif
+      
+      
+
       local(1:MDOF_3D) = 0
       
       DO k=1,num_Loc_ESM
@@ -731,7 +757,10 @@ if(Key_EBE_Precondition == 1)then
       
       if(Key_EBE_Sym_Storage_K==0)then
           DO kk=1,num_Loc_ESM     
-              Diag_localK(kk) =storK_FEM(kk,kk,Elem_Location(c_Elem,2)) 
+            
+            Diag_localK(kk) =storK_FEM(kk,kk,Elem_Location(c_Elem,2)) 
+
+    
           enddo       
       elseif(Key_EBE_Sym_Storage_K==1)then
           DO kk=1,num_Loc_ESM     
@@ -809,19 +838,24 @@ cg_iters=0
 if(Key_Print_EBEPCG_Solution_Time==1)then
   call Tool_Get_Current_Time(current_data,date_time,c_S_Time)
 endif
+
+
+initial_residual_norm = SQRT(DOT_PRODUCT(loads(1:num_FreeD), loads(1:num_FreeD)))
+if (initial_residual_norm<Tol_20) initial_residual_norm = Tol_20
   
   
 print *, '    PCG-EBE: PCG equation solution...'
 do i_PCG =1,max_num_PCG
-  cg_iters=cg_iters+1 
-  u=ZR
+    cg_iters=cg_iters+1 
+    u=ZR
 
     select case(Key_EBE_Sym_Storage_K)
   
     case(0)
-    
         u_thread(0:num_FreeD,1:max_threads)= ZR  
         !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(c_thread,i_E,c_Elem,num_Loc_ESM,local,cEle_Loc) 
+        
+        
         c_thread = omp_get_thread_num()+1
         !$OMP DO SCHEDULE(static) 
         do i_E=1,num_FEM_Elem
@@ -832,6 +866,10 @@ do i_PCG =1,max_num_PCG
               u_thread(local(1:num_Loc_ESM),c_thread)=u_thread(local(1:num_Loc_ESM),c_thread)+&
                                MATMUL(storK_FEM(1:num_Loc_ESM,1:num_Loc_ESM,cEle_Loc),p(local(1:num_Loc_ESM)))
         enddo
+
+        
+        
+        
         !$omp end do
         !$omp end parallel   
     
@@ -871,9 +909,12 @@ do i_PCG =1,max_num_PCG
 
     u_thread(0:num_FreeD,1:max_threads)= ZR   
     !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(c_thread,i_E,c_Elem,num_Loc_ESM,local,cEle_Loc) 
+    
+    
     c_thread = omp_get_thread_num()+1
     !$OMP DO SCHEDULE(static) 
     do i_E=1,num_XFEM_Elem
+        
           c_Elem = XFEM_Elem_List(i_E)
           num_Loc_ESM = Size_Local_3D(c_Elem)
           local(1:num_Loc_ESM)=All_Local_3D(1:num_Loc_ESM,c_Elem) 
@@ -881,10 +922,13 @@ do i_PCG =1,max_num_PCG
           u_thread(local(1:num_Loc_ESM),c_thread)=u_thread(local(1:num_Loc_ESM),c_thread)+&
                            MATMUL(storK_XFEM(cEle_Loc)%row(1:num_Loc_ESM,1:num_Loc_ESM),&
                                   p(local(1:num_Loc_ESM)))
-                            
+
+
+              
     enddo
     !$omp end do
     !$omp end parallel   
+    
     DO i_Thread = 1,omp_get_max_threads()
          u(0:num_FreeD)  =  u(0:num_FreeD)  + u_thread(0:num_FreeD,i_Thread)
     ENDDO
@@ -899,6 +943,10 @@ do i_PCG =1,max_num_PCG
   xnew = x + p*alpha 
 
   loads=loads-u*alpha
+  
+  current_residual_norm = SQRT(DOT_PRODUCT(loads(1:num_FreeD), loads(1:num_FreeD)))
+  Tol = current_residual_norm / initial_residual_norm
+
   pcg_d=diag_precon*loads 
 
   beta=DOT_PRODUCT(loads,pcg_d)/up 
@@ -907,11 +955,6 @@ do i_PCG =1,max_num_PCG
   
           
 
-  if(i_PCG==1) then
-      Tol = 100.0D0
-  else
-      Tol = MAXVAL(ABS(x(0:num_FreeD)-xnew(0:num_FreeD)))/MAXVAL(ABS(x(0:num_FreeD)))
-  endif
   
   x=xnew
  

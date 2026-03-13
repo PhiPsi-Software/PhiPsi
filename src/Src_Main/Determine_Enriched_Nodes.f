@@ -980,7 +980,7 @@ c     --------------------------------------------------------------------------
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! Determine the intersection between the crack and the elliptical hole, and assign element
           ! enhancement type 6 to the elements at the intersection
-          !2020-08-09
+          ! 2020-08-09
           ! Elliptical holes and circular holes cannot coexist.
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           do i_H=1,num_Ellip_Hole
@@ -1192,7 +1192,7 @@ c     --------------------------------------------------------------------------
                               exit
                           endif
                 !Get the support domain of the current node.
-      	      call Cal_Support_Domain_of_Node(c_Chk_N,
+      	        call Cal_Support_Domain_of_Node(c_Chk_N,
      &                           DOMAIN_Outline,m_DOMAIN_Outline,
      &                           Domain_El,n_Domain_El)
                           ! Convert support domain boundaries (node numbers) into a closed polygon

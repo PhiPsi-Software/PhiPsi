@@ -110,7 +110,7 @@
           if (temp > test) test = temp
       end do
       alamin = TOLX/test
-      print *,'          λ_min:',alamin
+      print *,'          Lambda_min:',alamin
       Lnsrch_Count = 0
       alam = ONE
       
@@ -185,7 +185,7 @@
           alam2 = alam
           F_2 = F_c
           alam = max(tmplam,ZP1*alam)  
-          print *,'              Value of λ:',alam
+          print *,'              Value of Lambda:',alam
           goto 8888    
                       
  9999 continue 

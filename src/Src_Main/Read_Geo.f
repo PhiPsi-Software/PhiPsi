@@ -865,7 +865,7 @@ c     --------------------------------------------------------------------------
           DEALLOCATE(Fd_EleGaus_yes_FEM_asemd)
       endif
       ALLOCATE(Fd_EleGaus_yes_FEM_asemd(Num_Elem,Num_Gauss_Points))
-      ! ----------Unit Destruction-------
+      ! ----------Element Destruction-------
       IF(ALLOCATED(Elem_Break)) DEALLOCATE(Elem_Break)
       ALLOCATE(Elem_Break(Num_Elem))
       IF(ALLOCATED(Elem_Ave_Gauss_Stress)) then
