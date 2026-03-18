@@ -2039,7 +2039,7 @@ end if
       !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       if (Num_Frac > Max_Num_Frac)then
           WRITE(*,5001)
-          print *, '    Max_Num_Frac is too big！'
+          print *, '    Max_Num_Frac is too big'
           call Warning_Message('E','Max_Num_Frac')
       end if
       !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -4685,7 +4685,7 @@ end if
   !************************
   ! Thermal Stress Related
   !************************
-  3162 FORMAT(5X,'Applied temperature of material type ',I3,' is ',F8.3,' K/℃')
+  3162 FORMAT(5X,'Applied temperature of material type ',I3,' is ',F8.3,' K')
   if(Key_Thermal_Stress==1)then
       ! Thermal stress calculation only supports quasi-static analysis
       if(Key_Analysis_Type/=1 .and. Key_Analysis_Type/=4)then

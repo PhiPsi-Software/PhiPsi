@@ -234,23 +234,23 @@ if(Key_Ini_Rule==1)then
 
           ! Construct local orthonormal basis u, v in the plane perpendicular to the normal vector
           ! Method: Select a vector not collinear with normal (e.g., [1,0,0]), cross product to get u; then
-          ! normal × u to get v
+          ! normal to get v
           if (abs(normal(1)) < 0.9d0) then
               u_vector = (/ 1.0d0, 0.0d0, 0.0d0 /)
           else
               u_vector = (/ 0.0d0, 1.0d0, 0.0d0 /)
           endif
 
-          ! Gram-Schmidt: u = u - (u·n)*n → then normalize
+          ! Gram-Schmidt
           u_vector = u_vector - dot_product(u_vector, normal) * normal
           u_vector = u_vector / sqrt(dot_product(u_vector, u_vector) + eps)
 
-          ! v = normal × u (right-handed system)
+          ! v = normal u (right-handed system)
           v_vector(1) = normal(2)*u_vector(3) - normal(3)*u_vector(2)
           v_vector(2) = normal(3)*u_vector(1) - normal(1)*u_vector(3)
           v_vector(3) = normal(1)*u_vector(2) - normal(2)*u_vector(1)
 
-          ! Four corner points: ±Size_Ini_Crack/2 along u and v
+          ! Four corner points: Size_Ini_Crack/2 along u and v
           half_size = Size_Ini_Crack / TWO
           ! Corner 1: center - u*half - v*half
           Crack3D_Coor(c_num_Crack,1,1:3) = center - u_vector * half_size - v_vector * half_size

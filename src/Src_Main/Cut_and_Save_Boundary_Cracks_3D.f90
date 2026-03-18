@@ -76,7 +76,7 @@ SUBROUTINE Cut_and_Save_Boundary_Cracks_3D(isub,c_DISP)
 !     0.0987...) to minimize the chance of exactly passing through 
 !     an edge or vertex of a triangle. For fracture vertices located &
 !     exactly on the model's boundary surface, the condition tv > TOL 
-!     automatically excludes contacts with t ≈ 0, usually'// &
+!     automatically excludes contacts with t, usually'// &
 !     'ensuring the correctness of the inside/outside judgment.
 
 !Clipping logic: For the "1 vertex inside" case, one triangle is 
@@ -448,10 +448,10 @@ do i_C = 1, num_Crack
                 
                 cnt_e = cnt_e + 1
                 if (dot_ref > 0.0d0) then
-                    ! Normal in the correct direction — keep node order.
+                    ! Normal in the correct direction - keep node order.
                     ne_conn(cnt_e, :) = (/old_to_new(idxA), ni1, ni2/)
                 else
-                    ! Normal is flipped — swap the last two nodes to correct orientation.
+                    ! Normal is flipped swap the last two nodes to correct orientation.
                     ne_conn(cnt_e, :) = (/old_to_new(idxA), ni2, ni1/)
                 end if
             else

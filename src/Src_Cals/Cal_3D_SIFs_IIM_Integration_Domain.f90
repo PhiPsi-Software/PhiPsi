@@ -66,21 +66,6 @@ subroutine Cal_3D_SIFs_IIM_Integration_Domain(Tip_Point, e1, e2, e3, R_in, R_out
 ! For any point in space, first calculate its radial distance r to the crack front vertex 
 !  (Note: This is the distance perpendicular to the crack front tangent):
 !
-! When r ≤ R_inner: q_radial = 1.0 (Full weight, core region)
-! When R_inner < r < R_outer: q_radial = (R_outer - r)/(R_outer - R_inner) (Linear decay)
-! When r ≥ R_outer: q_radial = 0.0 (No weight, outside the domain)
-!
-! (2) Value in the axial direction
-! Calculate the projected distance s of the point along the crack front tangent direction:
-!
-! When |s| ≤ L_front: q_front = 1.0 (Core segment)
-! When L_front < |s| < 2 × L_front: q_front = (2 × L_front - |s|)/L_front (Linear decay)
-! When |s| ≥ 2 × L_front: q_front = 0.0 (Outside the domain)
-!
-! Final q value
-! The final q-function value is the product of the radial and axial weights:
-!
-! q = q_radial × q_front
 !
 ! Special case: L_front = 0
 ! When L_front = 0 is set, it degenerates to a simple spherical domain (actually the application of
@@ -174,6 +159,3 @@ deallocate(Temp_List)
     
     
 end subroutine Cal_3D_SIFs_IIM_Integration_Domain
-
-
-

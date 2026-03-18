@@ -107,8 +107,6 @@ integer c_i
 call lis_initialize(lis_error)
 
 
-!print*,8888
-
 nprocs  = 1
 my_rank = 0
 

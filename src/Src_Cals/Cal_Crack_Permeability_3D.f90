@@ -44,7 +44,7 @@ subroutine Cal_Crack_Permeability_3D(isub)
 ! Calculate the fracture permeability tensor. 2022-11-26. NEWFTU2022112601.
 ! Save to the staggered array Cracks_CalP_k_3D: k_xx, k_yy, k_zz, k_xy, k_yz, k_xz
 ! Note that the z-axis of the fracture coordinate system is normal to the fracture plane.
-!Ref：
+!Ref:
 ! (1) https://www.continuummechanics.org/stressxforms.html or \theory_documents\040 Transformation
 ! Formulas of Second-Order Tensors in Different Coordinate Systems_2022-11-26.pdf
 ! (2) theory_documents\041 Crack Surface Permeability and element permeability Calculation - Shi's

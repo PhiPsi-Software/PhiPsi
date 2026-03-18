@@ -103,7 +103,7 @@ c     --------------------------
           ! Conversion of external load (Note: In the mm-ton-s unit system, the element of load is still N,
           ! It itself does not need to change, but due to the model's thickness increasing from the element
           ! thickness of 1m
-          ! It has been changed to a unit thickness of 1mm, so the load should be ×10⁻³)
+          ! It has been changed to a unit thickness of 1mm, so the load should be
           Foc_x(1:Num_Foc_x,2) = Foc_x(1:Num_Foc_x,2) / 1.0D3
           Foc_y(1:Num_Foc_x,2) = Foc_y(1:Num_Foc_x,2) / 1.0D3
           ! Normal and tangential stiffness of crack surface friction contact

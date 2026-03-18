@@ -505,13 +505,15 @@ do i_C=1,num_Crack
         cir_center(1:3)= Crack3D_Cir_Coor(i_C,1:3)
         ! Length of the element containing the center
         call Cal_Ele_Num_by_Coors_3D(cir_center(1),cir_center(2),cir_center(3),Ele_Num_Cache,Circle_Elem)
-        if(Circle_Elem==0 .and. Key_Warning_Level>=3) then
-           print *,'    WARNING-2022110101 :: Circle_Elem=0 in D3_Mesh_Initial_Crack.f90!'
-           print *,'                          Crack number:',i_C
-           print *,'                          cir_center:',cir_center(1:3)
-           print *,"                          Maybe outside the model!"
-           !call Warning_Message('S',Keywords_Blank)
-           Cricle_Elem_L = (Elem_Vol(1))**(ONE/THR)
+        if(Circle_Elem==0) then
+            if(Key_Warning_Level>=3) then
+                print *,'    WARNING-2022110101 :: Circle_Elem=0 in D3_Mesh_Initial_Crack.f90!'
+                print *,'                          Crack number:',i_C
+                print *,'                          cir_center:',cir_center(1:3)
+                print *,"                          Maybe outside the model!"
+                !call Warning_Message('S',Keywords_Blank)
+            endif
+            Cricle_Elem_L = (Elem_Vol(1))**(ONE/THR)
         else
            Cricle_Elem_L = (Elem_Vol(Circle_Elem))**(ONE/THR)
         endif
@@ -535,7 +537,8 @@ do i_C=1,num_Crack
            print *,'                        Num_divison:',num_divison
            print *,'                        Radius:',radius
            print *,'                        Circumference:',circumference
-           print *,'                        Cricle_Elem_L:',Cricle_Elem_L           
+           print *,'                        Cricle_Elem_L:',Cricle_Elem_L    
+           print *,'                        Circle_Elem:  ',Circle_Elem
            print *,"                        Maybe caused by too small cracks compared to element size!"
            call Warning_Message('S',Keywords_Blank)
         endif

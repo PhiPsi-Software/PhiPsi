@@ -230,7 +230,7 @@ C     end do
      &                globalK(c_node_DOF,first_node_DOF)-penalty_k
           enddo
       endif
-      ! Used for option 2 – defining coupled nodes through dofx, dofy, dofz files (this method can only
+      ! Used for option 2 - defining coupled nodes through dofx, dofy, dofz files (this method can only
       ! define multiple sets of coupling for each direction)
       if (num_CP_set_x>0)then
           penalty_k =  1.0D4*maxval(globalK)
