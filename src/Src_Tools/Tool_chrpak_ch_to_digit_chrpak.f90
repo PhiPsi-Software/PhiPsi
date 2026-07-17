@@ -1,20 +1,19 @@
- 
 subroutine Tool_chrpak_ch_to_digit_chrpak ( ch, digit )
 
-  implicit none
+implicit none
 
-  character ch
-  integer digit
+character ch
+integer digit
 
-  if ( lle ( '0', ch ) .and. lle ( ch, '9' ) ) then
+if ( lle ( '0', ch ) .and. lle ( ch, '9' ) ) then
 
     digit = iachar ( ch ) - 48
 
-  else
+else
 
     digit = - 1
 
-  end if
+end if
 
-  return
+return
 end subroutine Tool_chrpak_ch_to_digit_chrpak

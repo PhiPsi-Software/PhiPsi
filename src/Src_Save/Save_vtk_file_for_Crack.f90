@@ -1,45 +1,14 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
+!-----------------------------------------------------------
+! Brief: Writes a VTK legacy file describing the current crack geometry.
+!
+! Parameters:
+!   Input:  isub - substep index appended to the output file name
+!
+! Notes:   Honours Key_Save_Nothing and Key_Save_vtk switches.
+!          Handles 2D crack lines and 3D crack surfaces by assembling
+!          unique crack nodes and connectivity into VTK format.
+!-----------------------------------------------------------
+
 SUBROUTINE Save_vtk_file_for_Crack(isub)
 !Save vtk file for crack. NEWFTU2023072801.
 !https://raw.githubusercontent.com/Kitware/vtk-examples/gh-pages/src/Testing/Baseline/Cxx/GeometricObjects/TestLinearCellDemo.png
@@ -56,7 +25,7 @@ use Global_POST
 use Global_Crack_Common
 use Global_Crack
 use Global_Crack_3D
-      
+
 implicit none
 
 integer isub
@@ -88,7 +57,7 @@ if (Key_Save_vtk/=1) return
 if (Key_Dimension == 2) then
     if (num_Crack==0) return
     print *,'    Saving vtk file for crack...'
-    
+
     IUNIT = 101
     DATFIL= trim(Full_Pathname)
     VTKFIL=''
@@ -97,11 +66,11 @@ if (Key_Dimension == 2) then
     WRITE(TEMP,'(I5.5)')isub
     VTKFIL(I:I+5)='_CRACK'
     VTKFIL(I+6:I+15)='_'//TRIM(TEMP)//'.vtk'
-    
+
     open(IUNIT,file=VTKFIL,status='unknown')
     WRITE(IUNIT,'(A)')'# vtk DataFile Version 4.0'
     WRITE(IUNIT,'(A)')DATFIL(1:I)//' - results from increment '//TRIM(TEMP)
-    
+
     WRITE(IUNIT,'(A)')'ASCII'
     WRITE(IUNIT,'(A)')'DATASET UNSTRUCTURED_GRID'
 
@@ -137,12 +106,12 @@ if (Key_Dimension == 2) then
         print *, '             In Save_vtk_file_for_Crack.f90!'
         call Warning_Message('S',Keywords_Blank)
     endif
-    
+
     WRITE(IUNIT,'(/A,I0,A)')'POINTS ',num_2d_crack_nodes,' double'
     if(num_Crack >0) then
-          do i_Node=1,num_2d_crack_nodes
-              WRITE(IUNIT,'(3F12.6)') Crack_nodes_coor_2d(i_Node,1:2), ZR 
-          enddo 
+        do i_Node=1,num_2d_crack_nodes
+            WRITE(IUNIT,'(3F12.6)') Crack_nodes_coor_2d(i_Node,1:2), ZR 
+        enddo 
     endif    
 
 
@@ -158,7 +127,7 @@ if (Key_Dimension == 2) then
     DO i_Elem_2d=1,num_2d_crack_elements
         write(IUNIT,'(I3)') 3
     END DO
-    
+
     write(IUNIT,'(/A,I10)') "CELL_DATA", num_2d_crack_elements
 
 
@@ -166,7 +135,7 @@ if (Key_Dimension == 2) then
     do i_Elem_2d=1,num_2d_crack_elements
         write(IUNIT,'(I8)') i_Elem_2d
     enddo
-    
+
     write(IUNIT,'(/A,I10)') "POINT_DATA", num_2d_crack_nodes
 
     WRITE(IUNIT,'(/A,/A)')'SCALARS Crack_Node_Number integer','LOOKUP_TABLE default'
@@ -174,7 +143,7 @@ if (Key_Dimension == 2) then
         write(IUNIT,'(I8)') i_Node
     enddo
 
-    
+
     close(IUNIT)      
 elseif (Key_Dimension == 3) then
     if (num_Crack==0) return
@@ -195,72 +164,72 @@ elseif (Key_Dimension == 3) then
 
     WRITE(IUNIT,'(A)')'ASCII'
     WRITE(IUNIT,'(A)')'DATASET UNSTRUCTURED_GRID'
-          
+
     num_Crack_Points = 0
     num_Crack_Elements = 0
 
     if(num_Crack >0 .and. Key_Dimension==3) then
-    do i_C = 1,num_Crack
-          num_Crack_Points = num_Crack_Points + Crack3D_Meshed_Node_num(i_C)  
-          num_Crack_Elements = num_Crack_Elements + Crack3D_Meshed_Ele_num(i_C)
-    enddo
-    
-    if (allocated(Global_Crack_Points)) deallocate(Global_Crack_Points)
-    allocate(Global_Crack_Points(num_Crack_Points,3))
-    Global_Crack_Points(1:num_Crack_Points,1:3) = ZR
-    if (allocated(Global_Crack_Element_Points)) deallocate(Global_Crack_Element_Points)
-    allocate(Global_Crack_Element_Points(num_Crack_Elements,3))  
-    Global_Crack_Element_Points(1:num_Crack_Elements,1:3) = 0 
+        do i_C = 1,num_Crack
+            num_Crack_Points = num_Crack_Points + Crack3D_Meshed_Node_num(i_C)  
+            num_Crack_Elements = num_Crack_Elements + Crack3D_Meshed_Ele_num(i_C)
+        enddo
 
-    if (allocated(Temp_Global_Index)) deallocate(Temp_Global_Index)
-    allocate(Temp_Global_Index(num_Crack,maxval(Crack3D_Meshed_Node_num(1:num_Crack)))) 
+        if (allocated(Global_Crack_Points)) deallocate(Global_Crack_Points)
+        allocate(Global_Crack_Points(num_Crack_Points,3))
+        Global_Crack_Points(1:num_Crack_Points,1:3) = ZR
+        if (allocated(Global_Crack_Element_Points)) deallocate(Global_Crack_Element_Points)
+        allocate(Global_Crack_Element_Points(num_Crack_Elements,3))  
+        Global_Crack_Element_Points(1:num_Crack_Elements,1:3) = 0 
 
-    if (allocated(Global_Crack_Element_Crack_ID)) deallocate(Global_Crack_Element_Crack_ID)
-    allocate(Global_Crack_Element_Crack_ID(num_Crack_Elements)) 
-    Global_Crack_Element_Crack_ID(1:num_Crack_Elements) = 0
+        if (allocated(Temp_Global_Index)) deallocate(Temp_Global_Index)
+        allocate(Temp_Global_Index(num_Crack,maxval(Crack3D_Meshed_Node_num(1:num_Crack)))) 
 
-    if (allocated(Global_Crack_Node_Crack_ID)) deallocate(Global_Crack_Node_Crack_ID)
-    allocate(Global_Crack_Node_Crack_ID(num_Crack_Points,2)) 
-    Global_Crack_Node_Crack_ID(num_Crack_Points,2) = 0
-           
-    Temp_Global_Index(1:num_Crack,1:maxval(Crack3D_Meshed_Node_num(1:num_Crack))) = 0
-    c_count = 0
-    do i_C = 1,num_Crack
-          do i_Crack_Node = 1,Crack3D_Meshed_Node_num(i_C) 
-              c_count = c_count + 1
-              Global_Crack_Points(c_count,1:3) = Crack3D_Meshed_Node(i_C)%row(i_Crack_Node,1:3) 
-              Temp_Global_Index(i_C,i_Crack_Node) = c_count         
-              Global_Crack_Node_Crack_ID(c_count,1) = i_C            
-              Global_Crack_Node_Crack_ID(c_count,2) = i_Crack_Node  
-          enddo
-    enddo
-    
-    c_count = 0
-    do i_C = 1,num_Crack
-          do i_Crack_Ele =1,Crack3D_Meshed_Ele_num(i_C) 
-              c_count = c_count + 1
-              Global_Crack_Element_Points(c_count,1) = Temp_Global_Index(i_C,Crack3D_Meshed_Ele(i_C)%row(i_Crack_Ele,1))  
-              Global_Crack_Element_Points(c_count,2) = Temp_Global_Index(i_C,Crack3D_Meshed_Ele(i_C)%row(i_Crack_Ele,2))  
-              Global_Crack_Element_Points(c_count,3) = Temp_Global_Index(i_C,Crack3D_Meshed_Ele(i_C)%row(i_Crack_Ele,3))  
-              Global_Crack_Element_Crack_ID(c_count) = i_C  
-          enddo
-    enddo
+        if (allocated(Global_Crack_Element_Crack_ID)) deallocate(Global_Crack_Element_Crack_ID)
+        allocate(Global_Crack_Element_Crack_ID(num_Crack_Elements)) 
+        Global_Crack_Element_Crack_ID(1:num_Crack_Elements) = 0
+
+        if (allocated(Global_Crack_Node_Crack_ID)) deallocate(Global_Crack_Node_Crack_ID)
+        allocate(Global_Crack_Node_Crack_ID(num_Crack_Points,2)) 
+        Global_Crack_Node_Crack_ID(num_Crack_Points,2) = 0
+
+        Temp_Global_Index(1:num_Crack,1:maxval(Crack3D_Meshed_Node_num(1:num_Crack))) = 0
+        c_count = 0
+        do i_C = 1,num_Crack
+            do i_Crack_Node = 1,Crack3D_Meshed_Node_num(i_C) 
+                c_count = c_count + 1
+                Global_Crack_Points(c_count,1:3) = Crack3D_Meshed_Node(i_C)%row(i_Crack_Node,1:3) 
+                Temp_Global_Index(i_C,i_Crack_Node) = c_count         
+                Global_Crack_Node_Crack_ID(c_count,1) = i_C            
+                Global_Crack_Node_Crack_ID(c_count,2) = i_Crack_Node  
+            enddo
+        enddo
+
+        c_count = 0
+        do i_C = 1,num_Crack
+            do i_Crack_Ele =1,Crack3D_Meshed_Ele_num(i_C) 
+                c_count = c_count + 1
+                Global_Crack_Element_Points(c_count,1) = Temp_Global_Index(i_C,Crack3D_Meshed_Ele(i_C)%row(i_Crack_Ele,1))  
+                Global_Crack_Element_Points(c_count,2) = Temp_Global_Index(i_C,Crack3D_Meshed_Ele(i_C)%row(i_Crack_Ele,2))  
+                Global_Crack_Element_Points(c_count,3) = Temp_Global_Index(i_C,Crack3D_Meshed_Ele(i_C)%row(i_Crack_Ele,3))  
+                Global_Crack_Element_Crack_ID(c_count) = i_C  
+            enddo
+        enddo
     endif
-          
+
 
     WRITE(IUNIT,'(/A,I0,A)')'POINTS ',num_Crack_Points,' double'
     if(num_Crack >0) then
-          do i_Node=1,num_Crack_Points
-              WRITE(IUNIT,'(3F12.6)') Global_Crack_Points(i_Node,1:3) 
-          enddo 
+        do i_Node=1,num_Crack_Points
+            WRITE(IUNIT,'(3F12.6)') Global_Crack_Points(i_Node,1:3) 
+        enddo 
     endif    
 
     ind = 0
 
     if(num_Crack >0 .and. Key_Dimension==3) then
-      ind = ind + num_Crack_Elements*(3+1)
+        ind = ind + num_Crack_Elements*(3+1)
     endif
-          
+
     WRITE(IUNIT,'(/A,I0,A,I0)')'CELLS ',num_Crack_Elements,' ',ind
 
     IF(Key_Dimension == 2) THEN
@@ -271,7 +240,7 @@ elseif (Key_Dimension == 3) then
             enddo
         endif
     END IF
-          
+
     write(IUNIT,'(/A,I10)') "CELL_TYPES", num_Crack_Elements
     DO i_E=1,num_Crack_Elements
         write(IUNIT,'(I3)') 5
@@ -288,7 +257,7 @@ elseif (Key_Dimension == 3) then
     do i_E=1,num_Crack_Elements
         write(IUNIT,'(I8)') i_E
     enddo
-          
+
     write(IUNIT,'(/A,I10)') "POINT_DATA", num_Crack_Points
 
     WRITE(IUNIT,'(/A,/A)')'SCALARS Crack_Node_Number integer','LOOKUP_TABLE default'
@@ -306,7 +275,7 @@ elseif (Key_Dimension == 3) then
         END DO   
     endif
 
-    
+
     close(IUNIT)      
 endif
 

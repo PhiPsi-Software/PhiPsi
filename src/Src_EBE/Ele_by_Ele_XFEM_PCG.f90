@@ -1,50 +1,27 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
-SUBROUTINE Ele_by_Ele_XFEM_PCG(isub,Lambda,c_cg_tol,max_num_PCG,  &
-                             num_FreeD,freeDOF,F,disp,  &
-                             Total_Num_G_P,  &
-                             storK,size_local,all_local,  &
-                             diag_precon_no_invert)
+!-----------------------------------------------------------
+! Brief: 2D XFEM element-by-element PCG solver that builds K on the fly.
+!
+! Parameters:
+!   Input:  isub                  - load step index
+!           Lambda                - load factor
+!           c_cg_tol              - PCG convergence tolerance
+!           max_num_PCG           - maximum PCG iterations
+!           num_FreeD             - number of free DOF
+!           freeDOF               - list of free DOF indices
+!           F                     - global load vector (free DOF)
+!   Output: disp                  - solution displacement vector
+!           Total_Num_G_P         - total number of Gauss points
+!           storK                 - per-element XFEM stiffness matrices
+!           size_local            - per-element local DOF size
+!           all_local             - per-element local DOF map
+!           diag_precon_no_invert - diagonal preconditioner (uninverted)
+!
+! Notes:   Combines EBE-PCG with on-the-fly XFEM element integration
+!          (crack tip, Heaviside, and junction enrichments).
+!-----------------------------------------------------------
+
+SUBROUTINE Ele_by_Ele_XFEM_PCG(isub,Lambda,c_cg_tol,max_num_PCG, num_FreeD,freeDOF,F,disp, Total_Num_G_P, &
+storK,size_local,all_local, diag_precon_no_invert)
 !Element by Element, diagonally preconditioned conjugate gradient solver.
 !Ref: Programming the finite element method_2014_Smith_5th, Program 5.6.
 !First written on 2020-03-25.
@@ -110,8 +87,7 @@ Total_Num_G_P = 0
 print *, "    >>>> Start of element by element PCG solver <<<<"
 print *, "    Step 1: prepare data..."
 
-ALLOCATE(p(0:num_FreeD),loads(0:num_FreeD), &
-     x(0:num_FreeD),xnew(0:num_FreeD),u(0:num_FreeD),pcg_d(0:num_FreeD))
+ALLOCATE(p(0:num_FreeD),loads(0:num_FreeD), x(0:num_FreeD),xnew(0:num_FreeD),u(0:num_FreeD),pcg_d(0:num_FreeD))
 diag_precon= ZR
 
 max_threads = omp_get_max_threads()
@@ -120,11 +96,11 @@ ALLOCATE(u_thread(0:num_FreeD,max_threads))
 
 print *, "    Step 2: get and store element stiffness matrix..."
 if (Key_Integral_Sol  == 2)then
-  call Cal_Gauss_Points_QUAD(Num_Gauss_Points,kesi_Enr,yita_Enr,weight_Enr)
-  call Cal_Gauss_Points_QUAD(Num_Gauss_P_FEM,kesi_N_Enr,yita_N_Enr,weight_N_Enr)
+    call Cal_Gauss_Points_QUAD(Num_Gauss_Points,kesi_Enr,yita_Enr,weight_Enr)
+    call Cal_Gauss_Points_QUAD(Num_Gauss_P_FEM,kesi_N_Enr,yita_N_Enr,weight_N_Enr)
 elseif (Key_Integral_Sol  == 3)then
-  call Cal_Gauss_Points_QUAD_for_SUBQUAD(Num_Sub_Quads,kesi_Enr,yita_Enr,weight_Enr)
-  call Cal_Gauss_Points_QUAD(Num_Gauss_P_FEM,kesi_N_Enr,yita_N_Enr,weight_N_Enr)
+    call Cal_Gauss_Points_QUAD_for_SUBQUAD(Num_Sub_Quads,kesi_Enr,yita_Enr,weight_Enr)
+    call Cal_Gauss_Points_QUAD(Num_Gauss_P_FEM,kesi_N_Enr,yita_N_Enr,weight_N_Enr)
 endif
 
 EleGaus_yes_FEM_asemd(1:Num_Elem,1:Num_Gauss_Points)= .false.
@@ -132,25 +108,25 @@ storK(1:MDOF_2D,1:MDOF_2D,1:Num_Elem) =ZR
 all_local(1:MDOF_2D,1:Num_Elem) = 0
 
 do i_E=1,Num_Elem
-  Ele_GP_Start_Num(i_E) = Total_Num_G_P + 1
-  c_NN    = G_NN(1:4,i_E)
-  if (num_Crack/= 0 .and. (maxval(Enriched_Node_Type(c_NN,1:num_Crack)).ne.0)) then
-      c_Num_Gauss_Point = Num_Gauss_Points
-      Total_Num_G_P     = Total_Num_G_P + c_Num_Gauss_Point
-  elseif(num_Hole/= 0 .and. (maxval(Enriched_Node_Type_Hl(c_NN,1:num_Hole)).ne.0))then
-      c_Num_Gauss_Point = Num_Gauss_Points
-      Total_Num_G_P     = Total_Num_G_P + c_Num_Gauss_Point
-  elseif(num_Cross/= 0 .and. (maxval(Enriched_Node_Type_Cross(c_NN,1:num_Cross)).ne.0))then
-      c_Num_Gauss_Point = Num_Gauss_Points
-      Total_Num_G_P     = Total_Num_G_P + c_Num_Gauss_Point
-  elseif(num_Inclusion/= 0 .and.(maxval(Enriched_Node_Type_Incl(c_NN,1:num_Inclusion)).ne.0))then
-      c_Num_Gauss_Point = Num_Gauss_Points
-      Total_Num_G_P     = Total_Num_G_P + c_Num_Gauss_Point
-  else
-      c_Num_Gauss_Point = Num_Gauss_P_FEM
-      Total_Num_G_P     = Total_Num_G_P +c_Num_Gauss_Point
-  end if
-  num_GP_Elem(i_E) = c_Num_Gauss_Point
+    Ele_GP_Start_Num(i_E) = Total_Num_G_P + 1
+    c_NN    = G_NN(1:4,i_E)
+    if (num_Crack/= 0 .and. (maxval(Enriched_Node_Type(c_NN,1:num_Crack)).ne.0)) then
+        c_Num_Gauss_Point = Num_Gauss_Points
+        Total_Num_G_P     = Total_Num_G_P + c_Num_Gauss_Point
+    elseif(num_Hole/= 0 .and. (maxval(Enriched_Node_Type_Hl(c_NN,1:num_Hole)).ne.0))then
+        c_Num_Gauss_Point = Num_Gauss_Points
+        Total_Num_G_P     = Total_Num_G_P + c_Num_Gauss_Point
+    elseif(num_Cross/= 0 .and. (maxval(Enriched_Node_Type_Cross(c_NN,1:num_Cross)).ne.0))then
+        c_Num_Gauss_Point = Num_Gauss_Points
+        Total_Num_G_P     = Total_Num_G_P + c_Num_Gauss_Point
+    elseif(num_Inclusion/= 0 .and.(maxval(Enriched_Node_Type_Incl(c_NN,1:num_Inclusion)).ne.0))then
+        c_Num_Gauss_Point = Num_Gauss_Points
+        Total_Num_G_P     = Total_Num_G_P + c_Num_Gauss_Point
+    else
+        c_Num_Gauss_Point = Num_Gauss_P_FEM
+        Total_Num_G_P     = Total_Num_G_P +c_Num_Gauss_Point
+    end if
+    num_GP_Elem(i_E) = c_Num_Gauss_Point
 enddo
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_E,mat_num,c_thick,c_D,  &
 !$OMP            c_X_NODES,c_Y_NODES,c_NN,kesi,yita,weight,  &
@@ -161,167 +137,158 @@ enddo
 !$OMP            k,c_loca,localK_FEM_or_XFEM,num_B,tem_B,num_tem_B,detJ,j,local,  &
 !$OMP            Yes_Gauss_in_Incl,c_Incl_Num)
 do i_E=1,Num_Elem
-  mat_num = Elem_Mat(i_E)
-  c_thick = thick(Elem_Mat(i_E))
+    mat_num = Elem_Mat(i_E)
+    c_thick = thick(Elem_Mat(i_E))
 
-  c_D(1:3,1:3)     = D(Elem_Mat(i_E),1:3,1:3)
+    c_D(1:3,1:3)     = D(Elem_Mat(i_E),1:3,1:3)
 
-  if(Flag_Weibull_E)then
-      if (Key_Weibull_E(Elem_Mat(i_E)) ==1)then
-          c_D = Weibull_Elements_D_Matrix(i_E,1:3,1:3)
-      endif
-  endif
+    if(Flag_Weibull_E)then
+        if (Key_Weibull_E(Elem_Mat(i_E)) ==1)then
+            c_D = Weibull_Elements_D_Matrix(i_E,1:3,1:3)
+        endif
+    endif
 
-  c_NN    = G_NN(1:4,i_E)
-  c_X_NODES = G_X_NODES(1:4,i_E)
-  c_Y_NODES = G_Y_NODES(1:4,i_E)
-  if (num_Crack/= 0 .and. (maxval(Enriched_Node_Type(c_NN,1:num_Crack)).ne.0))then
-      kesi(1:Num_Gauss_Points)    = kesi_Enr
-      yita(1:Num_Gauss_Points)    = yita_Enr
-      weight(1:Num_Gauss_Points)  = weight_Enr
-      c_Num_Gauss_Point = Num_Gauss_Points
-  elseif(num_Hole/= 0 .and.(maxval(Enriched_Node_Type_Hl(c_NN,1:num_Hole)).ne.0))then
-      kesi(1:Num_Gauss_Points)    = kesi_Enr
-      yita(1:Num_Gauss_Points)    = yita_Enr
-      weight(1:Num_Gauss_Points)  = weight_Enr
-      c_Num_Gauss_Point = Num_Gauss_Points
-  elseif(num_Cross/= 0 .and.(maxval(Enriched_Node_Type_Cross(c_NN,1:num_Cross)).ne.0))then
-      kesi(1:Num_Gauss_Points)    = kesi_Enr
-      yita(1:Num_Gauss_Points)    = yita_Enr
-      weight(1:Num_Gauss_Points)  = weight_Enr
-      c_Num_Gauss_Point = Num_Gauss_Points
-  elseif(num_Inclusion/= 0 .and. (maxval(Enriched_Node_Type_Incl(c_NN,1:num_Inclusion)).ne.0))then
-      kesi(1:Num_Gauss_Points)    = kesi_Enr
-      yita(1:Num_Gauss_Points)    = yita_Enr
-      weight(1:Num_Gauss_Points)  = weight_Enr
-      c_Num_Gauss_Point = Num_Gauss_Points
-  else
-      kesi(1:Num_Gauss_P_FEM)    = kesi_N_Enr
-      yita(1:Num_Gauss_P_FEM)    = yita_N_Enr
-      weight(1:Num_Gauss_P_FEM)  = weight_N_Enr
-      c_Num_Gauss_Point = Num_Gauss_P_FEM
-  end if
-  Location_ESM(1:MDOF_2D)   = 0
-  num_Loc_ESM           = 0
-  if(num_Crack/=0)then
-    do i_C =1,num_Crack
-      call Location_Element_Stiff_Matrix(i_E,i_C,c_POS(1:Num_Node,i_C),&
-                         Location_ESM_C_Crack, num_Loc_ESM_C_Crack,&
-                          Location_ESM_C_Cr_NoFEM, num_Loc_ESM_C_Cr_NoFEM)
-      Location_ESM(num_Loc_ESM+1:num_Loc_ESM+num_Loc_ESM_C_Crack) = &
-        Location_ESM_C_Crack(1:num_Loc_ESM_C_Crack)
-      num_Loc_ESM  =  num_Loc_ESM + num_Loc_ESM_C_Crack
-    end do
-  endif
-  if(num_Hole/=0)then
-    do i_H =1,num_Hole
-      call Location_Element_Stiff_Matrix_Hl(i_E,i_H,c_POS_Hl(1:Num_Node,i_H),Location_ESM_C_Crack, &
-                       num_Loc_ESM_C_Crack,Location_ESM_C_Cr_NoFEM,num_Loc_ESM_C_Cr_NoFEM)
-      Location_ESM(num_Loc_ESM+1:num_Loc_ESM+num_Loc_ESM_C_Crack) = Location_ESM_C_Crack(1:num_Loc_ESM_C_Crack)
-      num_Loc_ESM  =  num_Loc_ESM + num_Loc_ESM_C_Crack
-    end do
-  endif
-  if(num_Cross/=0)then
-    do i_Cross =1,num_Cross
-      call Location_Element_Stiff_Matrix_Cross(i_E,i_Cross,c_POS_Cross(1:Num_Node,i_Cross),Location_ESM_C_Crack,  &
-                         num_Loc_ESM_C_Crack,Location_ESM_C_Cr_NoFEM,num_Loc_ESM_C_Cr_NoFEM)
-      Location_ESM(num_Loc_ESM+1:num_Loc_ESM+num_Loc_ESM_C_Crack) = Location_ESM_C_Crack(1:num_Loc_ESM_C_Crack)
-      num_Loc_ESM  =  num_Loc_ESM + num_Loc_ESM_C_Crack
-    end do
-  endif
-  if(num_Inclusion/=0)then
-    do i_Incl =1,num_Inclusion
-      call Location_Element_Stiff_Matrix_Incl(i_E,i_Incl,c_POS_Incl(1:Num_Node,i_Incl), &
-                            Location_ESM_C_Crack,num_Loc_ESM_C_Crack,Location_ESM_C_Cr_NoFEM, &
-                            num_Loc_ESM_C_Cr_NoFEM)
-      Location_ESM(num_Loc_ESM+1:num_Loc_ESM+num_Loc_ESM_C_Crack) = Location_ESM_C_Crack(1:num_Loc_ESM_C_Crack)
-      num_Loc_ESM  =  num_Loc_ESM + num_Loc_ESM_C_Crack
-    end do
-  endif
-  size_local(i_E) = num_Loc_ESM
-  DO k=1,num_Loc_ESM
-      if (any(freeDOF(1:num_FreeD)== Location_ESM(k)))then
-          c_loca = minloc(freeDOF(1:num_FreeD),1, MASK = (freeDOF(1:num_FreeD).eq.Location_ESM(k)))
-      else
-          c_loca =0
-      endif
-
-      local(k) = c_loca
-  enddo
-  all_local(1:num_Loc_ESM,i_E) = local(1:num_Loc_ESM)
-  allocate(localK_FEM_or_XFEM(MDOF_2D,MDOF_2D))
-  localK_FEM_or_XFEM(1:MDOF_2D,1:MDOF_2D) = ZR
-
-  do i_G = 1,c_Num_Gauss_Point
-      B(1:3,1:80) = ZR
-      num_B = 0
-      call Cal_N(kesi(i_G),yita(i_G),c_N)
-      call Cal_detJ(kesi(i_G),yita(i_G),c_X_NODES,c_Y_NODES,detJ)
-      c_G_x = DOT_PRODUCT(c_N(1,1:7:2),c_X_NODES(1:4))
-      c_G_y = DOT_PRODUCT(c_N(1,1:7:2),c_Y_NODES(1:4))
-      if(num_Crack/=0)then
+    c_NN    = G_NN(1:4,i_E)
+    c_X_NODES = G_X_NODES(1:4,i_E)
+    c_Y_NODES = G_Y_NODES(1:4,i_E)
+    if (num_Crack/= 0 .and. (maxval(Enriched_Node_Type(c_NN,1:num_Crack)).ne.0))then
+        kesi(1:Num_Gauss_Points)    = kesi_Enr
+        yita(1:Num_Gauss_Points)    = yita_Enr
+        weight(1:Num_Gauss_Points)  = weight_Enr
+        c_Num_Gauss_Point = Num_Gauss_Points
+    elseif(num_Hole/= 0 .and.(maxval(Enriched_Node_Type_Hl(c_NN,1:num_Hole)).ne.0))then
+        kesi(1:Num_Gauss_Points)    = kesi_Enr
+        yita(1:Num_Gauss_Points)    = yita_Enr
+        weight(1:Num_Gauss_Points)  = weight_Enr
+        c_Num_Gauss_Point = Num_Gauss_Points
+    elseif(num_Cross/= 0 .and.(maxval(Enriched_Node_Type_Cross(c_NN,1:num_Cross)).ne.0))then
+        kesi(1:Num_Gauss_Points)    = kesi_Enr
+        yita(1:Num_Gauss_Points)    = yita_Enr
+        weight(1:Num_Gauss_Points)  = weight_Enr
+        c_Num_Gauss_Point = Num_Gauss_Points
+    elseif(num_Inclusion/= 0 .and. (maxval(Enriched_Node_Type_Incl(c_NN,1:num_Inclusion)).ne.0))then
+        kesi(1:Num_Gauss_Points)    = kesi_Enr
+        yita(1:Num_Gauss_Points)    = yita_Enr
+        weight(1:Num_Gauss_Points)  = weight_Enr
+        c_Num_Gauss_Point = Num_Gauss_Points
+    else
+        kesi(1:Num_Gauss_P_FEM)    = kesi_N_Enr
+        yita(1:Num_Gauss_P_FEM)    = yita_N_Enr
+        weight(1:Num_Gauss_P_FEM)  = weight_N_Enr
+        c_Num_Gauss_Point = Num_Gauss_P_FEM
+    end if
+    Location_ESM(1:MDOF_2D)   = 0
+    num_Loc_ESM           = 0
+    if(num_Crack/=0)then
         do i_C =1,num_Crack
-          call Cal_B_Matrix_Crack(kesi(i_G),yita(i_G),i_C,i_E,i_G,c_NN,c_X_NODES,c_Y_NODES,  &
-                             tem_B,num_tem_B)
-          B(1:3,num_B+1:num_B+num_tem_B) =  tem_B(1:3,1:num_tem_B)
-          num_B = num_B + num_tem_B
+            call Location_Element_Stiff_Matrix(i_E,i_C,c_POS(1:Num_Node,i_C), Location_ESM_C_Crack, num_Loc_ESM_C_Crack, &
+            Location_ESM_C_Cr_NoFEM, num_Loc_ESM_C_Cr_NoFEM)
+            Location_ESM(num_Loc_ESM+1:num_Loc_ESM+num_Loc_ESM_C_Crack) = Location_ESM_C_Crack(1:num_Loc_ESM_C_Crack)
+            num_Loc_ESM  =  num_Loc_ESM + num_Loc_ESM_C_Crack
         end do
-      endif
-      if(num_Hole/=0)then
-          do i_H =1,num_Hole
-              call Cal_B_Matrix_Hl(kesi(i_G),yita(i_G),i_H,i_E,i_G, &
-                                 c_NN,c_X_NODES,c_Y_NODES,tem_B,num_tem_B)
-              B(1:3,num_B+1:num_B+num_tem_B) =  tem_B(1:3,1:num_tem_B)
-              num_B = num_B + num_tem_B
-          end do
-      endif
-      if(num_Cross/=0)then
-          do i_Cross =1,num_Cross
-              call Cal_B_Matrix_Cross(kesi(i_G),yita(i_G),i_Cross,i_E,i_G, &
-                                 c_NN,c_X_NODES,c_Y_NODES,tem_B,num_tem_B)
-              B(1:3,num_B+1:num_B+num_tem_B) =  tem_B(1:3,1:num_tem_B)
-              num_B = num_B + num_tem_B
-          end do
-      endif
-      if(num_Circ_Incl/=0)then
-          do i_Incl =1,num_Circ_Incl
-              call Cal_B_Matrix_Circ_Incl(kesi(i_G),yita(i_G),i_Incl,i_E,i_G, &
-                                 c_NN,c_X_NODES,c_Y_NODES,tem_B,num_tem_B)
-              B(1:3,num_B+1:num_B+num_tem_B) =  tem_B(1:3,1:num_tem_B)
-              num_B = num_B + num_tem_B
-          end do
-          call Tool_Yes_Point_in_Inclusions(c_G_x,c_G_y,Yes_Gauss_in_Incl,c_Incl_Num)
-          if(Yes_Gauss_in_Incl)then
-              c_MatNum = Circ_Inclu_Mat_Num(c_Incl_Num)
-              c_D     = D(c_MatNum,:,:)
-          endif
-      endif
-      if(num_Poly_Incl/=0)then
-          do i_Incl =1,num_Poly_Incl
-              call Cal_B_Matrix_Poly_Incl(kesi(i_G),  &
-                                yita(i_G),i_Incl,i_E,i_G,c_NN,c_X_NODES,c_Y_NODES,tem_B,num_tem_B)
-              B(1:3,num_B+1:num_B+num_tem_B) =  tem_B(1:3,1:num_tem_B)
-              num_B = num_B + num_tem_B
-          end do
-          call Tool_Yes_Point_in_Inclusions(c_G_x,c_G_y,Yes_Gauss_in_Incl,c_Incl_Num)
-          if(Yes_Gauss_in_Incl)then
-              c_MatNum = Poly_Inclu_Mat_Num(c_Incl_Num)
-              c_D     = D(c_MatNum,:,:)
-          endif
-      endif
-      localK_FEM_or_XFEM(1:num_B,1:num_B) = localK_FEM_or_XFEM(1:num_B,1:num_B) +  &
-                    c_thick*weight(i_G)*detJ*MATMUL(MATMUL(transpose  &
-                        (B(1:3,1:num_B)),c_D), B(1:3,1:num_B))
-  enddo
-  storK(1:num_B,1:num_B,i_E)=localK_FEM_or_XFEM(1:num_B,1:num_B)
-  DO j=1,num_B
-      c_loca=local(j)
-      if(abs(localK_FEM_or_XFEM(j,j))<=Tol_10)then
-          localK_FEM_or_XFEM(j,j)  = 1.0D0
-      endif
-      diag_precon(c_loca)=diag_precon(c_loca) + localK_FEM_or_XFEM(j,j)
-  END DO
-  deallocate(localK_FEM_or_XFEM)
+    endif
+    if(num_Hole/=0)then
+        do i_H =1,num_Hole
+            call Location_Element_Stiff_Matrix_Hl(i_E,i_H,c_POS_Hl(1:Num_Node,i_H),Location_ESM_C_Crack, &
+            num_Loc_ESM_C_Crack,Location_ESM_C_Cr_NoFEM,num_Loc_ESM_C_Cr_NoFEM)
+            Location_ESM(num_Loc_ESM+1:num_Loc_ESM+num_Loc_ESM_C_Crack) = Location_ESM_C_Crack(1:num_Loc_ESM_C_Crack)
+            num_Loc_ESM  =  num_Loc_ESM + num_Loc_ESM_C_Crack
+        end do
+    endif
+    if(num_Cross/=0)then
+        do i_Cross =1,num_Cross
+            call Location_Element_Stiff_Matrix_Cross(i_E,i_Cross,c_POS_Cross(1:Num_Node,i_Cross),Location_ESM_C_Crack, &
+            num_Loc_ESM_C_Crack,Location_ESM_C_Cr_NoFEM,num_Loc_ESM_C_Cr_NoFEM)
+            Location_ESM(num_Loc_ESM+1:num_Loc_ESM+num_Loc_ESM_C_Crack) = Location_ESM_C_Crack(1:num_Loc_ESM_C_Crack)
+            num_Loc_ESM  =  num_Loc_ESM + num_Loc_ESM_C_Crack
+        end do
+    endif
+    if(num_Inclusion/=0)then
+        do i_Incl =1,num_Inclusion
+            call Location_Element_Stiff_Matrix_Incl(i_E,i_Incl,c_POS_Incl(1:Num_Node,i_Incl), &
+            Location_ESM_C_Crack,num_Loc_ESM_C_Crack,Location_ESM_C_Cr_NoFEM, num_Loc_ESM_C_Cr_NoFEM)
+            Location_ESM(num_Loc_ESM+1:num_Loc_ESM+num_Loc_ESM_C_Crack) = Location_ESM_C_Crack(1:num_Loc_ESM_C_Crack)
+            num_Loc_ESM  =  num_Loc_ESM + num_Loc_ESM_C_Crack
+        end do
+    endif
+    size_local(i_E) = num_Loc_ESM
+    DO k=1,num_Loc_ESM
+        if (any(freeDOF(1:num_FreeD)== Location_ESM(k)))then
+            c_loca = minloc(freeDOF(1:num_FreeD),1, MASK = (freeDOF(1:num_FreeD).eq.Location_ESM(k)))
+        else
+            c_loca =0
+        endif
+
+        local(k) = c_loca
+    enddo
+    all_local(1:num_Loc_ESM,i_E) = local(1:num_Loc_ESM)
+    allocate(localK_FEM_or_XFEM(MDOF_2D,MDOF_2D))
+    localK_FEM_or_XFEM(1:MDOF_2D,1:MDOF_2D) = ZR
+
+    do i_G = 1,c_Num_Gauss_Point
+        B(1:3,1:80) = ZR
+        num_B = 0
+        call Cal_N(kesi(i_G),yita(i_G),c_N)
+        call Cal_detJ(kesi(i_G),yita(i_G),c_X_NODES,c_Y_NODES,detJ)
+        c_G_x = DOT_PRODUCT(c_N(1,1:7:2),c_X_NODES(1:4))
+        c_G_y = DOT_PRODUCT(c_N(1,1:7:2),c_Y_NODES(1:4))
+        if(num_Crack/=0)then
+            do i_C =1,num_Crack
+                call Cal_B_Matrix_Crack(kesi(i_G),yita(i_G),i_C,i_E,i_G,c_NN,c_X_NODES,c_Y_NODES, tem_B,num_tem_B)
+                B(1:3,num_B+1:num_B+num_tem_B) =  tem_B(1:3,1:num_tem_B)
+                num_B = num_B + num_tem_B
+            end do
+        endif
+        if(num_Hole/=0)then
+            do i_H =1,num_Hole
+                call Cal_B_Matrix_Hl(kesi(i_G),yita(i_G),i_H,i_E,i_G, c_NN,c_X_NODES,c_Y_NODES,tem_B,num_tem_B)
+                B(1:3,num_B+1:num_B+num_tem_B) =  tem_B(1:3,1:num_tem_B)
+                num_B = num_B + num_tem_B
+            end do
+        endif
+        if(num_Cross/=0)then
+            do i_Cross =1,num_Cross
+                call Cal_B_Matrix_Cross(kesi(i_G),yita(i_G),i_Cross,i_E,i_G, c_NN,c_X_NODES,c_Y_NODES,tem_B,num_tem_B)
+                B(1:3,num_B+1:num_B+num_tem_B) =  tem_B(1:3,1:num_tem_B)
+                num_B = num_B + num_tem_B
+            end do
+        endif
+        if(num_Circ_Incl/=0)then
+            do i_Incl =1,num_Circ_Incl
+                call Cal_B_Matrix_Circ_Incl(kesi(i_G),yita(i_G),i_Incl,i_E,i_G, c_NN,c_X_NODES,c_Y_NODES,tem_B,num_tem_B)
+                B(1:3,num_B+1:num_B+num_tem_B) =  tem_B(1:3,1:num_tem_B)
+                num_B = num_B + num_tem_B
+            end do
+            call Tool_Yes_Point_in_Inclusions(c_G_x,c_G_y,Yes_Gauss_in_Incl,c_Incl_Num)
+            if(Yes_Gauss_in_Incl)then
+                c_MatNum = Circ_Inclu_Mat_Num(c_Incl_Num)
+                c_D     = D(c_MatNum,:,:)
+            endif
+        endif
+        if(num_Poly_Incl/=0)then
+            do i_Incl =1,num_Poly_Incl
+                call Cal_B_Matrix_Poly_Incl(kesi(i_G), yita(i_G),i_Incl,i_E,i_G,c_NN,c_X_NODES,c_Y_NODES,tem_B,num_tem_B)
+                B(1:3,num_B+1:num_B+num_tem_B) =  tem_B(1:3,1:num_tem_B)
+                num_B = num_B + num_tem_B
+            end do
+            call Tool_Yes_Point_in_Inclusions(c_G_x,c_G_y,Yes_Gauss_in_Incl,c_Incl_Num)
+            if(Yes_Gauss_in_Incl)then
+                c_MatNum = Poly_Inclu_Mat_Num(c_Incl_Num)
+                c_D     = D(c_MatNum,:,:)
+            endif
+        endif
+        localK_FEM_or_XFEM(1:num_B,1:num_B) = localK_FEM_or_XFEM(1:num_B,1:num_B) + &
+        c_thick*weight(i_G)*detJ*MATMUL(MATMUL(transpose (B(1:3,1:num_B)),c_D), B(1:3,1:num_B))
+    enddo
+    storK(1:num_B,1:num_B,i_E)=localK_FEM_or_XFEM(1:num_B,1:num_B)
+    DO j=1,num_B
+        c_loca=local(j)
+        if(abs(localK_FEM_or_XFEM(j,j))<=Tol_10)then
+            localK_FEM_or_XFEM(j,j)  = 1.0D0
+        endif
+        diag_precon(c_loca)=diag_precon(c_loca) + localK_FEM_or_XFEM(j,j)
+    END DO
+    deallocate(localK_FEM_or_XFEM)
 enddo
 !$omp end parallel do
 
@@ -335,11 +302,11 @@ loads(1:num_FreeD) = F(1:num_FreeD)
 
 
 if (Key_EBE_Precondition==0) then
-  diag_precon=ONE
-  diag_precon(0) =ZR
+    diag_precon=ONE
+    diag_precon(0) =ZR
 elseif(Key_EBE_Precondition==1) then
-  diag_precon(1:)=ONE/diag_precon_no_invert(1:)
-  diag_precon(0) =ZR
+    diag_precon(1:)=ONE/diag_precon_no_invert(1:)
+    diag_precon(0) =ZR
 endif
 
 pcg_d=diag_precon*loads
@@ -354,45 +321,45 @@ initial_residual_norm = SQRT(DOT_PRODUCT(loads(1:num_FreeD), loads(1:num_FreeD))
 if (initial_residual_norm<Tol_20) initial_residual_norm = Tol_20
 
 do i_PCG =1,max_num_PCG
-  cg_iters=cg_iters+1
-  u=ZR
+    cg_iters=cg_iters+1
+    u=ZR
 
-  u_thread(0:num_FreeD,1:max_threads)= ZR
-  !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(c_thread,i_E,num_Loc_ESM,local)
-  c_thread = omp_get_thread_num()+1
-  !$OMP DO
-  do i_E=1,Num_Elem
-      num_Loc_ESM = size_local(i_E)
-      local(1:num_Loc_ESM)=all_local(1:num_Loc_ESM,i_E)
-      u_thread(local(1:num_Loc_ESM),c_thread) = u_thread(local(1:num_Loc_ESM),c_thread)+ &
-                  MATMUL(storK(1:num_Loc_ESM,1:num_Loc_ESM,i_E),p(local(1:num_Loc_ESM)))
-  enddo
-  !$omp end do
-  !$omp end parallel
+    u_thread(0:num_FreeD,1:max_threads)= ZR
+    !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(c_thread,i_E,num_Loc_ESM,local)
+    c_thread = omp_get_thread_num()+1
+    !$OMP DO
+    do i_E=1,Num_Elem
+        num_Loc_ESM = size_local(i_E)
+        local(1:num_Loc_ESM)=all_local(1:num_Loc_ESM,i_E)
+        u_thread(local(1:num_Loc_ESM),c_thread) = u_thread(local(1:num_Loc_ESM),c_thread)+ &
+        MATMUL(storK(1:num_Loc_ESM,1:num_Loc_ESM,i_E),p(local(1:num_Loc_ESM)))
+    enddo
+    !$omp end do
+    !$omp end parallel
 
-  DO i_Thread = 1,omp_get_max_threads()
-      u  =  u  + u_thread(:,i_Thread)
-  ENDDO
+    DO i_Thread = 1,omp_get_max_threads()
+        u  =  u  + u_thread(:,i_Thread)
+    ENDDO
 
-  up=DOT_PRODUCT(loads,pcg_d)
-  alpha=up/DOT_PRODUCT(p,u)
-  xnew=x+p*alpha
-  loads=loads-u*alpha
-  
-  current_residual_norm = SQRT(DOT_PRODUCT(loads(1:num_FreeD), loads(1:num_FreeD)))
-  Tol = current_residual_norm / initial_residual_norm
-  
-  
-  pcg_d=diag_precon*loads
-  beta=DOT_PRODUCT(loads,pcg_d)/up
-  p=pcg_d+p*beta
+    up=DOT_PRODUCT(loads,pcg_d)
+    alpha=up/DOT_PRODUCT(p,u)
+    xnew=x+p*alpha
+    loads=loads-u*alpha
+
+    current_residual_norm = SQRT(DOT_PRODUCT(loads(1:num_FreeD), loads(1:num_FreeD)))
+    Tol = current_residual_norm / initial_residual_norm
 
 
+    pcg_d=diag_precon*loads
+    beta=DOT_PRODUCT(loads,pcg_d)/up
+    p=pcg_d+p*beta
 
-  x=xnew
-  if(Tol<c_cg_tol.OR.cg_iters==max_num_PCG)then
-      exit
-  endif
+
+
+    x=xnew
+    if(Tol<c_cg_tol.OR.cg_iters==max_num_PCG)then
+        exit
+    endif
 enddo
 print *, "    Number of CG iterations to convergence was",cg_iters
 

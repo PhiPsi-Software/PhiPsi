@@ -6,9 +6,9 @@ finish
 /DSCALE,ALL,1.0                                                                                                                                                                                         
 /eshape,1                                                                                                                                                                                               
 !---------------------                                                                                                                                                                                  
-L  =  17  !长,x                                                                                                                                                                                        
-W  =  17  !宽,y                                                                                                                                                                                        
-H  =  17  !高,z                                                                                                                                                                                        
+L  =  17  !Length, x                                                                                                                                                                                        
+W  =  17  !Width, y                                                                                                                                                                                        
+H  =  17  !Height, z                                                                                                                                                                                        
 size_mesh = 1                                                                                                                                                                                           
 F = 1e7                                                                                                                                                                                                 
 !---------------------                                                                                                                                                                                  
@@ -31,7 +31,7 @@ k,6,L,0,H
 K,7,L,W,H                                                                                                                                                                                               
 K,8,0,W,H                                                                                                                                                                                               
 V,1,2,3,4,5,6,7,8                                                                                                                                                                                       
-!---------------------视角及显示                                                                                                                                                                   
+!---------------------View and display                                                                                                                                                                   
 /REPLO                                                                                                                                                                                                  
 /VIEW,  1,  0.306110853806    , -0.802050055528    ,  0.512846813006                                                                                                                                    
 /ANG,   1,  -34.0367734235                                                                                                                                                                              
@@ -52,7 +52,7 @@ VMESH,all
 !---------------------                                                                                                                                                                                  
 allsel                                                                                                                                                                                                  
 NSEL,S,LOC,Z,0                                                                                                                                                                                          
-D,all,all  !约束左端面全部自由度                                                                                                                                                              
+D,all,all  !Constrain all DOF on left end face                                                                                                                                                              
 ! allsel                                                                                                                                                                                                
 ! lsel,s,,,2,4,2                                                                                                                                                                                        
 ! NSLl,R,1                                                                                                                                                                                              

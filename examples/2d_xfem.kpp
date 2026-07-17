@@ -50,9 +50,11 @@ xfem_2d
 *Key_Play_Sounds
 1
 
-% Close the DOS Window when the calculation is finished.
+% Close the terminal when the calculation is finished.
 *Key_Close_Window
 1
+
+
 
 
 

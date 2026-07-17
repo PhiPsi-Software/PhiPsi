@@ -1,45 +1,15 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
+!-----------------------------------------------------------
+! Brief: Print formatted diagnostic summaries of analysis state.
+!
+! Parameters:
+!   Input:  print_type - Code selecting the report category
+!   Input:  Tab_number - Indentation level for the printed block
+!
+! Notes:   Switches on print_type to emit summary lines covering
+!   SIFs, displacements, nodal stresses and strains, including
+!   cylindrical components, using pre-declared FORMAT strings.
+!-----------------------------------------------------------
+
 subroutine Tool_Print_to_Screen(print_type,Tab_number)
 !2023-08-22.
 !
@@ -62,23 +32,17 @@ real(kind=FT) c_Max_KIII,c_Min_KIII,c_Ave_KIII
 real(kind=FT) Max_Disp_x,Max_Disp_y,Min_Disp_x,Min_Disp_y,Max_Disp_z,Min_Disp_z
 real(kind=FT) Max_Disp_x_Cyl,Max_Disp_y_Cyl,Min_Disp_x_Cyl,Min_Disp_y_Cyl,Max_Disp_z_Cyl,Min_Disp_z_Cyl
 real(kind=FT) Max_Node_Stress_xx,Max_Node_Stress_yy,Max_Node_Stress_zz, &
-              Min_Node_Stress_xx,Min_Node_Stress_yy,Min_Node_Stress_zz, &
-              Max_Node_Stress_xy,Max_Node_Stress_yz,Max_Node_Stress_xz, &
-              Min_Node_Stress_xy,Min_Node_Stress_yz,Min_Node_Stress_xz      
+Min_Node_Stress_xx,Min_Node_Stress_yy,Min_Node_Stress_zz, Max_Node_Stress_xy,Max_Node_Stress_yz,Max_Node_Stress_xz, &
+Min_Node_Stress_xy,Min_Node_Stress_yz,Min_Node_Stress_xz
 real(kind=FT) Max_Node_Strain_xx,Max_Node_Strain_yy,Max_Node_Strain_zz, &
-              Min_Node_Strain_xx,Min_Node_Strain_yy,Min_Node_Strain_zz, & 
-              Max_Node_Strain_xy,Max_Node_Strain_yz,Max_Node_Strain_xz, &
-              Min_Node_Strain_xy,Min_Node_Strain_yz,Min_Node_Strain_xz           
-real(kind=FT) Max_Node_Strain_Crr,Min_Node_Strain_Crr,                      &
-              Max_Node_Strain_Ctt,Min_Node_Strain_Ctt,Max_Node_Strain_Czz,  &
-              Min_Node_Strain_Czz,Max_Node_Strain_Crt,Min_Node_Strain_Crt,  &
-              Max_Node_Strain_Ctz,Min_Node_Strain_Ctz,Max_Node_Strain_Crz,  &
-              Min_Node_Strain_Crz
-real(kind=FT) Max_Node_Stress_Crr,Min_Node_Stress_Crr,                        &
-              Max_Node_Stress_Ctt,Min_Node_Stress_Ctt,Max_Node_Stress_Czz,    &
-              Min_Node_Stress_Czz,Max_Node_Stress_Crt,Min_Node_Stress_Crt,    &
-              Max_Node_Stress_Ctz,Min_Node_Stress_Ctz,Max_Node_Stress_Crz,    &
-              Min_Node_Stress_Crz   
+Min_Node_Strain_xx,Min_Node_Strain_yy,Min_Node_Strain_zz, Max_Node_Strain_xy,Max_Node_Strain_yz,Max_Node_Strain_xz, &
+Min_Node_Strain_xy,Min_Node_Strain_yz,Min_Node_Strain_xz
+real(kind=FT) Max_Node_Strain_Crr,Min_Node_Strain_Crr, Max_Node_Strain_Ctt,Min_Node_Strain_Ctt,Max_Node_Strain_Czz, &
+Min_Node_Strain_Czz,Max_Node_Strain_Crt,Min_Node_Strain_Crt, &
+Max_Node_Strain_Ctz,Min_Node_Strain_Ctz,Max_Node_Strain_Crz, Min_Node_Strain_Crz
+real(kind=FT) Max_Node_Stress_Crr,Min_Node_Stress_Crr, Max_Node_Stress_Ctt,Min_Node_Stress_Ctt,Max_Node_Stress_Czz, &
+Min_Node_Stress_Czz,Max_Node_Stress_Crt,Min_Node_Stress_Crt, &
+Max_Node_Stress_Ctz,Min_Node_Stress_Ctz,Max_Node_Stress_Crz, Min_Node_Stress_Crz
               
 real(kind=FT), allocatable:: tem_vector(:)
    
@@ -97,7 +61,7 @@ real(kind=FT), allocatable:: tem_vector(:)
 1023 FORMAT(5X,'Range of displacement z:  ',E16.9,' m to ',E16.9,' m')     
 
 1121 FORMAT(5X,'Range of displacement rr:',E14.5,' m to ',E14.5,' m')  
-1122 FORMAT(5X,'Range of displacement θθ:',E14.5,' m to ',E14.5,' m')  
+1122 FORMAT(5X,'Range of displacement �Ȧ�:',E14.5,' m to ',E14.5,' m')  
 1123 FORMAT(5X,'Range of displacement zz:',E14.5,' m to ',E14.5,' m')
 
 1721 FORMAT(5X,'Range of stress xx:  ',E13.5,' MPa to ',E13.6,' MPa')  
@@ -107,25 +71,25 @@ real(kind=FT), allocatable:: tem_vector(:)
 1725 FORMAT(5X,'Range of stress yz:  ',E13.5,' MPa to ',E13.6,' MPa') 
 1726 FORMAT(5X,'Range of stress xz:  ',E13.5,' MPa to ',E13.6,' MPa')  
 
-1821 FORMAT(5X,'Range of strain xx:  ',F9.2,' με to ',F9.2,' με')  
-1822 FORMAT(5X,'Range of strain yy:  ',F9.2,' με to ',F9.2,' με') 
-1823 FORMAT(5X,'Range of strain zz:  ',F9.2,' με to ',F9.2,' με')  
-1824 FORMAT(5X,'Range of strain xy:  ',F9.2,' με to ',F9.2,' με')  
-1825 FORMAT(5X,'Range of strain yz:  ',F9.2,' με to ',F9.2,' με') 
-1826 FORMAT(5X,'Range of strain xz:  ',F9.2,' με to ',F9.2,' με')   
+1821 FORMAT(5X,'Range of strain xx:  ',F9.2,' �̦� to ',F9.2,' �̦�')  
+1822 FORMAT(5X,'Range of strain yy:  ',F9.2,' �̦� to ',F9.2,' �̦�') 
+1823 FORMAT(5X,'Range of strain zz:  ',F9.2,' �̦� to ',F9.2,' �̦�')  
+1824 FORMAT(5X,'Range of strain xy:  ',F9.2,' �̦� to ',F9.2,' �̦�')  
+1825 FORMAT(5X,'Range of strain yz:  ',F9.2,' �̦� to ',F9.2,' �̦�') 
+1826 FORMAT(5X,'Range of strain xz:  ',F9.2,' �̦� to ',F9.2,' �̦�')   
 
-1921 FORMAT(5X,'Range of strain rr:  ',F9.2,' με to ',F9.2,' με') 
-1922 FORMAT(5X,'Range of strain θθ:  ',F9.2,' με to ',F9.2,' με') 
-1923 FORMAT(5X,'Range of strain zz:  ',F9.2,' με to ',F9.2,' με')  
-1924 FORMAT(5X,'Range of strain rθ:  ',F9.2,' με to ',F9.2,' με') 
-1925 FORMAT(5X,'Range of strain θz:  ',F9.2,' με to ',F9.2,' με')    
-1926 FORMAT(5X,'Range of strain rz:  ',F9.2,' με to ',F9.2,' με')     
+1921 FORMAT(5X,'Range of strain rr:  ',F9.2,' �̦� to ',F9.2,' �̦�') 
+1922 FORMAT(5X,'Range of strain �Ȧ�:  ',F9.2,' �̦� to ',F9.2,' �̦�') 
+1923 FORMAT(5X,'Range of strain zz:  ',F9.2,' �̦� to ',F9.2,' �̦�')  
+1924 FORMAT(5X,'Range of strain r��:  ',F9.2,' �̦� to ',F9.2,' �̦�') 
+1925 FORMAT(5X,'Range of strain ��z:  ',F9.2,' �̦� to ',F9.2,' �̦�')    
+1926 FORMAT(5X,'Range of strain rz:  ',F9.2,' �̦� to ',F9.2,' �̦�')     
 
 1931 FORMAT(5X,'Range of stress rr:  ',E13.6,' MPa to ',E13.6,' MPa')  
-1932 FORMAT(5X,'Range of stress θθ:  ',E13.6,' MPa to ',E13.6,' MPa')  
+1932 FORMAT(5X,'Range of stress �Ȧ�:  ',E13.6,' MPa to ',E13.6,' MPa')  
 1933 FORMAT(5X,'Range of stress zz:  ',E13.6,' MPa to ',E13.6,' MPa')  
-1934 FORMAT(5X,'Range of stress rθ:  ',E13.6,' MPa to ',E13.6,' MPa')  
-1935 FORMAT(5X,'Range of stress θz:  ',E13.6,' MPa to ',E13.6,' MPa')  
+1934 FORMAT(5X,'Range of stress r��:  ',E13.6,' MPa to ',E13.6,' MPa')  
+1935 FORMAT(5X,'Range of stress ��z:  ',E13.6,' MPa to ',E13.6,' MPa')  
 1936 FORMAT(5X,'Range of stress rz:  ',E13.6,' MPa to ',E13.6,' MPa')    
 
 
@@ -133,7 +97,6 @@ real(kind=FT), allocatable:: tem_vector(:)
 select case(print_type)
 
 case(1)
-#ifndef Silverfrost
     if(Key_Print_SIFs_to_Screen==1) then
         if(Key_Dimension==3) then
             do i_C = 1,num_Crack
@@ -165,39 +128,15 @@ case(1)
             enddo
         endif
     endif
-#endif
 
 case(2)
     if(Key_Dimension==3) then
-#ifndef Silverfrost
         Max_Disp_x = maxval(DISP(1:3*Num_Node:3))
         Min_Disp_x = minval(DISP(1:3*Num_Node:3))
         Max_Disp_y = maxval(DISP(2:3*Num_Node:3))
         Min_Disp_y = minval(DISP(2:3*Num_Node:3))
         Max_Disp_z = maxval(DISP(3:3*Num_Node:3))
-        Min_Disp_z = minval(DISP(3:3*Num_Node:3))
-#endif   
-     
-#ifdef Silverfrost
-        allocate(tem_vector(Num_Node))
-        
-        tem_vector = DISP(1:3*Num_Node:3)
-        Max_Disp_x = maxval(tem_vector)
-        tem_vector = DISP(1:3*Num_Node:3)
-        Min_Disp_x = minval(tem_vector)
-        
-        tem_vector = DISP(2:3*Num_Node:3)
-        Max_Disp_y = maxval(tem_vector)
-        tem_vector = DISP(2:3*Num_Node:3)
-        Min_Disp_y = minval(tem_vector)
-        
-        tem_vector = DISP(3:3*Num_Node:3)
-        Max_Disp_z = maxval(tem_vector)
-        tem_vector = DISP(3:3*Num_Node:3)
-        Min_Disp_z = minval(tem_vector)
-        
-        deallocate(tem_vector)
-#endif
+        Min_Disp_z = minval(DISP(3:3*Num_Node:3)) 
         
         if(Tab_number==5)then
             WRITE(*,1021) Min_Disp_x,Max_Disp_x
@@ -212,14 +151,12 @@ case(2)
 
 case(3)
     if(Key_Dimension==3) then
-#ifndef Silverfrost
         Max_Disp_x_Cyl = maxval(DISP_Cylinder(1:Total_FD:3))
         Min_Disp_x_Cyl = minval(DISP_Cylinder(1:Total_FD:3))
         Max_Disp_y_Cyl = maxval(DISP_Cylinder(2:Total_FD:3))
         Min_Disp_y_Cyl = minval(DISP_Cylinder(2:Total_FD:3))
         Max_Disp_z_Cyl = maxval(DISP_Cylinder(3:Total_FD:3))
         Min_Disp_z_Cyl = minval(DISP_Cylinder(3:Total_FD:3))
-#endif
         if(Tab_number==5)then
             WRITE(*,1121) Min_Disp_x_Cyl,Max_Disp_x_Cyl
             WRITE(*,1122) Min_Disp_y_Cyl,Max_Disp_y_Cyl

@@ -1,45 +1,15 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
+!-----------------------------------------------------------
+! Brief: Compute the 2D in-situ (geo-static) stress field.
+!
+! Parameters: (none)
+!
+! Notes:   Builds the global stiffness, applies boundary
+!          conditions, solves the displacement field under the
+!          configured external load, then maps displacements to
+!          the Gauss-point in-situ stresses used as the initial
+!          stress state. Supports sparse CSR K storage.
+!-----------------------------------------------------------
+
 subroutine Cal_InSitu_Stress
 ! This subroutine calculates the in-situ stress levels in the x and y directions based on the loads
 ! from the ANSYS model.
@@ -106,21 +76,19 @@ ALLOCATE(freeDOF_InSitu(2*Num_Node))
 call Boundary_Cond(2*Num_Node,1,freeDOF_InSitu,num_freeDOF_InSitu)
 
 if(Key_K_Sparse==0)then
-  ALLOCATE(globalK_InSitu(2*Num_Node,2*Num_Node))
-  call Assemble_Stiffness_Matrix_FEM(0,globalK_InSitu,2*Num_Node,&
+    ALLOCATE(globalK_InSitu(2*Num_Node,2*Num_Node))
+    call Assemble_Stiffness_Matrix_FEM(0,globalK_InSitu,2*Num_Node, &
     Total_Num_G_P_InSitu)
 elseif(Key_K_Sparse==1)then
 #ifdef gfortran
 #ifndef github
-  K_IS_COO_NNZ_Max = CEILING(IS_Total_FD**2*Sparse_Ratio)
-  ALLOCATE(K_IS_CSR_aa(K_IS_COO_NNZ_Max))
-  ALLOCATE(K_IS_CSR_ja(K_IS_COO_NNZ_Max))
-  ALLOCATE(K_IS_CSR_ia(num_freeDOF_InSitu+1))
-  call Assemble_Stiffness_Matrix_SPARS_FEM(0,    &
-         freeDOF_InSitu(1:num_freeDOF_InSitu),num_freeDOF_InSitu,&
-         K_IS_CSR_aa,K_IS_CSR_ja,K_IS_CSR_ia,&
-         K_IS_COO_NNZ_Max,K_IS_CSR_NNZ,IS_Total_FD,&
-         Total_Num_G_P_InSitu)
+    K_IS_COO_NNZ_Max = CEILING(IS_Total_FD**2*Sparse_Ratio)
+    ALLOCATE(K_IS_CSR_aa(K_IS_COO_NNZ_Max))
+    ALLOCATE(K_IS_CSR_ja(K_IS_COO_NNZ_Max))
+    ALLOCATE(K_IS_CSR_ia(num_freeDOF_InSitu+1))
+    call Assemble_Stiffness_Matrix_SPARS_FEM(0, &
+    freeDOF_InSitu(1:num_freeDOF_InSitu),num_freeDOF_InSitu, K_IS_CSR_aa,K_IS_CSR_ja,K_IS_CSR_ia, &
+    K_IS_COO_NNZ_Max,K_IS_CSR_NNZ,IS_Total_FD, Total_Num_G_P_InSitu)
 #endif
 #endif
 endif
@@ -128,20 +96,15 @@ endif
 DISP_InSitu(1:2*Num_Node) = ZR
 ALLOCATE(tem_DISP_InSitu(num_freeDOF_InSitu))
 if(Key_K_Sparse==0)then
-  if (Key_SLOE==11) then
-      
-#ifndef Silverfrost
-      c_Key_SLOE =  7
-#endif
+    if (Key_SLOE==11) then
 
-#ifdef Silverfrost
-      c_Key_SLOE =  4
-#endif
+        c_Key_SLOE =  7
 
-  else
-      c_Key_SLOE = Key_SLOE
-  endif
-  
+
+    else
+        c_Key_SLOE = Key_SLOE
+    endif
+
 #ifdef ifort  
     c_Key_SLOE =  3
 #endif
@@ -150,22 +113,14 @@ if(Key_K_Sparse==0)then
     c_Key_SLOE =  3
 #endif
 
-  call Matrix_Solve_LSOE(0,1,c_Key_SLOE,        &
-           globalK_InSitu(freeDOF_InSitu(1:num_freeDOF_InSitu),&
-                          freeDOF_InSitu(1:num_freeDOF_InSitu)),&
-           F_InSitu(freeDOF_InSitu(1:num_freeDOF_InSitu)),&
-           tem_DISP_InSitu,&
-           num_freeDOF_InSitu)
+    call Matrix_Solve_LSOE(0,1,c_Key_SLOE, globalK_InSitu(freeDOF_InSitu(1:num_freeDOF_InSitu), &
+    freeDOF_InSitu(1:num_freeDOF_InSitu)), F_InSitu(freeDOF_InSitu(1:num_freeDOF_InSitu)), tem_DISP_InSitu, &
+    num_freeDOF_InSitu)
 elseif(Key_K_Sparse==1)then
 #ifdef gfortran
 #ifndef github
-  call Matrix_Solve_LSOE_Sparse(0,1,Key_SLOE,&
-              K_IS_CSR_NNZ,&
-              K_IS_CSR_aa(1:K_IS_CSR_NNZ),&
-              K_IS_CSR_ja(1:K_IS_CSR_NNZ),    &
-              K_IS_CSR_ia(1:num_freeDOF_InSitu+1),  &
-              F_InSitu(freeDOF_InSitu(1:num_freeDOF_InSitu)),&
-              tem_DISP_InSitu,num_freeDOF_InSitu)
+    call Matrix_Solve_LSOE_Sparse(0,1,Key_SLOE, K_IS_CSR_NNZ, K_IS_CSR_aa(1:K_IS_CSR_NNZ), K_IS_CSR_ja(1:K_IS_CSR_NNZ), &
+    K_IS_CSR_ia(1:num_freeDOF_InSitu+1), F_InSitu(freeDOF_InSitu(1:num_freeDOF_InSitu)), tem_DISP_InSitu,num_freeDOF_InSitu)
 #endif
 #endif
 endif
@@ -173,19 +128,17 @@ endif
 DISP_InSitu(freeDOF_InSitu(1:num_freeDOF_InSitu))=tem_DISP_InSitu
 print *,'    Displacements under InSitu stress obtained.'
 
-#ifndef Silverfrost  
 Max_Disp_x_InSitu = maxval(DISP_InSitu(1:2*num_Node:2))
 Min_Disp_x_InSitu = minval(DISP_InSitu(1:2*num_Node:2))
 Max_Disp_y_InSitu = maxval(DISP_InSitu(2:2*num_Node:2))
 Min_Disp_y_InSitu = minval(DISP_InSitu(2:2*num_Node:2))
 if(Key_Unit_System==1)then
-  WRITE(*,1021) Min_Disp_x_InSitu,Max_Disp_x_InSitu
-  WRITE(*,1022) Min_Disp_y_InSitu,Max_Disp_y_InSitu
+    WRITE(*,1021) Min_Disp_x_InSitu,Max_Disp_x_InSitu
+    WRITE(*,1022) Min_Disp_y_InSitu,Max_Disp_y_InSitu
 elseif(Key_Unit_System==2)then
-  WRITE(*,1121) Min_Disp_x_InSitu,Max_Disp_x_InSitu
-  WRITE(*,1122) Min_Disp_y_InSitu,Max_Disp_y_InSitu
+    WRITE(*,1121) Min_Disp_x_InSitu,Max_Disp_x_InSitu
+    WRITE(*,1122) Min_Disp_y_InSitu,Max_Disp_y_InSitu
 endif
-#endif
 
 print *,'    Calculating InSitu stress of nodes...'
 ALLOCATE(Str_xx_InSitu(Num_Node))
@@ -195,8 +148,7 @@ ALLOCATE(Str_vm_InSitu(Num_Node))
 Yes_Add_Insitu = .False.
 
 
-call Get_Node_Stress_FEM_IN_OUT(Yes_Add_Insitu,1,DISP_InSitu,&
-     Str_xx_InSitu,Str_yy_InSitu,Str_xy_InSitu,Str_vm_InSitu)
+call Get_Node_Stress_FEM_IN_OUT(Yes_Add_Insitu,1,DISP_InSitu, Str_xx_InSitu,Str_yy_InSitu,Str_xy_InSitu,Str_vm_InSitu)
 
 
 
@@ -205,13 +157,13 @@ InSitu_y = sum(Str_yy_InSitu)/Num_Node
 InSitu_xy = sum(Str_xy_InSitu)/Num_Node
 
 if(Key_Unit_System==1)then
-  print *,"    ************************************************"
-  WRITE(*,1221) -InSitu_x/1.0D6
-  WRITE(*,1222) -InSitu_y/1.0D6
-  print *,"    ************************************************"
+    print *,"    ************************************************"
+    WRITE(*,1221) -InSitu_x/1.0D6
+    WRITE(*,1222) -InSitu_y/1.0D6
+    print *,"    ************************************************"
 elseif(Key_Unit_System==2)then
-  WRITE(*,1221) -InSitu_x
-  WRITE(*,1222) -InSitu_y
+    WRITE(*,1221) -InSitu_x
+    WRITE(*,1222) -InSitu_y
 endif
 
 print *,'    Calculating InSitu stress of Gauss points...'
@@ -221,50 +173,48 @@ ALLOCATE(InSitu_Strs_Gaus_xy(Num_Elem,Num_Gauss_P_FEM))
 call Cal_Gauss_Points_QUAD(4,kesi_N,yita_N,weight_N)
 G_Counter = 0
 do i_E = 1,Num_Elem
-  c_D     = D(Elem_Mat(i_E),:,:)
-  
-  if(Flag_Weibull_E)then
-      if (Key_Weibull_E(Elem_Mat(i_E)) ==1)then
-          c_D = Weibull_Elements_D_Matrix(i_E,1:3,1:3)
-      endif
-  endif
-  
-  c_NN    = G_NN(:,i_E)
-  c_X_NODES = G_X_NODES(:,i_E)
-  c_Y_NODES = G_Y_NODES(:,i_E)
-  U = [DISP_InSitu(c_NN(1)*2-1),DISP_InSitu(c_NN(1)*2),&
-         DISP_InSitu(c_NN(2)*2-1),DISP_InSitu(c_NN(2)*2),&
-         DISP_InSitu(c_NN(3)*2-1),DISP_InSitu(c_NN(3)*2),&
-         DISP_InSitu(c_NN(4)*2-1),DISP_InSitu(c_NN(4)*2)]
+    c_D     = D(Elem_Mat(i_E),:,:)
 
-  kesi(1:4)   = kesi_N
-  yita(1:4)   = yita_N
-  do i_G = 1,4
-      G_Counter =  G_Counter +1
-    c_kesi = kesi(i_G)
-    c_yita = yita(i_G)
-    call Cal_Ele_Stress_N4(i_E,i_G,c_X_NODES,c_Y_NODES,c_D,c_kesi,c_yita,U,c_Stress)
-      InSitu_Strs_Gaus_xx(i_E,i_G) = c_Stress(1)
-    InSitu_Strs_Gaus_yy(i_E,i_G) = c_Stress(2)
-    InSitu_Strs_Gaus_xy(i_E,i_G) = c_Stress(3)
-  end do
+    if(Flag_Weibull_E)then
+        if (Key_Weibull_E(Elem_Mat(i_E)) ==1)then
+            c_D = Weibull_Elements_D_Matrix(i_E,1:3,1:3)
+        endif
+    endif
+
+    c_NN    = G_NN(:,i_E)
+    c_X_NODES = G_X_NODES(:,i_E)
+    c_Y_NODES = G_Y_NODES(:,i_E)
+    U = [DISP_InSitu(c_NN(1)*2-1),DISP_InSitu(c_NN(1)*2), DISP_InSitu(c_NN(2)*2-1),DISP_InSitu(c_NN(2)*2), &
+    DISP_InSitu(c_NN(3)*2-1),DISP_InSitu(c_NN(3)*2), DISP_InSitu(c_NN(4)*2-1),DISP_InSitu(c_NN(4)*2)]
+
+    kesi(1:4)   = kesi_N
+    yita(1:4)   = yita_N
+    do i_G = 1,4
+        G_Counter =  G_Counter +1
+        c_kesi = kesi(i_G)
+        c_yita = yita(i_G)
+        call Cal_Ele_Stress_N4(i_E,i_G,c_X_NODES,c_Y_NODES,c_D,c_kesi,c_yita,U,c_Stress)
+        InSitu_Strs_Gaus_xx(i_E,i_G) = c_Stress(1)
+        InSitu_Strs_Gaus_yy(i_E,i_G) = c_Stress(2)
+        InSitu_Strs_Gaus_xy(i_E,i_G) = c_Stress(3)
+    end do
 end do
 
 if(Key_K_Sparse==0)then
-  DEALLOCATE(globalK_InSitu)
+    DEALLOCATE(globalK_InSitu)
 elseif(Key_K_Sparse==1)then
 #ifdef gfortran
-  DEALLOCATE(K_IS_CSR_aa); DEALLOCATE(K_IS_CSR_ia)
-  DEALLOCATE(K_IS_CSR_ja)
+    DEALLOCATE(K_IS_CSR_aa); DEALLOCATE(K_IS_CSR_ia)
+    DEALLOCATE(K_IS_CSR_ja)
 #endif
 endif
 DEALLOCATE(freeDOF_InSitu,tem_DISP_InSitu)
 
 State_InSitu = 0
 if(InSitu_x < 0.01D6 .or. InSitu_y < 0.01D6)then
-  State_InSitu = 1
-  InSitu_x = -InSitu_x
-  InSitu_y = -InSitu_y
+    State_InSitu = 1
+    InSitu_x = -InSitu_x
+    InSitu_y = -InSitu_y
 endif
 
 return

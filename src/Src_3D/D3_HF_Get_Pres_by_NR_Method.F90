@@ -1,52 +1,26 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
-SUBROUTINE D3_HF_Get_Pres_by_NR_Method(i_WB,i_Stage,i_Prop,                    &
-              isub,i_Time,c_Stage_Q,c_Time,Max_Pres_Steps,                     &
-              num_FreeD,c_Total_FD,c_num_Tol_CalP_Water,freeDOF,c_F_U,F,Lambda,&
-              diag_precon_no_invert,DISP,                                      &
-              NR_delta_Pres,f_Vol_Tol,Pres_Tol,c_Pres,Output_Pres,             &
-              K_CSR_NNZ,K_CSR_aa,K_CSR_ja,K_CSR_ia)     
-       
+!-----------------------------------------------------------
+! Brief: Solve for HF fluid pressure using Newton-Raphson iteration.
+!
+! Parameters:
+!   Input:  i_WB,i_Stage,i_Prop,isub,i_Time - stage/step indices
+!           c_Stage_Q,c_Time,Max_Pres_Steps - flow rate and limits
+!           num_FreeD,c_Total_FD,c_num_Tol_CalP_Water,freeDOF
+!           diag_precon_no_invert           - PCG preconditioner
+!           c_F_U,F,Lambda                  - load-vector inputs
+!           NR_delta_Pres,f_Vol_Tol,Pres_Tol - NR step/tolerances
+!           c_Pres                          - initial pressure
+!           K_CSR_NNZ,K_CSR_aa,K_CSR_ja,K_CSR_ia - CSR stiffness
+!   Output: F            - updated force vector
+!           Output_Pres  - converged pressure
+!           DISP         - converged displacement
+!
+! Notes:   Drives the coupled fluid-solid HF solver at one stage.
+!-----------------------------------------------------------
+
+SUBROUTINE D3_HF_Get_Pres_by_NR_Method(i_WB,i_Stage,i_Prop, isub,i_Time,c_Stage_Q,c_Time,Max_Pres_Steps, &
+num_FreeD,c_Total_FD,c_num_Tol_CalP_Water,freeDOF,c_F_U,F,Lambda, diag_precon_no_invert,DISP, &
+NR_delta_Pres,f_Vol_Tol,Pres_Tol,c_Pres,Output_Pres, K_CSR_NNZ,K_CSR_aa,K_CSR_ja,K_CSR_ia)
+
 
 ! 2022-07-01.    
 
@@ -111,12 +85,12 @@ logical Yes_P_Convergent
 real(kind=FT) Max_Cr_Vol,Min_Cr_Vol
 real(kind=FT) DISP2(Total_FD),tem_Pres
 integer i_C
-       
+
 2001 FORMAT(8X,'Max volume of crack:   ',E12.5,' m^3')       
 2002 FORMAT(8X,'Min volume of crack:   ',E12.5,' m^3')  
 3003 FORMAT(8X,'Sum of abs(Force vector):   ',E16.4)      
-4002 FORMAT(8X,'Pressure-step ',I3,' (',I3,') | Time-Step ',I3,' | Prop-Step ',I3,&
-               ' | Stage ',I3,' | WB ',I3,' started...')   
+4002 FORMAT(8X,'Pressure-step ',I3,' (',I3,') | Time-Step ',I3,' | Prop-Step ',I3, &
+' | Stage ',I3,' | WB ',I3,' started...')
 3100 FORMAT(8X,'Mass consrevation value:      ',E12.5,' m^3 / ', E12.5,' m^3')    
 3111 FORMAT(8X,'Mass consrevation value:      ',E12.5,' m^3 / ', E12.5,' m^3 (relaxed)')    
 3101 FORMAT(8X,'Pressure convergence value:   ',E12.5,' / ', E12.5)   
@@ -127,7 +101,7 @@ integer i_C
 4009 FORMAT(8X,'N-R Pressure iteration failed after ',I3,' tries and check!')  
 2004 FORMAT(5X,'Max aperture of crack ',I7,' is ',E12.5,' mm')  
 2005 FORMAT(5X,'Min aperture of crack ',I7,' is ',E12.5,' mm')   
-      
+
 tem_Pres = c_Pres
 
 
@@ -150,12 +124,12 @@ do i_Pres = 1,Max_Pres_Steps
     ! Information output
     print *,' '
     write(*,4002) i_Pres,Max_Pres_Steps,i_Time,i_Prop, i_Stage,i_WB  
-    
+
     ! If it's the first stress step.
     if(i_Pres==1)then
-          Yes_P_Convergent = .False.
+        Yes_P_Convergent = .False.
     endif
-              
+
     !***********************************************************************
     !*                                                                    *
     !*                                                                    *
@@ -166,81 +140,64 @@ do i_Pres = 1,Max_Pres_Steps
     Applied_Pres =  tem_Pres
     ! Applied_Pres = tem_Pres - NR_delta_Pres ! Central difference calculation of derivative.
     ! 2022-08-12. IMPROV2022081201.
-    
-    
+
+
     !///////////////////////////////////////////////////////////////////////////////////////////////
     ! Convert the water pressure into a pressure vector for all calculation points and output the F
     ! vector.
     !///////////////////////////////////////////////////////////////////////////////////////////////
-    call D3_HF_Const_Pres_to_F_Vector(isub,Applied_Pres,num_FreeD,Total_FD,num_Tol_CalP_Water,  &
-                                      freeDOF(1:num_FreeD),c_F_U,F)     
+    call D3_HF_Const_Pres_to_F_Vector(isub,Applied_Pres,num_FreeD,Total_FD,num_Tol_CalP_Water, freeDOF(1:num_FreeD),c_F_U,F)
     WRITE(*,3003) sum(abs(F))
-    
+
     !2023-09-26.
     F_each_NR(i_Pres,:) = F
-    
+
     !/////////////////////////////////////
     ! Ignoring contact: EBE-PCG solution.
     !/////////////////////////////////////
     if(Key_Contact == 0 .or. Key_Contact==5) then
         if(Key_SLOE==11)then
             print *,'       PCG-EBE: solving KU=F...'
-            call EBE_XFEM_PCG_3D_with_K(isub,Lambda,cg_tol,                                &
-                    max_cg,num_FreeD,freeDOF(1:num_FreeD),F(freeDOF(1:num_FreeD)),DISP,    &
-                    diag_precon_no_invert(0:num_FreeD))
-        !NEWFTU-2025120201.
+            call EBE_XFEM_PCG_3D_with_K(isub,Lambda,cg_tol, &
+            max_cg,num_FreeD,freeDOF(1:num_FreeD),F(freeDOF(1:num_FreeD)),DISP, &
+            diag_precon_no_invert(0:num_FreeD))
+            !NEWFTU-2025120201.
         else
             print *,'       Solving KU=F...'
-#ifndef Silverfrost
-            call Matrix_Solve_LSOE_Sparse(1,1,Key_SLOE,&
-                    K_CSR_NNZ,&
-                    K_CSR_aa(1:K_CSR_NNZ),&
-                    K_CSR_ja(1:K_CSR_NNZ),&
-                    K_CSR_ia(1:num_FreeD+1),&
-                    F(freeDOF(1:num_FreeD)),&
-                    DISP_temp(1:num_FreeD),num_FreeD)
+            call Matrix_Solve_LSOE_Sparse(1,1,Key_SLOE, K_CSR_NNZ, K_CSR_aa(1:K_CSR_NNZ), K_CSR_ja(1:K_CSR_NNZ), &
+            K_CSR_ia(1:num_FreeD+1), F(freeDOF(1:num_FreeD)), DISP_temp(1:num_FreeD),num_FreeD)
             DISP(freeDOF(1:num_FreeD)) =DISP_temp(1:num_FreeD)      
-#endif
         endif
-        
+
     endif
-    
+
     !/////////////////////////////////////////////////////////////////////////
     ! Consider contact: EBE-PCG contact iterative solution. NEWFTU2022081001.
     !/////////////////////////////////////////////////////////////////////////
     if(Key_Contact/=0 .and. Key_Contact/=5)then
         if(Key_SLOE==11)then
             print *,'       PCG-EBE: solving KU=F...'
-            call EBE_XFEM_PCG_3D_with_K(isub,Lambda,cg_tol,                                &
-                max_cg,num_FreeD,freeDOF(1:num_FreeD),F(freeDOF(1:num_FreeD)),DISP,    &
-                diag_precon_no_invert(0:num_FreeD))
-        !NEWFTU-2025120201.
+            call EBE_XFEM_PCG_3D_with_K(isub,Lambda,cg_tol, &
+            max_cg,num_FreeD,freeDOF(1:num_FreeD),F(freeDOF(1:num_FreeD)),DISP, &
+            diag_precon_no_invert(0:num_FreeD))
+            !NEWFTU-2025120201.
         else
             print *,'       Solving KU=F...'
-#ifndef Silverfrost
-            call Matrix_Solve_LSOE_Sparse(1,1,Key_SLOE,&
-                    K_CSR_NNZ,&
-                    K_CSR_aa(1:K_CSR_NNZ),&
-                    K_CSR_ja(1:K_CSR_NNZ),&
-                    K_CSR_ia(1:num_FreeD+1),&
-                    F(freeDOF(1:num_FreeD)),&
-                    DISP_temp(1:num_FreeD),num_FreeD)
+            call Matrix_Solve_LSOE_Sparse(1,1,Key_SLOE, K_CSR_NNZ, K_CSR_aa(1:K_CSR_NNZ), K_CSR_ja(1:K_CSR_NNZ), &
+            K_CSR_ia(1:num_FreeD+1), F(freeDOF(1:num_FreeD)), DISP_temp(1:num_FreeD),num_FreeD)
             DISP(freeDOF(1:num_FreeD)) =DISP_temp(1:num_FreeD)   
-#endif
         endif
-        
+
         ! Contact iteration
         print *,'       Determine contact states by iteration...' 
         if(Key_SLOE==11)then 
-            call EBE_Determine_Contact_State_by_Iteration_3D(isub,cg_tol,max_cg,&
-                   num_FreeD,freeDOF(1:num_FreeD),                              &      
-                   F,DISP,                                                      &
-                   diag_precon_no_invert(0:num_FreeD),8)
+            call EBE_Determine_Contact_State_by_Iteration_3D(isub,cg_tol,max_cg, &
+            num_FreeD,freeDOF(1:num_FreeD), F,DISP, diag_precon_no_invert(0:num_FreeD),8)
         else
             !TBD
         endif
     endif 
-    
+
     !2023-09-26.
     DISP_each_NR(i_Pres,:) = DISP
 
@@ -254,38 +211,38 @@ do i_Pres = 1,Max_Pres_Steps
     Min_Cr_Vol = minval(Cracks_Volume(1:num_Crack))
     WRITE(*,2001) Max_Cr_Vol
     WRITE(*,2002) Min_Cr_Vol
-    
+
     !/////////////////////
     ! Calculate f_Vol(1).
     !/////////////////////
     print *,'       Calculate f_Vol(p)...'
     f_Vol(1) = ZR
     do i_C = 1,num_Crack
-          !if(Crack_Type_Status_3D(i_C,1)==1) then ! If it is an HF crack.
-          !    f_Vol(1) = f_Vol(1) + Cracks_Volume(i_C)
-          !endif
-          
-          !NEWFTU-2026022701. 
-          if (Key_3D_Slip_HF_Keep_Pressure==0) then
-              if(Crack_Type_Status_3D(i_C,1)==1) then
-                  f_Vol(1) = f_Vol(1) + Cracks_Volume(i_C)
-                  
-                  !IMPROV-2026030701.
-                  !f_Vol(1) = f_Vol(1) + max(ZR, Cracks_Volume(i_C))
-              endif
-          elseif (Key_3D_Slip_HF_Keep_Pressure==1) then
-              ! If it is an HF crack, and not post HF crack.
-              if(Crack_Type_Status_3D(i_C,1)==1 .and. Crack_Type_Status_3D(i_C,2) /= 2 ) then
-                  f_Vol(1) = f_Vol(1) + Cracks_Volume(i_C)
-                  
-                  !IMPROV-2026030701.
-                  !f_Vol(1) = f_Vol(1) + max(ZR, Cracks_Volume(i_C))
-              endif
-          endif
-          
+        !if(Crack_Type_Status_3D(i_C,1)==1) then ! If it is an HF crack.
+        !    f_Vol(1) = f_Vol(1) + Cracks_Volume(i_C)
+        !endif
+
+        !NEWFTU-2026022701. 
+        if (Key_3D_Slip_HF_Keep_Pressure==0) then
+            if(Crack_Type_Status_3D(i_C,1)==1) then
+                f_Vol(1) = f_Vol(1) + Cracks_Volume(i_C)
+
+                !IMPROV-2026030701.
+                !f_Vol(1) = f_Vol(1) + max(ZR, Cracks_Volume(i_C))
+            endif
+        elseif (Key_3D_Slip_HF_Keep_Pressure==1) then
+            ! If it is an HF crack, and not post HF crack.
+            if(Crack_Type_Status_3D(i_C,1)==1 .and. Crack_Type_Status_3D(i_C,2) /= 2 ) then
+                f_Vol(1) = f_Vol(1) + Cracks_Volume(i_C)
+
+                !IMPROV-2026030701.
+                !f_Vol(1) = f_Vol(1) + max(ZR, Cracks_Volume(i_C))
+            endif
+        endif
+
     enddo
     f_Vol(1) = f_Vol(1) - c_Stage_Q*c_Time           
-    
+
 
     !******************************************************
     !*                                                   *
@@ -295,40 +252,32 @@ do i_Pres = 1,Max_Pres_Steps
     !*                                                   *
     !******************************************************
     Applied_Pres =  tem_Pres + NR_delta_Pres
-    
+
     !/////////////////////////////////////////////////////
     ! Convert the water pressure into a pressure vector
     ! for all calculation points and output the F vector.
     !/////////////////////////////////////////////////////
-    call D3_HF_Const_Pres_to_F_Vector(isub,Applied_Pres,num_FreeD,Total_FD,num_Tol_CalP_Water,  &
-                                freeDOF(1:num_FreeD),c_F_U,F)     
+    call D3_HF_Const_Pres_to_F_Vector(isub,Applied_Pres,num_FreeD,Total_FD,num_Tol_CalP_Water, freeDOF(1:num_FreeD),c_F_U,F)
     WRITE(*,3003) sum(abs(F))
-    
+
     !/////////////////////////////////////
     ! Ignoring contact: EBE-PCG solution.
     !/////////////////////////////////////
     if(Key_Contact == 0 .or. Key_Contact==5) then
         if(Key_SLOE==11)then
             print *,'       PCG-EBE: solving KU=F...'
-            call EBE_XFEM_PCG_3D_with_K(isub,Lambda,cg_tol,                              &
-                max_cg,num_FreeD,freeDOF(1:num_FreeD),F(freeDOF(1:num_FreeD)),DISP2, & 
-                diag_precon_no_invert(0:num_FreeD))
-        !NEWFTU-2025120201.
+            call EBE_XFEM_PCG_3D_with_K(isub,Lambda,cg_tol, &
+            max_cg,num_FreeD,freeDOF(1:num_FreeD),F(freeDOF(1:num_FreeD)),DISP2, &
+            diag_precon_no_invert(0:num_FreeD))
+            !NEWFTU-2025120201.
         else
             print *,'       Solving KU=F...'
-#ifndef Silverfrost
-            call Matrix_Solve_LSOE_Sparse(1,1,Key_SLOE,&
-                    K_CSR_NNZ,&
-                    K_CSR_aa(1:K_CSR_NNZ),&
-                    K_CSR_ja(1:K_CSR_NNZ),&
-                    K_CSR_ia(1:num_FreeD+1),&
-                    F(freeDOF(1:num_FreeD)),&
-                    DISP_temp(1:num_FreeD),num_FreeD)
+            call Matrix_Solve_LSOE_Sparse(1,1,Key_SLOE, K_CSR_NNZ, K_CSR_aa(1:K_CSR_NNZ), K_CSR_ja(1:K_CSR_NNZ), &
+            K_CSR_ia(1:num_FreeD+1), F(freeDOF(1:num_FreeD)), DISP_temp(1:num_FreeD),num_FreeD)
             DISP2(freeDOF(1:num_FreeD)) =DISP_temp(1:num_FreeD)   
-#endif
         endif
     endif
-    
+
     !/////////////////////////////////////////////////////////////////////////
     ! Consider contact: EBE-PCG contact iterative solution. NEWFTU2022081001.
     !/////////////////////////////////////////////////////////////////////////
@@ -336,35 +285,27 @@ do i_Pres = 1,Max_Pres_Steps
     if(Key_Contact/=0 .and. Key_Contact/=5)then 
         if(Key_SLOE==11)then 
             print *,'       PCG-EBE: solving KU=F...'
-            call EBE_XFEM_PCG_3D_with_K(isub,Lambda,cg_tol,                              &
-                max_cg,num_FreeD,freeDOF(1:num_FreeD),F(freeDOF(1:num_FreeD)),DISP2, & 
-                diag_precon_no_invert(0:num_FreeD))
-        !NEWFTU-2025120201.
+            call EBE_XFEM_PCG_3D_with_K(isub,Lambda,cg_tol, &
+            max_cg,num_FreeD,freeDOF(1:num_FreeD),F(freeDOF(1:num_FreeD)),DISP2, &
+            diag_precon_no_invert(0:num_FreeD))
+            !NEWFTU-2025120201.
         else
             print *,'       Solving KU=F...'
-#ifndef Silverfrost
-            call Matrix_Solve_LSOE_Sparse(1,1,Key_SLOE,&
-                    K_CSR_NNZ,&
-                    K_CSR_aa(1:K_CSR_NNZ),&
-                    K_CSR_ja(1:K_CSR_NNZ),&
-                    K_CSR_ia(1:num_FreeD+1),&
-                    F(freeDOF(1:num_FreeD)),&
-                    DISP_temp(1:num_FreeD),num_FreeD)
+            call Matrix_Solve_LSOE_Sparse(1,1,Key_SLOE, K_CSR_NNZ, K_CSR_aa(1:K_CSR_NNZ), K_CSR_ja(1:K_CSR_NNZ), &
+            K_CSR_ia(1:num_FreeD+1), F(freeDOF(1:num_FreeD)), DISP_temp(1:num_FreeD),num_FreeD)
             DISP2(freeDOF(1:num_FreeD)) =DISP_temp(1:num_FreeD)   
-#endif
         endif
         ! Contact iteration.
         if(Key_SLOE==11)then 
-            call EBE_Determine_Contact_State_by_Iteration_3D(isub,cg_tol,max_cg,&
-               num_FreeD,freeDOF(1:num_FreeD),                              &      
-               F,DISP2,                                                     &
-               diag_precon_no_invert(0:num_FreeD),8)
-        
+            call EBE_Determine_Contact_State_by_Iteration_3D(isub,cg_tol,max_cg, &
+            num_FreeD,freeDOF(1:num_FreeD), F,DISP2, &
+            diag_precon_no_invert(0:num_FreeD),8)
+
         else
 
         endif
     endif
-    
+
     !///////////////////////////////////
     ! Calculate crack width and volume.
     !///////////////////////////////////
@@ -375,7 +316,7 @@ do i_Pres = 1,Max_Pres_Steps
     Min_Cr_Vol = minval(Cracks_Volume(1:num_Crack))
     WRITE(*,2001) Max_Cr_Vol
     WRITE(*,2002) Min_Cr_Vol
-    
+
     !//////////////////////////////////////////////////////////////
     ! If the crack volume is negative, adjust it to 0. 2022-08-05.
     !//////////////////////////////////////////////////////////////
@@ -384,38 +325,38 @@ do i_Pres = 1,Max_Pres_Steps
     !        Cracks_Volume(i_C)=ZR
     !    endif
     ! enddo
-    
+
     !/////////////////////
     ! Calculate f_Vol(2).
     !/////////////////////
     print *,'       Calculate f_Vol(p+delta_p)...'
     f_Vol(2) = ZR
     do i_C = 1,num_Crack
-          
-          !if(Crack_Type_Status_3D(i_C,1)==1) then ! If it is an HF crack
-          !      f_Vol(2) = f_Vol(2) + Cracks_Volume(i_C)
-          !endif
-          
-          !NEWFTU-2026022701. 
-          if (Key_3D_Slip_HF_Keep_Pressure==0) then
-              if(Crack_Type_Status_3D(i_C,1)==1) then
-                  f_Vol(2) = f_Vol(2) + Cracks_Volume(i_C)
-                  
-                  !IMPROV-2026030701.
-                  !f_Vol(2) = f_Vol(2) + max(ZR, Cracks_Volume(i_C))
-              endif
-          elseif (Key_3D_Slip_HF_Keep_Pressure==1) then
-              ! If it is an HF crack, and not post HF crack.
-              if(Crack_Type_Status_3D(i_C,1)==1 .and. Crack_Type_Status_3D(i_C,2) /= 2 ) then 
-                  f_Vol(2) = f_Vol(2) + Cracks_Volume(i_C)
-                  
-                  !IMPROV-2026030701.
-                  !f_Vol(2) = f_Vol(2) + max(ZR, Cracks_Volume(i_C))
-              endif
-          endif
+
+        !if(Crack_Type_Status_3D(i_C,1)==1) then ! If it is an HF crack
+        !      f_Vol(2) = f_Vol(2) + Cracks_Volume(i_C)
+        !endif
+
+        !NEWFTU-2026022701. 
+        if (Key_3D_Slip_HF_Keep_Pressure==0) then
+            if(Crack_Type_Status_3D(i_C,1)==1) then
+                f_Vol(2) = f_Vol(2) + Cracks_Volume(i_C)
+
+                !IMPROV-2026030701.
+                !f_Vol(2) = f_Vol(2) + max(ZR, Cracks_Volume(i_C))
+            endif
+        elseif (Key_3D_Slip_HF_Keep_Pressure==1) then
+            ! If it is an HF crack, and not post HF crack.
+            if(Crack_Type_Status_3D(i_C,1)==1 .and. Crack_Type_Status_3D(i_C,2) /= 2 ) then 
+                f_Vol(2) = f_Vol(2) + Cracks_Volume(i_C)
+
+                !IMPROV-2026030701.
+                !f_Vol(2) = f_Vol(2) + max(ZR, Cracks_Volume(i_C))
+            endif
+        endif
     enddo
     f_Vol(2) = f_Vol(2) - c_Stage_Q*c_Time               
-    
+
     !*****************************************************
     !*                                                  *
     !*                                                  *
@@ -425,10 +366,10 @@ do i_Pres = 1,Max_Pres_Steps
     !*****************************************************
     print *,'       Calculate the derivative of f_Vol...'
     d_f_Vol = (f_Vol(2)-f_Vol(1))/NR_delta_Pres
-    
+
     ! d_f_Vol = (f_Vol(2) - f_Vol(1)) / (TWO * NR_delta_Pres) ! Central difference calculation of
     ! derivative. 2022-08-12. IMPROV2022081201.
-    
+
     !*****************************************************
     !*                                                  *
     !*                                                  *
@@ -438,13 +379,13 @@ do i_Pres = 1,Max_Pres_Steps
     !*****************************************************
     Old_Pres = tem_Pres
     tem_Pres = tem_Pres - f_Vol(1)/d_f_Vol
-    
+
     Output_Pres_each_NR(i_Pres) = tem_Pres
-    
+
     ! Explanation: For calculating derivatives using central differences, it is necessary to compute the
     ! crack opening at position f_0, which increases the computational workload.
     !      To be done
-    
+
     print *,'       Updated pressure (MPa):',tem_Pres/1.0D6
     !*****************************************************
     !*                                                  *
@@ -455,30 +396,30 @@ do i_Pres = 1,Max_Pres_Steps
     !*****************************************************
     !Tem_Condition_1 = .False.
     !Tem_Condition_2 = .False.
-    
+
     Criterion_1_NR(i_Pres) = abs(f_Vol(1))
-    
+
     if(Criterion_1_NR(i_Pres) <= f_Vol_Tol) then
         !Tem_Condition_1 =  .True.
         Flag_1_NR(i_Pres) = .True.
     endif
     write(*,3100)  Criterion_1_NR(i_Pres) ,f_Vol_Tol
-    
-    
+
+
     Criterion_2_NR(i_Pres) = abs((tem_Pres-Old_Pres)/Old_Pres)
-    
+
     if(Criterion_2_NR(i_Pres) <= Pres_Tol) then                            
         !Tem_Condition_2 =  .True.
         Flag_2_NR(i_Pres) = .True.
     endif  
     write(*,3101)  Criterion_2_NR(i_Pres),Pres_Tol
-    
+
     ! If both conditions are met.
     if((Flag_1_NR(i_Pres).eqv. .True.) .and. (Flag_2_NR(i_Pres).eqv. .True.)) then   
-          write(*,*) '       ..................................................'
-          write(*,4006) i_Pres
-          write(*,*) '       ..................................................'
-          exit
+        write(*,*) '       ..................................................'
+        write(*,4006) i_Pres
+        write(*,*) '       ..................................................'
+        exit
     endif
 
     ! ==========
@@ -492,7 +433,7 @@ do i_Pres = 1,Max_Pres_Steps
     !          write(*,4007) 
     !          call Warning_Message('S',Keywords_Blank) 
     !    endif
-    
+
     ! ==========
     ! OPTION 2.
     ! ==========
@@ -500,10 +441,10 @@ do i_Pres = 1,Max_Pres_Steps
     ! If after completing all steps it still does not converge, then find the best result from the
     ! previous calculations. 2023-09-26.
     if(i_Pres == Max_Pres_Steps .and. SlipWater_Pres_Step_Conv_Check==1) then
-          ! Sort Criterion_1_NR(:) from small to large.
-          call Vector_Sort_Dou_with_Index_v_HSL_KB07(Criterion_1_NR(1:Max_Pres_Steps),Max_Pres_Steps,sort_INDEX(1:Max_Pres_Steps))
-          ! Find the best result that meets the conditions from small to large.
-          do i_Try=1,Max_Pres_Steps
+        ! Sort Criterion_1_NR(:) from small to large.
+        call Vector_Sort_Dou_with_Index_v_HSL_KB07(Criterion_1_NR(1:Max_Pres_Steps),Max_Pres_Steps,sort_INDEX(1:Max_Pres_Steps))
+        ! Find the best result that meets the conditions from small to large.
+        do i_Try=1,Max_Pres_Steps
             Current_Try_Index = sort_INDEX(i_Try)
             ! If the criterion 2 corresponding to the minimum value of Criterion_1_NR(:) is satisfied.
             if(Flag_2_NR(Current_Try_Index) .eqv. .True.)then
@@ -512,7 +453,7 @@ do i_Pres = 1,Max_Pres_Steps
                 DISP        = DISP_each_NR(Current_Try_Index,:)
                 exit
             endif
-            
+
             if (i_Try == Max_Pres_Steps) then
                 if (KEY_WARNING_LEVEL==3) then
                     !Pop up an warning message.
@@ -522,9 +463,9 @@ do i_Pres = 1,Max_Pres_Steps
                     call Warning_Message('S',Keywords_Blank) 
                 endif
             endif
-          enddo
+        enddo
     endif
-  
+
 enddo
 
 Output_Pres = tem_Pres
@@ -536,7 +477,7 @@ do i_C=1,num_Crack
     !if(Crack_Type_Status_3D(i_C,1) == 1) then 
     !    Crack_Pressure(i_C) = Output_Pres
     !endif    
-    
+
     !NEWFTU-2026022701. 
     if (Key_3D_Slip_HF_Keep_Pressure==0) then
         ! If it is an HF crack.
@@ -549,13 +490,13 @@ do i_C=1,num_Crack
             ! If it is not a post HF crack.
             if (Crack_Type_Status_3D(i_C,2) /= 2) then 
                 Crack_Pressure(i_C) = Output_Pres
-            ! If it is a post HF crack, use the saved pressure.  
+                ! If it is a post HF crack, use the saved pressure.  
             elseif (Crack_Type_Status_3D(i_C,2) == 2) then 
                 Crack_Pressure(i_C) = WBPT_3D_Slip_HF_Crack_Convergent_Pressure(i_C)
             endif
         endif
     endif
-          
+
 enddo
 
 

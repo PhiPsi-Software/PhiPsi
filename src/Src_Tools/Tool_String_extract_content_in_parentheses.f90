@@ -1,4 +1,3 @@
- 
 recursive subroutine Tool_String_extract_content_in_parentheses(Input_String,Output_String,left_index,right_index,found) 
 
 implicit none  

@@ -1,45 +1,16 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
+!-----------------------------------------------------------
+! Brief: List solid elements intersected by a natural fracture.
+!
+! Parameters:
+!   Input:  c_Crack           - NF crack index
+!   Output: Out_num_Element   - number of intersected elements
+!           Out_Element_List  - element index list (capacity 10000)
+!
+! Notes:   Uses NF bounding range + per-edge AABB checks, then prunes
+!          elements whose AABB contains the NF plane edges. Supports
+!          quadrilateral/polygonal planar NFs only.
+!-----------------------------------------------------------
+
 SUBROUTINE D3_Get_Element_List_of_Natural_Crack(c_Crack,Out_num_Element,Out_Element_List)
 ! Used to obtain the list of solid elements containing natural fractures. NEWFTU2023011203.
 ! Only quadrilateral and polygonal planar natural fractures are supported.
@@ -139,42 +110,42 @@ c_count = 0
 do i_Domain=1,Num_Domain
     c_Domain = Domain_List(i_Domain)
     do i_El =1,Domain_Elements_Num(c_Domain)
-      c_Ele = Domain_Elements(c_Domain,i_El)
-      c_x_max = x_max_Elements(c_Ele)
-      c_x_min = x_min_Elements(c_Ele)
-      c_y_max = y_max_Elements(c_Ele)
-      c_y_min = y_min_Elements(c_Ele)
-      c_z_max = z_max_Elements(c_Ele)
-      c_z_min = z_min_Elements(c_Ele)
-      ! Check whether the x-coordinate range of the detection element overlaps with the x-coordinate range
-      ! of the crack
-      call Tool_Yes_Two_Ranges_Overlapped_Double([c_x_min,c_x_max],&
-                       [c_NF_Coor_Ranges(1,1),c_NF_Coor_Ranges(1,2)],c_Logical_Yes)   
-      if(.not. c_Logical_Yes) then
-          cycle
-      endif
-      ! Check whether the y-coordinate range of the detection element overlaps with the y-coordinate range
-      ! of the crack
-      call Tool_Yes_Two_Ranges_Overlapped_Double([c_y_min,c_y_max],&
-                       [c_NF_Coor_Ranges(2,1),c_NF_Coor_Ranges(2,2)],c_Logical_Yes)   
-      if(.not. c_Logical_Yes) then
-          cycle
-      endif
-      ! Check whether the z-coordinate range of the detection element overlaps with the z-coordinate range
-      ! of the crack
-      call Tool_Yes_Two_Ranges_Overlapped_Double([c_z_min,c_z_max],&
-                       [c_NF_Coor_Ranges(3,1),c_NF_Coor_Ranges(3,2)],c_Logical_Yes)   
-      if(.not. c_Logical_Yes) then
-          cycle
-      endif      
-      c_count = c_count +1
-      Potent_Elems(c_count) = c_Ele
-  enddo
+        c_Ele = Domain_Elements(c_Domain,i_El)
+        c_x_max = x_max_Elements(c_Ele)
+        c_x_min = x_min_Elements(c_Ele)
+        c_y_max = y_max_Elements(c_Ele)
+        c_y_min = y_min_Elements(c_Ele)
+        c_z_max = z_max_Elements(c_Ele)
+        c_z_min = z_min_Elements(c_Ele)
+        ! Check whether the x-coordinate range of the detection element overlaps with the x-coordinate range
+        ! of the crack
+        call Tool_Yes_Two_Ranges_Overlapped_Double([c_x_min,c_x_max], &
+        [c_NF_Coor_Ranges(1,1),c_NF_Coor_Ranges(1,2)],c_Logical_Yes)
+        if(.not. c_Logical_Yes) then
+            cycle
+        endif
+        ! Check whether the y-coordinate range of the detection element overlaps with the y-coordinate range
+        ! of the crack
+        call Tool_Yes_Two_Ranges_Overlapped_Double([c_y_min,c_y_max], &
+        [c_NF_Coor_Ranges(2,1),c_NF_Coor_Ranges(2,2)],c_Logical_Yes)
+        if(.not. c_Logical_Yes) then
+            cycle
+        endif
+        ! Check whether the z-coordinate range of the detection element overlaps with the z-coordinate range
+        ! of the crack
+        call Tool_Yes_Two_Ranges_Overlapped_Double([c_z_min,c_z_max], &
+        [c_NF_Coor_Ranges(3,1),c_NF_Coor_Ranges(3,2)],c_Logical_Yes)
+        if(.not. c_Logical_Yes) then
+            cycle
+        endif      
+        c_count = c_count +1
+        Potent_Elems(c_count) = c_Ele
+    enddo
 enddo
 
 ! Delete duplicates
-call Vector_Unique_Int(Num_Potent_Elems,c_count,Potent_Elems(1:Num_Potent_Elems),&
-                       Unique_Potent_Elems(1:Num_Potent_Elems),c_Uniqued_count)
+call Vector_Unique_Int(Num_Potent_Elems,c_count,Potent_Elems(1:Num_Potent_Elems), &
+Unique_Potent_Elems(1:Num_Potent_Elems),c_Uniqued_count)
 
 
 !**************************************
@@ -191,11 +162,10 @@ do i_El =1,c_Uniqued_count
     do i_Edge=1,12
         A(1:3) = Coor(Element_Edges(i_Edge,1,c_Ele),1:3)
         B(1:3) = Coor(Element_Edges(i_Edge,2,c_Ele),1:3)
-        
+
         ! Using Tool_Intersection_of_AB_and_3D_Plane_Polygon
         call Tool_Intersection_of_AB_and_3D_Plane_Polygon(A,B, &
-                  Each_NaCr3D_Poi_Num(c_Crack),Na_Crack3D_Coor(c_Crack,1:Each_NaCr3D_Poi_Num(c_Crack),1:3), &
-                  c_Yes_Inter,c_InterSection_P) 
+        Each_NaCr3D_Poi_Num(c_Crack),Na_Crack3D_Coor(c_Crack,1:Each_NaCr3D_Poi_Num(c_Crack),1:3), c_Yes_Inter,c_InterSection_P)
         ! If the edges of a element intersect with a natural fracture, the element is marked as containing a
         ! natural fracture.
         if (c_Yes_Inter) then
@@ -210,10 +180,10 @@ end do
 !********************
 ! Delete duplicates.
 !********************
-call Vector_Unique_Int(10000,tem_Out_num_Element,tem_Out_Element_List(1:10000),&
-                       Out_Element_List(1:10000),Out_num_Element)
+call Vector_Unique_Int(10000,tem_Out_num_Element,tem_Out_Element_List(1:10000), &
+Out_Element_List(1:10000),Out_num_Element)
 
-                                        
+
 !*****************
 ! Clear variable.
 !*****************

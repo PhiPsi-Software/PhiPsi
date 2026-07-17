@@ -244,11 +244,6 @@
 *Key_Get_Permeability
 1
 
-
-
-
-
-
 *WELLBORE_COORS_2_1
 249,150,125
 
@@ -291,9 +286,6 @@
 *KEY_CLOSE_WINDOW
 1
 
-
-
-
 *KEY_SIFS_METHOD
 1
 
@@ -303,21 +295,12 @@
 *BOUNDARY_CRACKS
 0
 
-
-
-
-
-
-
-
 *KEY_SAVE_STIFFNESS_MATRIX
 0
 
-
-
-
 *KEY_3D_SLIP_HF_KEEP_PRESSURE
 1
+
 
 
 

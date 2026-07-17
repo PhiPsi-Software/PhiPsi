@@ -1,48 +1,25 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
+!-----------------------------------------------------------
+! Brief: Assemble the 3D FEM stiffness matrix in CSR
+!        sparse storage for 8-node hexahedral elements.
+!
+! Parameters:
+!   Input:  isub           - current load step index
+!           freeDOF        - mapping of free DOFs
+!           num_FreeD      - number of free DOFs
+!           K_CSR_NNZ_Max  - maximum nonzero count
+!           T_Freedom      - total DOF count
+!   Output: K_CSR_aa       - sparse matrix values
+!           K_CSR_ja       - sparse matrix column indices
+!           K_CSR_ia       - sparse matrix row pointers
+!           K_CSR_NNZ      - actual nonzero count
+!           Total_Num_G_P  - total Gauss points
+!
+! Notes:   Supports composite material rotation; uses
+!          COO-then-CSR conversion via coocsr module.
+!-----------------------------------------------------------
+
 SUBROUTINE Assemble_Stiffness_Matrix_SPARS_FEM_3D(isub,freeDOF,num_FreeD, &
-               K_CSR_aa,K_CSR_ja,K_CSR_ia,K_CSR_NNZ_Max,K_CSR_NNZ,   &
-               T_Freedom,Total_Num_G_P)
+K_CSR_aa,K_CSR_ja,K_CSR_ia,K_CSR_NNZ_Max,K_CSR_NNZ, T_Freedom,Total_Num_G_P)
 ! Assemble the stiffness matrix.
 ! Stored in compressed row format.
 
@@ -120,14 +97,9 @@ do i_E = 1,Num_Elem
     Total_Num_G_P = Total_Num_G_P + Num_Gauss_P_FEM_3D
     c_NN    = G_NN(:,i_E)
     !Traditional index locations
-    local=[c_NN(1)*3-2,c_NN(1)*3-1,c_NN(1)*3, &
-           c_NN(2)*3-2,c_NN(2)*3-1,c_NN(2)*3, &
-           c_NN(3)*3-2,c_NN(3)*3-1,c_NN(3)*3, &
-           c_NN(4)*3-2,c_NN(4)*3-1,c_NN(4)*3, &
-           c_NN(5)*3-2,c_NN(5)*3-1,c_NN(5)*3, &
-           c_NN(6)*3-2,c_NN(6)*3-1,c_NN(6)*3, &
-           c_NN(7)*3-2,c_NN(7)*3-1,c_NN(7)*3, &
-           c_NN(8)*3-2,c_NN(8)*3-1,c_NN(8)*3]   
+local=[c_NN(1)*3-2,c_NN(1)*3-1,c_NN(1)*3, c_NN(2)*3-2,c_NN(2)*3-1,c_NN(2)*3, c_NN(3)*3-2,c_NN(3)*3-1,c_NN(3)*3, &
+c_NN(4)*3-2,c_NN(4)*3-1,c_NN(4)*3, c_NN(5)*3-2,c_NN(5)*3-1,c_NN(5)*3, c_NN(6)*3-2,c_NN(6)*3-1,c_NN(6)*3, &
+c_NN(7)*3-2,c_NN(7)*3-1,c_NN(7)*3, c_NN(8)*3-2,c_NN(8)*3-1,c_NN(8)*3]
     ! Extract the non-zero elements of the stiffness matrix (without summing for now)
     do i_row = 1,24
         do i_col = 1,24
@@ -179,18 +151,12 @@ do i_E = 1,Num_Elem
     c_Y_NODES = G_Y_NODES(:,i_E)    
     c_Z_NODES = G_Z_NODES(:,i_E)        
     !Traditional index locations
-    local=[c_NN(1)*3-2,c_NN(1)*3-1,c_NN(1)*3, &
-           c_NN(2)*3-2,c_NN(2)*3-1,c_NN(2)*3, &
-           c_NN(3)*3-2,c_NN(3)*3-1,c_NN(3)*3, &
-           c_NN(4)*3-2,c_NN(4)*3-1,c_NN(4)*3, &
-           c_NN(5)*3-2,c_NN(5)*3-1,c_NN(5)*3, &
-           c_NN(6)*3-2,c_NN(6)*3-1,c_NN(6)*3, &
-           c_NN(7)*3-2,c_NN(7)*3-1,c_NN(7)*3, &
-           c_NN(8)*3-2,c_NN(8)*3-1,c_NN(8)*3]   
+local=[c_NN(1)*3-2,c_NN(1)*3-1,c_NN(1)*3, c_NN(2)*3-2,c_NN(2)*3-1,c_NN(2)*3, c_NN(3)*3-2,c_NN(3)*3-1,c_NN(3)*3, &
+c_NN(4)*3-2,c_NN(4)*3-1,c_NN(4)*3, c_NN(5)*3-2,c_NN(5)*3-1,c_NN(5)*3, c_NN(6)*3-2,c_NN(6)*3-1,c_NN(6)*3, &
+c_NN(7)*3-2,c_NN(7)*3-1,c_NN(7)*3, c_NN(8)*3-2,c_NN(8)*3-1,c_NN(8)*3]
     !Get the element stiffness matrix of the current element	
-    call Cal_Ele_Stiffness_Matrix_3D_8nodes(i_E, &
-              Num_Gauss_P_FEM_3D,c_X_NODES,c_Y_NODES,c_Z_NODES, &
-              c_D,kesi,yita,zeta,weight,localK)  
+call Cal_Ele_Stiffness_Matrix_3D_8nodes(i_E, Num_Gauss_P_FEM_3D,c_X_NODES,c_Y_NODES,c_Z_NODES, &
+c_D,kesi,yita,zeta,weight,localK)
     ! Extract the non-zero elements of the stiffness matrix (without summing for now)
     do i_row = 1,24
         do i_col = 1,24
@@ -224,9 +190,8 @@ K_Each(1:K_Each_Count,1:3) = Temp_K_Each(1:K_Each_Count,1:3)
 deallocate(Temp_K_Each)
 allocate(Combined_K_Each(K_Each_Count,3))
 write ( * ,'(a)') '     Combining duplicate lines of K...' 
-call Matrix_n_x_3_Combine_Same_i_j_Lines(K_Each_Count,K_Each(1:K_Each_Count,1:3),&
-                                         Combined_K_Each(1:K_Each_Count,1:3), &
-                                         num_rows_Combined_K)
+call Matrix_n_x_3_Combine_Same_i_j_Lines(K_Each_Count,K_Each(1:K_Each_Count,1:3), Combined_K_Each(1:K_Each_Count,1:3), &
+num_rows_Combined_K)
                                        
 !**************************
 !           Step 5:
@@ -280,8 +245,8 @@ write(*,1112) DBLE(K_CSR_NNZ)/T_Freedom/T_Freedom*100.0D0
 ! Convert to CSR format.
 !************************
 write ( * ,'(a)') '     Converting K to CSR format...' 
-call coocsr(num_FreeD,K_CSR_NNZ,K_vals(1:K_CSR_NNZ),K_rows(1:K_CSR_NNZ),K_cols(1:K_CSR_NNZ),&
-                   K_CSR_aa(1:K_CSR_NNZ),K_CSR_ja(1:K_CSR_NNZ),K_CSR_ia(1:num_FreeD+1))                   
+call coocsr(num_FreeD,K_CSR_NNZ,K_vals(1:K_CSR_NNZ),K_rows(1:K_CSR_NNZ),K_cols(1:K_CSR_NNZ), &
+K_CSR_aa(1:K_CSR_NNZ),K_CSR_ja(1:K_CSR_NNZ),K_CSR_ia(1:num_FreeD+1))
 deallocate(K_rows,K_cols,K_vals)                   
 
 

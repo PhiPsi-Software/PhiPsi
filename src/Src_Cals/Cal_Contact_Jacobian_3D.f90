@@ -1,49 +1,30 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
-subroutine Cal_Contact_Jacobian_3D(iter,ifra,Counter_Iter,i_NR_P, &
-     c_Total_Freedom,c_num_freeDOF,ori_globalK, &
-     freeDOF,Kn,Kn_Gauss,Kt1_Gauss,Kt2_Gauss, &
-     CT_State_Gauss,CT_Jacobian)
+!-----------------------------------------------------------
+! Brief: Assemble the contact Jacobian matrix for 3D penalty contact.
+!
+! Parameters:
+!   Input:  iter              - outer Newton iteration index
+!           ifra              - current loading fraction index
+!           Counter_Iter      - global nonlinear iteration counter
+!           i_NR_P            - Newton-Raphson contact iteration count
+!           c_Total_Freedom   - total free DOFs
+!           c_num_freeDOF     - number of free DOFs
+!           ori_globalK       - original elastic global stiffness matrix
+!           freeDOF           - free-DOF map array
+!           Kn                - base normal penalty stiffness
+!           CT_State_Gauss    - contact state at each contact Gauss point
+!   In/Out: Kn_Gauss          - normal penalty stiffness at Gauss points
+!           Kt1_Gauss         - tangential penalty stiffness dir-1
+!           Kt2_Gauss         - tangential penalty stiffness dir-2
+!   Output: CT_Jacobian       - assembled contact Jacobian matrix
+!
+! Notes:   Part of the 3D penalty-function contact algorithm. The 3D
+!          variant has two tangential penalty stiffnesses in the local
+!          crack plane. Contact element nodes coincide with fluid
+!          element nodes for programming convenience.
+!-----------------------------------------------------------
+
+subroutine Cal_Contact_Jacobian_3D(iter,ifra,Counter_Iter,i_NR_P, c_Total_Freedom,c_num_freeDOF,ori_globalK, &
+freeDOF,Kn,Kn_Gauss,Kt1_Gauss,Kt2_Gauss, CT_State_Gauss,CT_Jacobian)
 ! Computation of the Jacobian Matrix during Contact Iteration (3D)
 ! The nodes of the contact elements and the fluid elements completely coincide, which greatly
 ! facilitates the programming.
@@ -70,10 +51,10 @@ implicit none
 integer, intent(in)::iter,ifra,Counter_Iter,i_NR_P
 integer, intent(in)::c_Total_Freedom,c_num_freeDOF
 real(kind=FT),intent(in)::ori_globalK(c_Total_Freedom,c_Total_Freedom),Kn
-real(kind=FT),intent(inout)::  &
-     Kt1_Gauss(num_Crack,Max_Max_N_FluEl_3D),     &
-     Kt2_Gauss(num_Crack,Max_Max_N_FluEl_3D),    &
-     Kn_Gauss(num_Crack,Max_Max_N_FluEl_3D)
+real(kind=FT),intent(inout):: &
+Kt1_Gauss(num_Crack,Max_Max_N_FluEl_3D), &
+Kt2_Gauss(num_Crack,Max_Max_N_FluEl_3D), &
+Kn_Gauss(num_Crack,Max_Max_N_FluEl_3D)
 integer, intent(in)::freeDOF(c_Total_Freedom)
 integer,intent(in)::CT_State_Gauss(num_Crack,Max_Max_N_FluEl_3D)
 real(kind=FT),intent(out)::CT_Jacobian(c_Total_Freedom,c_Total_Freedom)
@@ -107,84 +88,84 @@ CT_Jacobian = ori_globalK
 
 
 do i_C=1,num_Crack
-  do i_CT_Elem = 1,Cracks_FluidEle_num_3D(i_C)
-      c_Center = Cracks_FluidEle_Centroid_3D(i_C)%row(i_CT_Elem,1:3)
-      ori_n    = Cracks_FluidEle_Vector_3D(i_C)%row(i_CT_Elem,1:3)
-      T=Cracks_FluidEle_LCS_T_3D(i_C)%row(i_CT_Elem,1:3,1:3)
-      Solid_El = Cracks_FluidEle_EleNum_3D(i_C)%row(i_CT_Elem)     
-      Flu_Ele_Area = Cracks_FluidEle_Area_3D(i_C)%row(i_CT_Elem)  
+    do i_CT_Elem = 1,Cracks_FluidEle_num_3D(i_C)
+        c_Center = Cracks_FluidEle_Centroid_3D(i_C)%row(i_CT_Elem,1:3)
+        ori_n    = Cracks_FluidEle_Vector_3D(i_C)%row(i_CT_Elem,1:3)
+        T=Cracks_FluidEle_LCS_T_3D(i_C)%row(i_CT_Elem,1:3,1:3)
+        Solid_El = Cracks_FluidEle_EleNum_3D(i_C)%row(i_CT_Elem)     
+        Flu_Ele_Area = Cracks_FluidEle_Area_3D(i_C)%row(i_CT_Elem)  
 
-      if(CT_State_Gauss(i_C,i_CT_Elem) /= 0)then
-          c_kt1 = ZR
-          c_kt2 = ZR
-          c_kn = Kn_Gauss(i_C,i_CT_Elem)
-          
-          
-          D_ep_o(1,1:3) = [c_kt1,    ZR,       ZR]
-          D_ep_o(2,1:3) = [ZR,    c_kt2,       ZR]
-          D_ep_o(3,1:3) = [ZR,       ZR,     c_kn]
-          
-          call Cal_KesiYita_by_Coor_3D(c_Center,Solid_El,Kesi,Yita,Zeta)
-          c_NN(1:8)    = G_NN(1:8,Solid_El)
-          call Cal_N_3D(Kesi,Yita,Zeta,N)     
-          tem_n(1) = N(1,1);    tem_n(2) = N(1,4)
-          tem_n(3) = N(1,7);    tem_n(4) = N(1,10)      
-          tem_n(5) = N(1,13);   tem_n(6) = N(1,16)
-          tem_n(7) = N(1,19);   tem_n(8) = N(1,22)    
-          N_HF(1:3) = ONE/THR      
-          D_ep = MATMUL(MATMUL(transpose(T),D_ep_o),T)
-          num_Local_W = 0
-          N_W(1:3,1:60) =ZR
-          do i_N = 1,8
-              if(Enriched_Node_Type_3D(c_NN(i_N),i_C) ==2)then
-                  num_Local_W = num_Local_W+1
-                  Local_W(3*num_Local_W-2)=3*c_POS_3D(c_NN(i_N),i_C)-2
-                  Local_W(3*num_Local_W-1)=3*c_POS_3D(c_NN(i_N),i_C)-1     
-                  Local_W(3*num_Local_W)  =3*c_POS_3D(c_NN(i_N),i_C)
-                  N_W(1,3*num_Local_W-2)   = TWO*tem_n(i_N)
-                  N_W(2,3*num_Local_W-1)   = TWO*tem_n(i_N)
-                  N_W(3,3*num_Local_W)     = TWO*tem_n(i_N)     
-              elseif(Enriched_Node_Type_3D(c_NN(i_N),i_C) ==3)then
+        if(CT_State_Gauss(i_C,i_CT_Elem) /= 0)then
+            c_kt1 = ZR
+            c_kt2 = ZR
+            c_kn = Kn_Gauss(i_C,i_CT_Elem)
 
-              elseif(Enriched_Node_Type_3D(c_NN(i_N),i_C)==1) then
-                  
-                  if ((Elem_Type_3D(Solid_El,i_C).eq.1 )) then
-                      ref_elem=Solid_El
-                  else
-                      ref_elem=Ele_Num_Tip_Enriched_Node_3D(c_NN(i_N))%row(i_C)
-                  endif                
-   
-                  call Vector_Location_Int_v2(Solid_El_Max_num_Crs,&
-                         Solid_El_Crs(ref_elem,1:Solid_El_Max_num_Crs),i_C,c_Cr_Location)
 
-                  BaseLine_A = Solid_El_Tip_BaseLine(ref_elem)%row(c_Cr_Location,1,1:3)
-                  BaseLine_B = Solid_El_Tip_BaseLine(ref_elem)%row(c_Cr_Location,2,1:3)
-                  BaseLine_Mid = (BaseLine_A+BaseLine_B)/TWO
-                  BaseLine_x_Vec=Solid_El_Tip_BaseLine_x_Vec(ref_elem)%row(c_Cr_Location,1:3)
-                  BaseLine_y_Vec=Solid_El_Tip_BaseLine_y_Vec(ref_elem)%row(c_Cr_Location,1:3)
-                  BaseLine_z_Vec=Solid_El_Tip_BaseLine_z_Vec(ref_elem)%row(c_Cr_Location,1:3)
-                  Tip_T_Matrx(1:3,1:3)=Solid_El_Tip_BaseLine_T_Matrix(ref_elem)%row(c_Cr_Location,1:3,1:3)
+            D_ep_o(1,1:3) = [c_kt1,    ZR,       ZR]
+            D_ep_o(2,1:3) = [ZR,    c_kt2,       ZR]
+            D_ep_o(3,1:3) = [ZR,       ZR,     c_kn]
 
-                  Gauss_Coor_Local= MATMUL(Tip_T_Matrx,c_Center-BaseLine_Mid)
-                  r_Gauss = sqrt(Gauss_Coor_Local(1)**2 + Gauss_Coor_Local(2)**2)
-                  theta_Gauss = atan2(Gauss_Coor_Local(2),Gauss_Coor_Local(1))    
+            call Cal_KesiYita_by_Coor_3D(c_Center,Solid_El,Kesi,Yita,Zeta)
+            c_NN(1:8)    = G_NN(1:8,Solid_El)
+            call Cal_N_3D(Kesi,Yita,Zeta,N)     
+            tem_n(1) = N(1,1);    tem_n(2) = N(1,4)
+            tem_n(3) = N(1,7);    tem_n(4) = N(1,10)      
+            tem_n(5) = N(1,13);   tem_n(6) = N(1,16)
+            tem_n(7) = N(1,19);   tem_n(8) = N(1,22)    
+            N_HF(1:3) = ONE/THR      
+            D_ep = MATMUL(MATMUL(transpose(T),D_ep_o),T)
+            num_Local_W = 0
+            N_W(1:3,1:60) =ZR
+            do i_N = 1,8
+                if(Enriched_Node_Type_3D(c_NN(i_N),i_C) ==2)then
+                    num_Local_W = num_Local_W+1
+                    Local_W(3*num_Local_W-2)=3*c_POS_3D(c_NN(i_N),i_C)-2
+                    Local_W(3*num_Local_W-1)=3*c_POS_3D(c_NN(i_N),i_C)-1     
+                    Local_W(3*num_Local_W)  =3*c_POS_3D(c_NN(i_N),i_C)
+                    N_W(1,3*num_Local_W-2)   = TWO*tem_n(i_N)
+                    N_W(2,3*num_Local_W-1)   = TWO*tem_n(i_N)
+                    N_W(3,3*num_Local_W)     = TWO*tem_n(i_N)     
+                elseif(Enriched_Node_Type_3D(c_NN(i_N),i_C) ==3)then
 
-                  num_Local_W = num_Local_W+1
-                  Local_W(3*num_Local_W-2)=3*c_POS_3D(c_NN(i_N),i_C)-2
-                  Local_W(3*num_Local_W-1)=3*c_POS_3D(c_NN(i_N),i_C)-1     
-                  Local_W(3*num_Local_W)  =3*c_POS_3D(c_NN(i_N),i_C) 
+                elseif(Enriched_Node_Type_3D(c_NN(i_N),i_C)==1) then
 
-                  N_W(1,3*num_Local_W-2)= TWO*sqrt(r_Gauss)*tem_n(i_N)
-                  N_W(2,3*num_Local_W-1)= TWO*sqrt(r_Gauss)*tem_n(i_N)
-                  N_W(3,3*num_Local_W)  = TWO*sqrt(r_Gauss)*tem_n(i_N)     
-              endif
-          enddo
-          
-          CT_Jacobian(Local_W(1:3*num_Local_W),Local_W(1:3*num_Local_W))                &
-             = CT_Jacobian(Local_W(1:3*num_Local_W),Local_W(1:3*num_Local_W)) +         &
-          MATMUL(MATMUL(transpose(N_W(1:3,1:3*num_Local_W)),D_ep),N_W(1:3,1:3*num_Local_W))*Flu_Ele_Area
-      endif
-  enddo
+                    if ((Elem_Type_3D(Solid_El,i_C).eq.1 )) then
+                        ref_elem=Solid_El
+                    else
+                        ref_elem=Ele_Num_Tip_Enriched_Node_3D(c_NN(i_N))%row(i_C)
+                    endif                
+
+                    call Vector_Location_Int_v2(Solid_El_Max_num_Crs, &
+                    Solid_El_Crs(ref_elem,1:Solid_El_Max_num_Crs),i_C,c_Cr_Location)
+
+                    BaseLine_A = Solid_El_Tip_BaseLine(ref_elem)%row(c_Cr_Location,1,1:3)
+                    BaseLine_B = Solid_El_Tip_BaseLine(ref_elem)%row(c_Cr_Location,2,1:3)
+                    BaseLine_Mid = (BaseLine_A+BaseLine_B)/TWO
+                    BaseLine_x_Vec=Solid_El_Tip_BaseLine_x_Vec(ref_elem)%row(c_Cr_Location,1:3)
+                    BaseLine_y_Vec=Solid_El_Tip_BaseLine_y_Vec(ref_elem)%row(c_Cr_Location,1:3)
+                    BaseLine_z_Vec=Solid_El_Tip_BaseLine_z_Vec(ref_elem)%row(c_Cr_Location,1:3)
+                    Tip_T_Matrx(1:3,1:3)=Solid_El_Tip_BaseLine_T_Matrix(ref_elem)%row(c_Cr_Location,1:3,1:3)
+
+                    Gauss_Coor_Local= MATMUL(Tip_T_Matrx,c_Center-BaseLine_Mid)
+                    r_Gauss = sqrt(Gauss_Coor_Local(1)**2 + Gauss_Coor_Local(2)**2)
+                    theta_Gauss = atan2(Gauss_Coor_Local(2),Gauss_Coor_Local(1))    
+
+                    num_Local_W = num_Local_W+1
+                    Local_W(3*num_Local_W-2)=3*c_POS_3D(c_NN(i_N),i_C)-2
+                    Local_W(3*num_Local_W-1)=3*c_POS_3D(c_NN(i_N),i_C)-1     
+                    Local_W(3*num_Local_W)  =3*c_POS_3D(c_NN(i_N),i_C) 
+
+                    N_W(1,3*num_Local_W-2)= TWO*sqrt(r_Gauss)*tem_n(i_N)
+                    N_W(2,3*num_Local_W-1)= TWO*sqrt(r_Gauss)*tem_n(i_N)
+                    N_W(3,3*num_Local_W)  = TWO*sqrt(r_Gauss)*tem_n(i_N)     
+                endif
+            enddo
+
+            CT_Jacobian(Local_W(1:3*num_Local_W),Local_W(1:3*num_Local_W)) &
+            = CT_Jacobian(Local_W(1:3*num_Local_W),Local_W(1:3*num_Local_W)) + &
+            MATMUL(MATMUL(transpose(N_W(1:3,1:3*num_Local_W)),D_ep),N_W(1:3,1:3*num_Local_W))*Flu_Ele_Area
+        endif
+    enddo
 enddo
 
 

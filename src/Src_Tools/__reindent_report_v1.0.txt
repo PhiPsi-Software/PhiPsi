@@ -1,0 +1,183 @@
+======================================================================
+reindent_f90_v1.0.py -- Final Run Report (2026/06/24)
+======================================================================
+
+Total .f90 / .F90 files in Src_Tools:  204
+
+MODIFIED:                            119 files
+  (each has a .bak_<timestamp> sidecar in this directory)
+ALREADY GOOD (no changes needed):    77 files
+SKIPPED (fixed-form):                8 files
+  (these need separate F77->F90 conversion, not just re-indentation)
+
+Total .bak_<timestamp> files:        120
+  (119 successful modifications + 1 from a rolled-back file)
+
+======================================================================
+FIXED-FORM files (NEED MANUAL F77->F90 CONVERSION):
+======================================================================
+  Tool_Count_Lines.f90
+  Tool_Fit_Least_Square.f90
+  Tool_Get_Current_Time.f90
+  Tool_Read_File.f90
+  Tool_Save_Files_Dou.f90
+  Tool_Save_Files_Int.f90
+  Tool_Shorten_or_Extend_Line.f90
+  Tool_Shorten_or_Extend_Line_3D.f90
+
+======================================================================
+Modified files (with backup):
+======================================================================
+  Tool_Angle_of_Vectors_a_and_b_3D.F90
+  Tool_Arc_Extend_or_Shorten.f90
+  Tool_Check_Oscillation_by_6_Variables.f90
+  Tool_Connect_Points_to_Form_Line_Segments_3D.f90
+  Tool_Cos_Value_of_Vectors_a_and_b_3D.f90
+  Tool_Denoise_Data.f90
+  Tool_Dis_Point_to_3D_Quad.f90
+  Tool_Dis_Point_to_3D_Tri.F90
+  Tool_Dis_Point_to_3D_Tri_only_Dis.F90
+  Tool_Estimate_Solution_Time_Remaining.f90
+  Tool_Fit_3D_Points_Check_Rollback.f90
+  Tool_Fit_3D_Points_to_Circle.f90
+  Tool_Fit_3D_Points_to_Ellipse.f90
+  Tool_Fit_3D_Points_to_Straight_Line.f90
+  Tool_Fit_3D_Points_using_Python.f90
+  Tool_Foot_Point_to_Seg.f90
+  Tool_Function_Dis_Point_to_3D_Tri_v2.f90
+  Tool_Generate_Circles.f90
+  Tool_Generate_Inscribed_Poly.f90
+  Tool_Generate_Inscribed_Poly_Irregular.f90
+  Tool_Generate_Natural_Fractures.f90
+  Tool_Generate_Natural_Fractures_3D.f90
+  Tool_Generate_Rand_3DPoint_by_Point_and_n_Vector.f90
+  Tool_Generate_Rand_Point_in_3D_Circle.f90
+  Tool_Generate_Random_Number.f90
+  Tool_Geometry.f90
+  Tool_Get_3D_Polygon_by_n_Vector_and_Center.f90
+  Tool_Get_Farthest_Two_Points_3D.f90
+  Tool_Get_Last_Result_Number.f90
+  Tool_Get_Nearest_Point_3D.f90
+  Tool_Get_Nearest_Point_on_3D_Polygon.f90
+  Tool_Get_Value_from_x_y_Curve.f90
+  Tool_Get_num_Data_from_a_String.f90
+  Tool_HF_Pres_Transform.f90
+  Tool_Injected_Periodically.f90
+  Tool_Internet_by_using_CURL.f90
+  Tool_Intersection.f90
+  Tool_Intersection_Circle_and_Circle.f90
+  Tool_Intersection_Line_and_Arc.f90
+  Tool_Intersection_Line_and_Circle.f90
+  Tool_Intersection_Line_and_Oblique_Ellipse.f90
+  Tool_Intersection_of_AB_and_3D_Plane_Polygon.f90
+  Tool_Intersection_of_AB_and_Brick_Ele.f90
+  Tool_Intersection_of_AB_and_Brick_Ele_v2.f90
+  Tool_Intersection_of_AB_and_CD_3D.f90
+  Tool_Intersection_of_AB_and_Triangle_3D.f90
+  Tool_Intersections_of_Two_Triangles_3D.f90
+  Tool_Length_CalP_to_InjP.f90
+  Tool_Length_of_Crack.f90
+  Tool_Logger.f90
+  Tool_Map_3D_Points_to_2D.f90
+  Tool_Normal_vector_of_3D_Tri.f90
+  Tool_Offset_Point_A_to_Point_B_3D.f90
+  Tool_Point_Giv_2P_and_L.f90
+  Tool_Position_Vector_Point_to_3D_Tri.f90
+  Tool_Principal_Stresses_3D.f90
+  Tool_Print_Matrix.f90
+  Tool_Rank_LineSeg_Points.f90
+  Tool_Read_fab_Natural_Fractures_3D.f90
+  Tool_Set_Natural_Fractures_by_kpp_3D.f90
+  Tool_Smooth_Data.f90
+  Tool_Sort_by_End_to_End.f90
+  Tool_String_arithmetic.f90
+  Tool_String_to_Upper.f90
+  Tool_ThetaX_ThetaY_ThetaZ_3D_rotation.f90
+  Tool_Volume_Hexahedron.f90
+  Tool_Volume_Pyramid.f90
+  Tool_Yes_Crack_Polygon_Intersects.f90
+  Tool_Yes_Cricle_Polygon_Intersects.f90
+  Tool_Yes_Ele_Intersected_by_3D_Crack_Outline.f90
+  Tool_Yes_In_Poly.f90
+  Tool_Yes_Line_on_3D_Triangle.f90
+  Tool_Yes_On_Arc.f90
+  Tool_Yes_On_Line.f90
+  Tool_Yes_On_Poly.f90
+  Tool_Yes_PER_in_3D_Tri.f90
+  Tool_Yes_Point_Near_Model_Boundary_3D.f90
+  Tool_Yes_Point_in_3D_Hexahedron.f90
+  Tool_Yes_Point_in_3D_Hexahedron_with_Tol.f90
+  Tool_Yes_Point_in_3D_Pyramid.f90
+  Tool_Yes_Point_in_3D_Pyramid_with_Tol.f90
+  Tool_Yes_Point_in_3D_Tetrahedron.f90
+  Tool_Yes_Point_in_3D_Tetrahedron_with_Tol.f90
+  Tool_Yes_Point_in_Inclusions.f90
+  Tool_Yes_Point_in_Oblique_Ellipse.f90
+  Tool_Yes_Point_on_3D_Triangle.f90
+  Tool_Yes_Point_on_3D_Triangle_with_Tol.f90
+  Tool_Yes_Point_on_Line_Segment_3D.f90
+  Tool_Yes_Point_on_Line_Segment_3D_Tol.f90
+  Tool_Yes_Point_on_Line_Segments_3D.f90
+  Tool_Yes_Point_on_Line_Segments_3D_Tol.f90
+  Tool_Yes_Triangle_Egde_on_3D_Triangle.f90
+  Tool_Yes_Two_Circles_Intersects.f90
+  Tool_Yes_Two_Ranges_Overlapped_Double.f90
+  Tool_chrpak_ch_cap.f90
+  Tool_chrpak_ch_cap_chrpak.f90
+  Tool_chrpak_ch_eqi_chrpak.f90
+  Tool_chrpak_ch_index_first.f90
+  Tool_chrpak_ch_index_first_for_minus_sign.f90
+  Tool_chrpak_ch_index_first_for_plus_sign.f90
+  Tool_chrpak_ch_index_last.f90
+  Tool_chrpak_ch_is_digit.f90
+  Tool_chrpak_ch_to_digit_chrpak.f90
+  Tool_chrpak_digit_to_ch.f90
+  Tool_chrpak_i4_to_s_left.f90
+  Tool_chrpak_r4_to_s_left.f90
+  Tool_chrpak_r8_to_s_left.f90
+  Tool_chrpak_s_blank_delete.f90
+  Tool_chrpak_s_digits_count.f90
+  Tool_chrpak_s_eqi.f90
+  Tool_chrpak_s_indexi.f90
+  Tool_chrpak_s_is_i.f90
+  Tool_chrpak_s_is_r.f90
+  Tool_chrpak_s_replace_i.f90
+  Tool_chrpak_s_to_i4.f90
+  Tool_chrpak_s_to_r4.f90
+  Tool_delaunay_2D.f90
+  Tool_for_Post_Processing_2D.f90
+  Tool_fpm_environment.F90
+
+======================================================================
+VERIFICATION:
+======================================================================
+  [x] gfortran -fsyntax-only on all 204 files: PASS (0 errors)
+  [x] diff-only-whitespace check on all modified files: PASS
+  [x] Per CLAUDE.md, comments are in English (no Chinese characters)
+  [x] No file renames; no build-config (.prj, Makefile) changes
+  [x] Each modified file has a side-by-side .bak_<YYYYMMDD_HHMMSS>
+  [x] Tabs converted to 4 spaces (1 file affected: Tool_Yes_On_Arc.f90)
+
+======================================================================
+STYLE APPLIED:
+======================================================================
+  - Top-level statements (subroutine, use, implicit none,
+    declarations, return, end subroutine) at COLUMN 0
+  - Block bodies (do, if, select case, case, where, forall,
+    type, interface) at 4 spaces, +4 per nesting level
+  - Continuation lines aligned with parent statement
+  - else / elseif / case default at same depth as their parent
+  - Tab characters converted to 4 spaces
+
+======================================================================
+TOOLS:
+======================================================================
+  Script:        X:\PhiPsi_Project\python_toolseindent_f90_v1.0.py
+  Backup count:  120 (.bak_<YYYYMMDD_HHMMSS> files in Src_Tools\)
+  Report file:   X:\PhiPsi_Project\Src_Tools\__reindent_report_v1.0.txt
+
+======================================================================
+NOTE: Per CLAUDE.md workspace-safety rule, .bak_* files are intentionally
+preserved (not auto-deleted). To remove them once verified:
+  rm X:\PhiPsi_Project\Src_Tools\*.bak_*
+======================================================================

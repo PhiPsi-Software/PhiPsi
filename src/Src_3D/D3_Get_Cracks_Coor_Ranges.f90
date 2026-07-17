@@ -1,45 +1,13 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
+!-----------------------------------------------------------
+! Brief: Allocate and fill bounding ranges for every 3D crack.
+!
+! Parameters:
+!
+! Notes:   (Re)allocates the global Crack_Coor_Range(num_Crack,3,2)
+!          array and fills it with min/max of meshed node coordinates.
+!          OpenMP-parallelised over cracks.
+!-----------------------------------------------------------
+
 SUBROUTINE D3_Get_Cracks_Coor_Ranges
 ! Obtain the coordinate ranges of each discrete fracture surface. NEWFTU2022050401.
 ! 2022-05-04.
@@ -52,7 +20,7 @@ use Global_Common
 use Global_Crack_Common
 use Global_Crack_3D
 use omp_lib     
-      
+
 !---------------------------
 ! Variable Type Declaration
 !---------------------------
@@ -75,16 +43,16 @@ Crack_Coor_Range(1:num_Crack,1:3,1:2) = ZR
 ! IMPROV2022072202. OpenMP Parallelization.
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_C,c_mesh_ndoes_num) SCHEDULE(static) 
 do i_C =1,num_Crack
-  c_mesh_ndoes_num = Crack3D_Meshed_Node_num(i_C)  
-  ! x range
-  Crack_Coor_Range(i_C,1,1) =  minval(Crack3D_Meshed_Node(i_C)%row(1:c_mesh_ndoes_num,1))
-  Crack_Coor_Range(i_C,1,2) =  maxval(Crack3D_Meshed_Node(i_C)%row(1:c_mesh_ndoes_num,1))     
-  ! y-range
-  Crack_Coor_Range(i_C,2,1) =  minval(Crack3D_Meshed_Node(i_C)%row(1:c_mesh_ndoes_num,2))
-  Crack_Coor_Range(i_C,2,2) =  maxval(Crack3D_Meshed_Node(i_C)%row(1:c_mesh_ndoes_num,2))   
-  ! z range
-  Crack_Coor_Range(i_C,3,1) =  minval(Crack3D_Meshed_Node(i_C)%row(1:c_mesh_ndoes_num,3))
-  Crack_Coor_Range(i_C,3,2) =  maxval(Crack3D_Meshed_Node(i_C)%row(1:c_mesh_ndoes_num,3))        
+    c_mesh_ndoes_num = Crack3D_Meshed_Node_num(i_C)  
+    ! x range
+    Crack_Coor_Range(i_C,1,1) =  minval(Crack3D_Meshed_Node(i_C)%row(1:c_mesh_ndoes_num,1))
+    Crack_Coor_Range(i_C,1,2) =  maxval(Crack3D_Meshed_Node(i_C)%row(1:c_mesh_ndoes_num,1))     
+    ! y-range
+    Crack_Coor_Range(i_C,2,1) =  minval(Crack3D_Meshed_Node(i_C)%row(1:c_mesh_ndoes_num,2))
+    Crack_Coor_Range(i_C,2,2) =  maxval(Crack3D_Meshed_Node(i_C)%row(1:c_mesh_ndoes_num,2))   
+    ! z range
+    Crack_Coor_Range(i_C,3,1) =  minval(Crack3D_Meshed_Node(i_C)%row(1:c_mesh_ndoes_num,3))
+    Crack_Coor_Range(i_C,3,2) =  maxval(Crack3D_Meshed_Node(i_C)%row(1:c_mesh_ndoes_num,3))        
 enddo
 !$omp end parallel do       
 

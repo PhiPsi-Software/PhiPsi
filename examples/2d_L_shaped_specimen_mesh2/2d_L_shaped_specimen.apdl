@@ -6,16 +6,16 @@ finish
 /DSCALE,ALL,1.0
 /eshape,1
 !---------------------
-L                 =  250e-3 !长,x
-! T                 =  100e-3  !高,z
-L_Force           =  30e-3   !载荷区域长度
+L                 =  250e-3 !Length, x
+! T                 =  100e-3  !Height, z
+L_Force           =  30e-3   !Load region length
 
 
-num_mesh_T        = 5*2       !厚度方向网格划分数目
-num_mesh_L        = 15*2      !厚度方向网格划分数目
-num_mesh_L_Force  = 4*2       !载荷施加区域网格划分数目
+num_mesh_T        = 5*2       !Number of mesh divisions in thickness direction
+num_mesh_L        = 15*2      !Number of mesh divisions in thickness direction
+num_mesh_L_Force  = 4*2       !Number of mesh divisions in load application region
 
-F                 = 10e3     !载荷（总载荷）
+F                 = 10e3     !Load (total load)
 
 !---------------------
 ! pressure = F/T/L_Force
@@ -57,31 +57,31 @@ a,9,7,8,10
 
 aglue,all
 
-!---------------------视角及显示
+!---------------------View and display
 /VIEW,1,,,1 
 /ANG,1  
 /REP,FAST   
 !---------------------
 VPLOT
 
-!---------网格划分------------
+!---------Mesh division------------
 
-!宽度方向网格划分数目
+!Number of mesh divisions in width direction
 ! allsel
-! lsel,s,length,,T  !根据长度选择线
+! lsel,s,length,,T  !Select line by length
 ! lesize,all,,,num_mesh_T,,,,
 
-!载荷区域方向网格划分数目
+!Number of mesh divisions in load region direction
 allsel
-lsel,s,length,,L_Force  !根据长度选择线
+lsel,s,length,,L_Force  !Select line by length
 lesize,all,,,num_mesh_L_Force,,,,
 
 allsel
-lsel,s,length,,L  !根据长度选择线
+lsel,s,length,,L  !Select line by length
 lesize,all,,,num_mesh_L,,,,
 
 allsel
-lsel,s,length,,L-L_Force  !根据长度选择线
+lsel,s,length,,L-L_Force  !Select line by length
 lesize,all,,,num_mesh_L,,,,
 
 !---------------------
@@ -91,7 +91,7 @@ AMESH,all
 !---------------------
 allsel
 NSEL,S,LOC,Y,-L
-D,all,all  !约束模型下表面全部自由度
+D,all,all  !Constrain all DOF on bottom surface of model
 !---------------------
 !
 allsel

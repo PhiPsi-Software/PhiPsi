@@ -1,18 +1,17 @@
- 
 subroutine Tool_chrpak_ch_cap ( ch )
 
-  implicit none
+implicit none
 
-  character ch
-  integer itemp
+character ch
+integer itemp
 
-  itemp = iachar ( ch )
+itemp = iachar ( ch )
 
-  if ( 97 <= itemp .and. itemp <= 122 ) then
+if ( 97 <= itemp .and. itemp <= 122 ) then
     ch = achar ( itemp - 32 )
-  end if
+end if
 
-  return
-  
+return
+
 end subroutine Tool_chrpak_ch_cap
 

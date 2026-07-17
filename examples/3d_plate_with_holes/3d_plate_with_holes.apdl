@@ -6,11 +6,11 @@ finish
 /DSCALE,ALL,1.0
 /eshape,1
 !---------------------
-Width  =  65.0e-3   !长,x
-Height  =  120.0e-3  !宽,y
-Thichness  =  10.0e-3 !高,z
-R  =  10.0e-3   !圆的半径
-R_small  =  6.5e-3   !圆的半径
+Width  =  65.0e-3   !Length, x
+Height  =  120.0e-3  !Width, y
+Thichness  =  10.0e-3 !Height, z
+R  =  10.0e-3   !Circle radius
+R_small  =  6.5e-3   !Circle radius
 
 
 !Good!
@@ -72,17 +72,17 @@ VPLOT
 
 !---------------------
 allsel
-lsel,s,length,,Height  !根据长度选择线
+lsel,s,length,,Height  !Select line by length
 lesize,all,,,num_mesh_height,
 allsel
-lsel,s,length,,Thichness  !根据长度选择线
+lsel,s,length,,Thichness  !Select line by length
 lesize,all,,,num_mesh_thichness,
 allsel
-lsel,s,length,,Width  !根据长度选择线
+lsel,s,length,,Width  !Select line by length
 lesize,all,,,num_mesh_width,
 allsel
 
-lsel,s,RADIUS,,R  !根据半径选择线
+lsel,s,RADIUS,,R  !Select line by radius
 lesize,all,,,num_mesh_big_circle,
 allsel
 !---------------------

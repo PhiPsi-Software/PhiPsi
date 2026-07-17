@@ -1,4 +1,3 @@
- 
 recursive subroutine Tool_String_count_char_occurrences(input_string, input_chr, num_char)
 
 character(len=*), intent(in) :: input_string

@@ -1,3 +1,16 @@
+!-----------------------------------------------------------
+! Brief: Taubin smoothing for non-closed (edge) crack fronts
+!
+! Parameters:
+!   Input:  i_C                - crack index
+!   Input:  num_Point          - number of front vertices
+!   Input:  In_Points          - input front vertex coordinates
+!   Input:  Points_Flag_Inside - inside/outside mask
+!   Output: Out_Points         - smoothed vertex coordinates
+!
+! Notes:   Smooths only the contiguous inside segment; requires exactly one such segment.
+!-----------------------------------------------------------
+
 subroutine Tool_Fit_3D_Points_Taubin_Non_Closed(i_C,num_Point,In_Points,Points_Flag_Inside,Out_Points)
 ! Taubin smooth treatment of crack front edge for non-closed edge crack. 
 ! Logic: Extract the single continuous segment of inside points, smooth only 
@@ -115,8 +128,7 @@ do i_Loop = 1, n_Loops
             weight_nex = ONE / nex_L
             total_weight = weight_pre + weight_nex
             
-            L1_vector(i_point, 1:3) = &
-                (weight_pre*pre_point + weight_nex*nex_point) / total_weight - c_point
+L1_vector(i_point, 1:3) = (weight_pre*pre_point + weight_nex*nex_point) / total_weight - c_point
         else
             L1_vector(i_point, 1:3) = ZR
         endif
@@ -143,8 +155,7 @@ do i_Loop = 1, n_Loops
             weight_nex = ONE / nex_L
             total_weight = weight_pre + weight_nex
             
-            L2_vector(i_point, 1:3) = &
-                (weight_pre*pre_point + weight_nex*nex_point) / total_weight - c_point
+L2_vector(i_point, 1:3) = (weight_pre*pre_point + weight_nex*nex_point) / total_weight - c_point
         else
             L2_vector(i_point, 1:3) = ZR
         endif

@@ -1,52 +1,19 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
-subroutine EBE_Cal_Contact_Jacobian(  &
-                   isub,i_NR_P,  &
-                   num_freeD,freeDOF, &
-                   storK_0,size_local_0,all_local_0,diag_precon_0, &
-                   storK,diag_precon,     &
-                   Kn,Kn_Gauss,Kt_Gauss, &
-                   CT_State_Gauss)
+!-----------------------------------------------------------
+! Brief: EBE-form contact Jacobian and diagonal preconditioner (2D).
+!
+! Parameters:
+!   Input:  isub, i_NR_P    - substep and NR iteration indices
+!           num_freeD, freeDOF - free DOF count and map
+!           storK_0, size_local_0, all_local_0 - baseline EBE K
+!           diag_precon_0    - baseline diagonal preconditioner
+!           Kn, Kn_Gauss, Kt_Gauss - penalty stiffnesses
+!           CT_State_Gauss   - per-Gauss contact state
+!   In/Out: Kt_Gauss, Kn_Gauss - updated penalty stiffnesses
+!   Output: storK, diag_precon - contact-aware EBE K and precon
+!-----------------------------------------------------------
+
+subroutine EBE_Cal_Contact_Jacobian( isub,i_NR_P, num_freeD,freeDOF, storK_0,size_local_0,all_local_0,diag_precon_0, &
+storK,diag_precon, Kn,Kn_Gauss,Kt_Gauss, CT_State_Gauss)
 ! Calculation of the Jacobian matrix in the contact iteration process
 ! The nodes of the contact elements and the fluid elements coincide completely, which greatly
 ! facilitates the programming.
@@ -82,8 +49,8 @@ real(kind=FT),intent(out)::storK(MDOF_2D,MDOF_2D,Num_Elem)
 real(kind=FT),intent(out)::diag_precon(0:num_FreeD)
 
 real(kind=FT),intent(inout):: &
-        Kt_Gauss(num_Crack,Max_Num_Cr_CalP-1,2),     &
-        Kn_Gauss(num_Crack,Max_Num_Cr_CalP-1,2)
+Kt_Gauss(num_Crack,Max_Num_Cr_CalP-1,2), &
+Kn_Gauss(num_Crack,Max_Num_Cr_CalP-1,2)
 integer,intent(in)::CT_State_Gauss(num_Crack,Max_Num_Cr_CalP-1,2)
 integer i_N,i_C
 integer c_NN(4)
@@ -111,225 +78,217 @@ integer k,c_loca,c_loca_W,local_FreeD(60),j,True_local_FreeD(60)
 real(kind=FT) localK(60,60)
 
 if(Conta_Integ_Point==2)then
-  num_CT_Gauss = 2
-  kesi_CT(1)  = -0.577350269189626D0
-  kesi_CT(2)  =  0.577350269189626D0
-  Weight_CT(1)=  ONE
-  Weight_CT(2)=  ONE
+    num_CT_Gauss = 2
+    kesi_CT(1)  = -0.577350269189626D0
+    kesi_CT(2)  =  0.577350269189626D0
+    Weight_CT(1)=  ONE
+    Weight_CT(2)=  ONE
 elseif(Conta_Integ_Point==1)then
-  num_CT_Gauss = 1
-  kesi_CT(1)  =  0.0D0
-  Weight_CT(1)=  TWO
+    num_CT_Gauss = 1
+    kesi_CT(1)  =  0.0D0
+    Weight_CT(1)=  TWO
 endif
 
 storK= storK_0
 diag_precon(0:num_FreeD) = diag_precon_0(0:num_FreeD)
 
 do i_C=1,num_Crack
-  Num_Div_Points = Cracks_CalP_Num(i_C)
-  do i_CT_Elem = 1,Num_Div_Points - 1
-    x1= Cracks_CalP_Coors(i_C,i_CT_Elem,1)
-    y1= Cracks_CalP_Coors(i_C,i_CT_Elem,2)
-    x2= Cracks_CalP_Coors(i_C,i_CT_Elem+1,1)
-    y2= Cracks_CalP_Coors(i_C,i_CT_Elem+1,2)
-      ori_CT_elem = atan2(y2-y1,x2-x1)
-      CT_Length = Cracks_HF_Ele_L(i_C,i_CT_Elem)
-      
-      detJ   = CT_Length/TWO
-      
-      ori_n = [cos(pi/TWO + ori_CT_elem),sin(pi/TWO + ori_CT_elem)]
-      T(1,1:2)   = [ cos(ori_CT_elem), sin(ori_CT_elem)]   
-      T(2,1:2)   = [-sin(ori_CT_elem), cos(ori_CT_elem)]  
-      do i_CT_GAUSS  = 1,num_CT_Gauss
-          if(CT_State_Gauss(i_C,i_CT_Elem,i_CT_GAUSS) /= 0)then
-              c_kt = Kt_Gauss(i_C,i_CT_Elem,i_CT_GAUSS)
-              c_kn = Kn_Gauss(i_C,i_CT_Elem,i_CT_GAUSS)
-              
-              D_ep_o(1,1:2) = [c_kt, ZR]
-              D_ep_o(2,1:2) = [ZR, c_kn]
-              
-              
-              call Cal_HF_Coor_by_Kesi(kesi_CT(i_CT_GAUSS),x1,y1,x2,y2,CT_GAUSS_x,CT_GAUSS_y)
-              call Cal_Ele_Num_by_Coors(CT_GAUSS_x,CT_GAUSS_y,CT_GAUSS_Elem)
+    Num_Div_Points = Cracks_CalP_Num(i_C)
+    do i_CT_Elem = 1,Num_Div_Points - 1
+        x1= Cracks_CalP_Coors(i_C,i_CT_Elem,1)
+        y1= Cracks_CalP_Coors(i_C,i_CT_Elem,2)
+        x2= Cracks_CalP_Coors(i_C,i_CT_Elem+1,1)
+        y2= Cracks_CalP_Coors(i_C,i_CT_Elem+1,2)
+        ori_CT_elem = atan2(y2-y1,x2-x1)
+        CT_Length = Cracks_HF_Ele_L(i_C,i_CT_Elem)
 
-              num_Loc_ESM = size_local_0(CT_GAUSS_Elem)
-              local(1:num_Loc_ESM)=all_local_0(1:num_Loc_ESM,CT_GAUSS_Elem) 
-              
-              
-              call Cal_KesiYita_by_Coor([CT_GAUSS_x,CT_GAUSS_y],CT_GAUSS_Elem,c_Kesi,c_Yita)
-              c_NN    = G_NN(1:4,CT_GAUSS_Elem)     
-              call Cal_N(c_Kesi,c_Yita,N)      
-              tem_n(1) = N(1,1);    tem_n(2) = N(1,3)
-              tem_n(3) = N(1,5);    tem_n(4) = N(1,7)      
-              N_CT(1) = (ONE-kesi_CT(i_CT_GAUSS))/TWO      
-              N_CT(2) = (ONE+kesi_CT(i_CT_GAUSS))/TWO   
-              D_ep = MATMUL(MATMUL(transpose(T),D_ep_o),T)
-              num_Local_W = 0
-              N_W(1:2,1:60) =ZR
-              do i_N = 1,4
-                  if(Enriched_Node_Type(c_NN(i_N),i_C) ==2)then
-                      num_Local_W = num_Local_W+1
-                      Local_W(2*num_Local_W-1)=2*c_POS(c_NN(i_N),i_C)-1
-                      Local_W(2*num_Local_W)  =2*c_POS(c_NN(i_N),i_C)
-                      N_W(1,2*num_Local_W-1) = TWO*tem_n(i_N)
-                      N_W(2,2*num_Local_W)   = TWO*tem_n(i_N)
-                  elseif(Enriched_Node_Type(c_NN(i_N),i_C) ==3) then
-                      c_Junc_Ele = Node_Jun_elem(c_NN(i_N),i_C)
-                      Coor_Tip =Coors_Junction(c_Junc_Ele,i_C,3:4) 
-                      Orient_Tip = atan2(Coor_Tip(2)-CT_GAUSS_y,Coor_Tip(1)-CT_GAUSS_x)
-                      ele_Sign =  sign(ONE,cos(ori_CT_elem))
-                      c_Sign   =  sign(ONE,cos(Orient_Tip))
-                      tem_val1 = abs(ori_CT_elem - pi/TWO)
-                      tem_val2 = abs(ori_CT_elem + pi/TWO)
-                      if (tem_val1 <= Tol_10) then
-                          ele_Sign = ONE
-                          tem_val3 = abs(Orient_Tip - pi/TWO)
-                          tem_val4 = abs(Orient_Tip + pi/TWO)
-                          if(tem_val4 <= Tol_10) then
-                              c_Sign   = -ONE
-                          elseif (tem_val3 <= Tol_10) then
-                              c_Sign   =  ONE
-                          endif
-                      elseif (tem_val2 <= Tol_10) then
-                          ele_Sign = ONE
-                          tem_val3 = abs(Orient_Tip - pi/TWO)
-                          tem_val4 = abs(Orient_Tip + pi/TWO)  
-                          if(tem_val4 <= Tol_10) then
-                              c_Sign   =  ONE
-                          elseif (tem_val3 <= Tol_10) then
-                              c_Sign   = -ONE
-                          endif                          
-                      endif
-                      num_Local_W = num_Local_W+1
-                      Local_W(2*num_Local_W-1)=2*c_POS(c_NN(i_N),i_C)-1
-                      Local_W(2*num_Local_W)  =2*c_POS(c_NN(i_N),i_C)
-                      N_W(1,2*num_Local_W-1)=c_Sign*ele_Sign*TWO*tem_n(i_N)
-                      N_W(2,2*num_Local_W)  =c_Sign*ele_Sign*TWO*tem_n(i_N)
-                  elseif(Enriched_Node_Type(c_NN(i_N),i_C)==1)   then
-                      Num_Enriched_Node = c_POS(c_NN(i_N),i_C)
-                      if(Elem_Type(CT_GAUSS_Elem,i_C).eq.1)then
-                          ref_elem = CT_GAUSS_Elem
-                      else
-                        find_element=Node_Elements(c_NN(i_N),:)
-                        do i_tem=1,num_Node_Elements(c_NN(i_N))
-                          if (Elem_Type(find_element(i_tem),i_C).eq.1)  then
-                              ref_elem = find_element(i_tem)
-                          end if
-                        end do
-                      end if
-                      Coor_AB(1,:)=[Coors_Element_Crack(ref_elem,i_C,1),Coors_Element_Crack(ref_elem,i_C,2)]
-                      Coor_AB(2,:)=[Coors_Element_Crack(ref_elem,i_C,3),Coors_Element_Crack(ref_elem,i_C,4)]
-                      Coor_Tip = [Coor_AB(2,1),Coor_AB(2,2)]
-                      r=sqrt((CT_GAUSS_x-Coor_Tip(1))**2 + (CT_GAUSS_y-Coor_Tip(2))**2)
-                      Orient_Tip = atan2(Coor_Tip(2)-CT_GAUSS_y,Coor_Tip(1)-CT_GAUSS_x)
-                      num_Local_W = num_Local_W+1
-                      Local_W(2*num_Local_W-1)=2*(c_POS(c_NN(i_N),i_C)) - 1
-                      Local_W(2*num_Local_W)  =2*(c_POS(c_NN(i_N),i_C))
-                      ele_Sign =  sign(ONE,cos(ori_CT_elem))
-                      c_Sign   =  sign(ONE,cos(Orient_Tip))
-                      tem_val1 = abs(ori_CT_elem - pi/TWO)
-                      tem_val2 = abs(ori_CT_elem + pi/TWO)
-                      if (tem_val1 <= Tol_10) then
-                          ele_Sign = ONE
-                          tem_val3 = abs(Orient_Tip - pi/TWO)
-                          tem_val4 = abs(Orient_Tip + pi/TWO)
-                          if(tem_val4 <= Tol_10) then
-                              c_Sign   = -ONE
-                          elseif (tem_val3 <= Tol_10) then
-                              c_Sign   =  ONE
-                          endif
-                      elseif (tem_val2 <= Tol_10) then
-                          ele_Sign = ONE
-                          tem_val3 = abs(Orient_Tip - pi/TWO)
-                          tem_val4 = abs(Orient_Tip + pi/TWO)  
-                          if(tem_val4 <= Tol_10) then
-                              c_Sign   =  ONE
-                          elseif (tem_val3 <= Tol_10) then
-                              c_Sign   = -ONE
-                          endif                          
-                      endif
-                      N_W(1,2*num_Local_W-1) = ele_Sign*c_Sign*TWO*sqrt(r)*tem_n(i_N)
-                      N_W(2,2*num_Local_W)   = ele_Sign*c_Sign*TWO*sqrt(r)*tem_n(i_N)
-                  endif
-                if(Enriched_Node_Type(c_NN(i_N),i_C)==2)then
-                  do j_C = 1,num_Crack
-                   if(Enriched_Node_Type(c_NN(i_N),j_C)==3)then
-                      do j_E =1,num_Node_Elements(c_NN(i_N))
-                          c_Adj_Ele=Node_Elements(c_NN(i_N),j_E) 
-                          if(Elem_Type(c_Adj_Ele,j_C)==4)then
-                              c_Junc_Ele = c_Adj_Ele 
-                              exit
-                          endif
-                      enddo
-                      Coor_Tip =Coors_Junction(c_Junc_Ele,i_C,3:4) 
-                      Orient_Tip =atan2(Coor_Tip(2)-CT_GAUSS_y,Coor_Tip(1)-CT_GAUSS_x)
-                      ele_Sign =  sign(ONE,cos(ori_CT_elem))
-                      c_Sign   =  sign(ONE,cos(Orient_Tip))
-                      tem_val1 = abs(ori_CT_elem - pi/TWO)
-                      tem_val2 = abs(ori_CT_elem + pi/TWO)
-                      if (tem_val1 <= Tol_10) then
-                          ele_Sign = ONE
-                          tem_val3 = abs(Orient_Tip - pi/TWO)
-                          tem_val4 = abs(Orient_Tip + pi/TWO)
-                          if(tem_val4 <= Tol_10) then
-                              c_Sign   = -ONE
-                          elseif (tem_val3 <= Tol_10) then
-                              c_Sign   =  ONE
-                          endif
-                      elseif (tem_val2 <= Tol_10) then
-                          ele_Sign = ONE
-                          tem_val3 = abs(Orient_Tip - pi/TWO)
-                          tem_val4 = abs(Orient_Tip + pi/TWO)  
-                          if(tem_val4 <= Tol_10) then
-                              c_Sign   =  ONE
-                          elseif (tem_val3 <= Tol_10) then
-                              c_Sign   = -ONE
-                          endif                          
-                      endif
-                      num_Local_W = num_Local_W+1
-                      Local_W(2*num_Local_W-1)=2*c_POS(c_NN(i_N),j_C)-1
-                      Local_W(2*num_Local_W)  =2*c_POS(c_NN(i_N),j_C)
-                      N_W(1,2*num_Local_W-1)= -c_Sign*ele_Sign*ONE*tem_n(i_N)
-                      N_W(2,2*num_Local_W)  = -c_Sign*ele_Sign*ONE*tem_n(i_N)
+        detJ   = CT_Length/TWO
+
+        ori_n = [cos(pi/TWO + ori_CT_elem),sin(pi/TWO + ori_CT_elem)]
+        T(1,1:2)   = [ cos(ori_CT_elem), sin(ori_CT_elem)]   
+        T(2,1:2)   = [-sin(ori_CT_elem), cos(ori_CT_elem)]  
+        do i_CT_GAUSS  = 1,num_CT_Gauss
+            if(CT_State_Gauss(i_C,i_CT_Elem,i_CT_GAUSS) /= 0)then
+                c_kt = Kt_Gauss(i_C,i_CT_Elem,i_CT_GAUSS)
+                c_kn = Kn_Gauss(i_C,i_CT_Elem,i_CT_GAUSS)
+
+                D_ep_o(1,1:2) = [c_kt, ZR]
+                D_ep_o(2,1:2) = [ZR, c_kn]
+
+
+                call Cal_HF_Coor_by_Kesi(kesi_CT(i_CT_GAUSS),x1,y1,x2,y2,CT_GAUSS_x,CT_GAUSS_y)
+                call Cal_Ele_Num_by_Coors(CT_GAUSS_x,CT_GAUSS_y,CT_GAUSS_Elem)
+
+                num_Loc_ESM = size_local_0(CT_GAUSS_Elem)
+                local(1:num_Loc_ESM)=all_local_0(1:num_Loc_ESM,CT_GAUSS_Elem) 
+
+
+                call Cal_KesiYita_by_Coor([CT_GAUSS_x,CT_GAUSS_y],CT_GAUSS_Elem,c_Kesi,c_Yita)
+                c_NN    = G_NN(1:4,CT_GAUSS_Elem)     
+                call Cal_N(c_Kesi,c_Yita,N)      
+                tem_n(1) = N(1,1);    tem_n(2) = N(1,3)
+                tem_n(3) = N(1,5);    tem_n(4) = N(1,7)      
+                N_CT(1) = (ONE-kesi_CT(i_CT_GAUSS))/TWO      
+                N_CT(2) = (ONE+kesi_CT(i_CT_GAUSS))/TWO   
+                D_ep = MATMUL(MATMUL(transpose(T),D_ep_o),T)
+                num_Local_W = 0
+                N_W(1:2,1:60) =ZR
+                do i_N = 1,4
+                    if(Enriched_Node_Type(c_NN(i_N),i_C) ==2)then
+                        num_Local_W = num_Local_W+1
+                        Local_W(2*num_Local_W-1)=2*c_POS(c_NN(i_N),i_C)-1
+                        Local_W(2*num_Local_W)  =2*c_POS(c_NN(i_N),i_C)
+                        N_W(1,2*num_Local_W-1) = TWO*tem_n(i_N)
+                        N_W(2,2*num_Local_W)   = TWO*tem_n(i_N)
+                    elseif(Enriched_Node_Type(c_NN(i_N),i_C) ==3) then
+                        c_Junc_Ele = Node_Jun_elem(c_NN(i_N),i_C)
+                        Coor_Tip =Coors_Junction(c_Junc_Ele,i_C,3:4) 
+                        Orient_Tip = atan2(Coor_Tip(2)-CT_GAUSS_y,Coor_Tip(1)-CT_GAUSS_x)
+                        ele_Sign =  sign(ONE,cos(ori_CT_elem))
+                        c_Sign   =  sign(ONE,cos(Orient_Tip))
+                        tem_val1 = abs(ori_CT_elem - pi/TWO)
+                        tem_val2 = abs(ori_CT_elem + pi/TWO)
+                        if (tem_val1 <= Tol_10) then
+                            ele_Sign = ONE
+                            tem_val3 = abs(Orient_Tip - pi/TWO)
+                            tem_val4 = abs(Orient_Tip + pi/TWO)
+                            if(tem_val4 <= Tol_10) then
+                                c_Sign   = -ONE
+                            elseif (tem_val3 <= Tol_10) then
+                                c_Sign   =  ONE
+                            endif
+                        elseif (tem_val2 <= Tol_10) then
+                            ele_Sign = ONE
+                            tem_val3 = abs(Orient_Tip - pi/TWO)
+                            tem_val4 = abs(Orient_Tip + pi/TWO)  
+                            if(tem_val4 <= Tol_10) then
+                                c_Sign   =  ONE
+                            elseif (tem_val3 <= Tol_10) then
+                                c_Sign   = -ONE
+                            endif                          
+                        endif
+                        num_Local_W = num_Local_W+1
+                        Local_W(2*num_Local_W-1)=2*c_POS(c_NN(i_N),i_C)-1
+                        Local_W(2*num_Local_W)  =2*c_POS(c_NN(i_N),i_C)
+                        N_W(1,2*num_Local_W-1)=c_Sign*ele_Sign*TWO*tem_n(i_N)
+                        N_W(2,2*num_Local_W)  =c_Sign*ele_Sign*TWO*tem_n(i_N)
+                    elseif(Enriched_Node_Type(c_NN(i_N),i_C)==1)   then
+                        Num_Enriched_Node = c_POS(c_NN(i_N),i_C)
+                        if(Elem_Type(CT_GAUSS_Elem,i_C).eq.1)then
+                            ref_elem = CT_GAUSS_Elem
+                        else
+                            find_element=Node_Elements(c_NN(i_N),:)
+                            do i_tem=1,num_Node_Elements(c_NN(i_N))
+                                if (Elem_Type(find_element(i_tem),i_C).eq.1)  then
+                                    ref_elem = find_element(i_tem)
+                                end if
+                            end do
+                        end if
+                        Coor_AB(1,:)=[Coors_Element_Crack(ref_elem,i_C,1),Coors_Element_Crack(ref_elem,i_C,2)]
+                        Coor_AB(2,:)=[Coors_Element_Crack(ref_elem,i_C,3),Coors_Element_Crack(ref_elem,i_C,4)]
+                        Coor_Tip = [Coor_AB(2,1),Coor_AB(2,2)]
+                        r=sqrt((CT_GAUSS_x-Coor_Tip(1))**2 + (CT_GAUSS_y-Coor_Tip(2))**2)
+                        Orient_Tip = atan2(Coor_Tip(2)-CT_GAUSS_y,Coor_Tip(1)-CT_GAUSS_x)
+                        num_Local_W = num_Local_W+1
+                        Local_W(2*num_Local_W-1)=2*(c_POS(c_NN(i_N),i_C)) - 1
+                        Local_W(2*num_Local_W)  =2*(c_POS(c_NN(i_N),i_C))
+                        ele_Sign =  sign(ONE,cos(ori_CT_elem))
+                        c_Sign   =  sign(ONE,cos(Orient_Tip))
+                        tem_val1 = abs(ori_CT_elem - pi/TWO)
+                        tem_val2 = abs(ori_CT_elem + pi/TWO)
+                        if (tem_val1 <= Tol_10) then
+                            ele_Sign = ONE
+                            tem_val3 = abs(Orient_Tip - pi/TWO)
+                            tem_val4 = abs(Orient_Tip + pi/TWO)
+                            if(tem_val4 <= Tol_10) then
+                                c_Sign   = -ONE
+                            elseif (tem_val3 <= Tol_10) then
+                                c_Sign   =  ONE
+                            endif
+                        elseif (tem_val2 <= Tol_10) then
+                            ele_Sign = ONE
+                            tem_val3 = abs(Orient_Tip - pi/TWO)
+                            tem_val4 = abs(Orient_Tip + pi/TWO)  
+                            if(tem_val4 <= Tol_10) then
+                                c_Sign   =  ONE
+                            elseif (tem_val3 <= Tol_10) then
+                                c_Sign   = -ONE
+                            endif                          
+                        endif
+                        N_W(1,2*num_Local_W-1) = ele_Sign*c_Sign*TWO*sqrt(r)*tem_n(i_N)
+                        N_W(2,2*num_Local_W)   = ele_Sign*c_Sign*TWO*sqrt(r)*tem_n(i_N)
                     endif
-                  enddo
-                endif
-              enddo
+                    if(Enriched_Node_Type(c_NN(i_N),i_C)==2)then
+                        do j_C = 1,num_Crack
+                            if(Enriched_Node_Type(c_NN(i_N),j_C)==3)then
+                                do j_E =1,num_Node_Elements(c_NN(i_N))
+                                    c_Adj_Ele=Node_Elements(c_NN(i_N),j_E) 
+                                    if(Elem_Type(c_Adj_Ele,j_C)==4)then
+                                        c_Junc_Ele = c_Adj_Ele 
+                                        exit
+                                    endif
+                                enddo
+                                Coor_Tip =Coors_Junction(c_Junc_Ele,i_C,3:4) 
+                                Orient_Tip =atan2(Coor_Tip(2)-CT_GAUSS_y,Coor_Tip(1)-CT_GAUSS_x)
+                                ele_Sign =  sign(ONE,cos(ori_CT_elem))
+                                c_Sign   =  sign(ONE,cos(Orient_Tip))
+                                tem_val1 = abs(ori_CT_elem - pi/TWO)
+                                tem_val2 = abs(ori_CT_elem + pi/TWO)
+                                if (tem_val1 <= Tol_10) then
+                                    ele_Sign = ONE
+                                    tem_val3 = abs(Orient_Tip - pi/TWO)
+                                    tem_val4 = abs(Orient_Tip + pi/TWO)
+                                    if(tem_val4 <= Tol_10) then
+                                        c_Sign   = -ONE
+                                    elseif (tem_val3 <= Tol_10) then
+                                        c_Sign   =  ONE
+                                    endif
+                                elseif (tem_val2 <= Tol_10) then
+                                    ele_Sign = ONE
+                                    tem_val3 = abs(Orient_Tip - pi/TWO)
+                                    tem_val4 = abs(Orient_Tip + pi/TWO)  
+                                    if(tem_val4 <= Tol_10) then
+                                        c_Sign   =  ONE
+                                    elseif (tem_val3 <= Tol_10) then
+                                        c_Sign   = -ONE
+                                    endif                          
+                                endif
+                                num_Local_W = num_Local_W+1
+                                Local_W(2*num_Local_W-1)=2*c_POS(c_NN(i_N),j_C)-1
+                                Local_W(2*num_Local_W)  =2*c_POS(c_NN(i_N),j_C)
+                                N_W(1,2*num_Local_W-1)= -c_Sign*ele_Sign*ONE*tem_n(i_N)
+                                N_W(2,2*num_Local_W)  = -c_Sign*ele_Sign*ONE*tem_n(i_N)
+                            endif
+                        enddo
+                    endif
+                enddo
 
-              DO k=1,2*num_Local_W
-                  c_loca_W = minloc(freeDOF(1:num_FreeD),1,MASK = &
-                    (freeDOF(1:num_FreeD).eq.Local_W(k)))
-                  local_FreeD(k) = c_loca_W
-              enddo
-              DO k=1,2*num_Local_W
-                  c_loca_W = minloc(local(1:num_Loc_ESM),1,MASK = &
-                    (local(1:num_Loc_ESM).eq.local_FreeD(k)))
-                  True_local_FreeD(k) = c_loca_W
-              enddo 
-              
-              localK(1:60,1:60) = ZR
-              localK(1:2*num_Local_W,1:2*num_Local_W) =MATMUL(   &
-                       MATMUL(transpose(N_W(1:2,1:2*num_Local_W)),  &
-                              D_ep),        &                     
-                        N_W(1:2,1:2*num_Local_W)) &
-                        * Weight_CT(i_CT_GAUSS)*detJ                       
-              storK(True_local_FreeD(1:2*num_Local_W),  &
-                       True_local_FreeD(1:2*num_Local_W),  &
-                       CT_GAUSS_Elem)=  &
-                     storK(True_local_FreeD(1:2*num_Local_W),True_local_FreeD(1:2*num_Local_W), &
-                           CT_GAUSS_Elem)+  &
-                     localK(1:2*num_Local_W,1:2*num_Local_W)
-              
-              DO j=1,2*num_Local_W
-                  c_loca=local_FreeD(j)
-                  if(abs(localK(j,j))<=Tol_10)then
-                      localK(j,j)  = 1.0D0
-                  endif           
-                  diag_precon(c_loca)=diag_precon(c_loca) +localK(j,j)
-              END DO
-          endif
-      enddo
-  enddo
+                DO k=1,2*num_Local_W
+                    c_loca_W = minloc(freeDOF(1:num_FreeD),1,MASK = (freeDOF(1:num_FreeD).eq.Local_W(k)))
+                    local_FreeD(k) = c_loca_W
+                enddo
+                DO k=1,2*num_Local_W
+                    c_loca_W = minloc(local(1:num_Loc_ESM),1,MASK = (local(1:num_Loc_ESM).eq.local_FreeD(k)))
+                    True_local_FreeD(k) = c_loca_W
+                enddo 
+
+                localK(1:60,1:60) = ZR
+                localK(1:2*num_Local_W,1:2*num_Local_W) =MATMUL( MATMUL(transpose(N_W(1:2,1:2*num_Local_W)), D_ep), &
+                N_W(1:2,1:2*num_Local_W)) * Weight_CT(i_CT_GAUSS)*detJ
+                storK(True_local_FreeD(1:2*num_Local_W), True_local_FreeD(1:2*num_Local_W), CT_GAUSS_Elem)= &
+                storK(True_local_FreeD(1:2*num_Local_W),True_local_FreeD(1:2*num_Local_W), CT_GAUSS_Elem)+ &
+                localK(1:2*num_Local_W,1:2*num_Local_W)
+
+                DO j=1,2*num_Local_W
+                    c_loca=local_FreeD(j)
+                    if(abs(localK(j,j))<=Tol_10)then
+                        localK(j,j)  = 1.0D0
+                    endif           
+                    diag_precon(c_loca)=diag_precon(c_loca) +localK(j,j)
+                END DO
+            endif
+        enddo
+    enddo
 enddo
 
 

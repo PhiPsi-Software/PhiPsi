@@ -1,45 +1,16 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
+!-----------------------------------------------------------
+! Brief: Compute crack aperture (opening) for each 3D crack fluid element.
+!
+! Parameters:
+!   Input:  isub   - current load step index
+!           c_DISP - global displacement vector
+!
+! Notes:   Uses an offset-point method (delta_L = 0.02 * Ave_Elem_L_Enrich)
+!          to project above/below the fluid-element centroid, retrieve the
+!          displacement from each side, and take the relative normal opening.
+!          Output stored in Cracks_CalP_Aper_3D and Cracks_Volume.
+!-----------------------------------------------------------
+
 subroutine Cal_Crack_Aperture_3D(isub,c_DISP)
 ! Calculate crack opening (3D).
 ! It calculates the opening at each fluid element node.
@@ -106,61 +77,60 @@ if(Key_Cal_HF_Crack_Points_Info_3D==0) goto 555
 !$OMP                  norm_Flu_Ele_Vector,Ele_Num_Cache,c_Aperture,c_Max_N_FluEl_3D)    &         
 !$OMP             SCHEDULE(static)     
 do i_C = 1,num_Crack
-  
-  Ele_Num_Cache = 1
-  c_Max_N_FluEl_3D = size(Cracks_FluidEle_CalP_3D(i_C)%row,1)
-  Cracks_FluidEle_Aper_3D(i_C)%row(1:c_Max_N_FluEl_3D) = ZR
-  
-  c_Max_N_CalP_3D = size(Cracks_CalP_Coors_3D(i_C)%row,1)
-  Cracks_CalP_Aper_3D(i_C)%row(1:c_Max_N_CalP_3D)       = ZR
-  Cracks_CalP_LowDis_3D(i_C)%row(1:c_Max_N_CalP_3D,1:3) = ZR
-  Cracks_CalP_LowDis_3D(i_C)%row(1:c_Max_N_CalP_3D,1:3) = ZR
-  
-  do i_FluidEle = 1,Cracks_FluidEle_num_3D(i_C)
-      Flu_Ele_Area =Cracks_FluidEle_Area_3D(i_C)%row(i_FluidEle)
-      num_Flu_Nodes=Cracks_FluidEle_num_CalP_3D(i_C)%row(i_FluidEle)
-      Flu_Ele_Centroid(1:3) = Cracks_FluidEle_Centroid_3D(i_C)%row(i_FluidEle,1:3)
-      Flu_Ele_Vector(1:3) = Cracks_FluidEle_Vector_3D(i_C)%row(i_FluidEle,1:3)
-      
-      if(Key_Crack_Aperture_Method==1) then
-          call Cal_Crack_Point_Aperture_3D(c_DISP,i_C,Flu_Ele_Centroid,Relative_Disp,i_FluidEle,0,0,0)
-          
-      elseif(Key_Crack_Aperture_Method==2) then
-          delta_L = delta_L_Factor*Ave_Elem_L_Enrich
-          up_offset_P(1:3) = Flu_Ele_Centroid + delta_L*Flu_Ele_Vector(1:3)
-          lw_offset_P(1:3)= Flu_Ele_Centroid - delta_L*Flu_Ele_Vector(1:3)
 
-          call Cal_Ele_Num_by_Coors_3D(up_offset_P(1),up_offset_P(2),up_offset_P(3),Ele_Num_Cache,up_Elem_num)        
-          call Cal_Ele_Num_by_Coors_3D(lw_offset_P(1),lw_offset_P(2),lw_offset_P(3),Ele_Num_Cache,lw_Elem_num)  
-          
-          call Cal_KesiYita_by_Coor_3D(up_offset_P,up_Elem_num,up_Kesi,up_Yita,up_Zeta)
-          call Cal_KesiYita_by_Coor_3D(lw_offset_P,lw_Elem_num,lw_Kesi,lw_Yita,lw_Zeta)  
-          if(up_Elem_num<=0)then
-              print *,"    WARNING :: illegal up_Elem_num in Cal_Crack_Aperture_3D.f"
-              Cracks_FluidEle_Aper_3D(i_C)%row(i_FluidEle) =ZR
-              cycle
-          endif
-          if(lw_Elem_num<=0)then
-              print *,"    WARNING :: illegal lw_Elem_num in Cal_Crack_Aperture_3D.f"
-              Cracks_FluidEle_Aper_3D(i_C)%row(i_FluidEle) =ZR
-              cycle
-          endif
-          call Cal_Any_Point_Disp_KesiYita_3D(up_Elem_num,up_Kesi,up_Yita,up_Zeta,c_DISP,up_P_Disp)
-          call Cal_Any_Point_Disp_KesiYita_3D(lw_Elem_num,lw_Kesi,lw_Yita,lw_Zeta,c_DISP,lw_P_Disp)  
-          Relative_Disp(1:3) = up_P_Disp- lw_P_Disp   
-      endif
-      
-      norm_Flu_Ele_Vector = ONE
-      c_Aperture = (Relative_Disp(1)* Flu_Ele_Vector(1) &
-                  + Relative_Disp(2)* Flu_Ele_Vector(2) &
-                  + Relative_Disp(3)* Flu_Ele_Vector(3))/norm_Flu_Ele_Vector
-                  
-      if(Key_Contact ==5 .or. Key_Non_Negtive_Aperture_3D  == 1) then
-          if(c_Aperture<=ZR) c_Aperture=ZR
-      endif
-      
-      Cracks_FluidEle_Aper_3D(i_C)%row(i_FluidEle) = c_Aperture    
-  end do
+    Ele_Num_Cache = 1
+    c_Max_N_FluEl_3D = size(Cracks_FluidEle_CalP_3D(i_C)%row,1)
+    Cracks_FluidEle_Aper_3D(i_C)%row(1:c_Max_N_FluEl_3D) = ZR
+
+    c_Max_N_CalP_3D = size(Cracks_CalP_Coors_3D(i_C)%row,1)
+    Cracks_CalP_Aper_3D(i_C)%row(1:c_Max_N_CalP_3D)       = ZR
+    Cracks_CalP_LowDis_3D(i_C)%row(1:c_Max_N_CalP_3D,1:3) = ZR
+    Cracks_CalP_LowDis_3D(i_C)%row(1:c_Max_N_CalP_3D,1:3) = ZR
+
+    do i_FluidEle = 1,Cracks_FluidEle_num_3D(i_C)
+        Flu_Ele_Area =Cracks_FluidEle_Area_3D(i_C)%row(i_FluidEle)
+        num_Flu_Nodes=Cracks_FluidEle_num_CalP_3D(i_C)%row(i_FluidEle)
+        Flu_Ele_Centroid(1:3) = Cracks_FluidEle_Centroid_3D(i_C)%row(i_FluidEle,1:3)
+        Flu_Ele_Vector(1:3) = Cracks_FluidEle_Vector_3D(i_C)%row(i_FluidEle,1:3)
+
+        if(Key_Crack_Aperture_Method==1) then
+            call Cal_Crack_Point_Aperture_3D(c_DISP,i_C,Flu_Ele_Centroid,Relative_Disp,i_FluidEle,0,0,0)
+
+        elseif(Key_Crack_Aperture_Method==2) then
+            delta_L = delta_L_Factor*Ave_Elem_L_Enrich
+            up_offset_P(1:3) = Flu_Ele_Centroid + delta_L*Flu_Ele_Vector(1:3)
+            lw_offset_P(1:3)= Flu_Ele_Centroid - delta_L*Flu_Ele_Vector(1:3)
+
+            call Cal_Ele_Num_by_Coors_3D(up_offset_P(1),up_offset_P(2),up_offset_P(3),Ele_Num_Cache,up_Elem_num)        
+            call Cal_Ele_Num_by_Coors_3D(lw_offset_P(1),lw_offset_P(2),lw_offset_P(3),Ele_Num_Cache,lw_Elem_num)  
+
+            call Cal_KesiYita_by_Coor_3D(up_offset_P,up_Elem_num,up_Kesi,up_Yita,up_Zeta)
+            call Cal_KesiYita_by_Coor_3D(lw_offset_P,lw_Elem_num,lw_Kesi,lw_Yita,lw_Zeta)  
+            if(up_Elem_num<=0)then
+                print *,"    WARNING :: illegal up_Elem_num in Cal_Crack_Aperture_3D.f"
+                Cracks_FluidEle_Aper_3D(i_C)%row(i_FluidEle) =ZR
+                cycle
+            endif
+            if(lw_Elem_num<=0)then
+                print *,"    WARNING :: illegal lw_Elem_num in Cal_Crack_Aperture_3D.f"
+                Cracks_FluidEle_Aper_3D(i_C)%row(i_FluidEle) =ZR
+                cycle
+            endif
+            call Cal_Any_Point_Disp_KesiYita_3D(up_Elem_num,up_Kesi,up_Yita,up_Zeta,c_DISP,up_P_Disp)
+            call Cal_Any_Point_Disp_KesiYita_3D(lw_Elem_num,lw_Kesi,lw_Yita,lw_Zeta,c_DISP,lw_P_Disp)  
+            Relative_Disp(1:3) = up_P_Disp- lw_P_Disp   
+        endif
+
+        norm_Flu_Ele_Vector = ONE
+        c_Aperture = (Relative_Disp(1)* Flu_Ele_Vector(1) + Relative_Disp(2)* Flu_Ele_Vector(2) &
+        + Relative_Disp(3)* Flu_Ele_Vector(3))/norm_Flu_Ele_Vector
+
+        if(Key_Contact ==5 .or. Key_Non_Negtive_Aperture_3D  == 1) then
+            if(c_Aperture<=ZR) c_Aperture=ZR
+        endif
+
+        Cracks_FluidEle_Aper_3D(i_C)%row(i_FluidEle) = c_Aperture    
+    end do
 end do  
 !$omp end parallel do  
 
@@ -169,64 +139,62 @@ end do
 !$OMP                 Fl_El_Nodes,i_FluNode,num_Flu_Nodes)       &         
 !$OMP            SCHEDULE(static)     
 do i_C = 1,num_Crack
-  
-  num_All_Flu_Nodes = Cracks_CalP_Num_3D(i_C)
-  Cracks_CalP_Aper_3D(i_C)%row(1:num_All_Flu_Nodes)  = ZR
-  count_All_Flu_Nodes(1:num_All_Flu_Nodes) = 0
-  do i_FluidEle = 1,Cracks_FluidEle_num_3D(i_C)
-      c_Aperture =  Cracks_FluidEle_Aper_3D(i_C)%row(i_FluidEle)
-      num_Flu_Nodes=Cracks_FluidEle_num_CalP_3D(i_C)%row(i_FluidEle)
-      Fl_El_Nodes(1:num_Flu_Nodes) = Cracks_FluidEle_CalP_3D(i_C)%row(i_FluidEle,1:num_Flu_Nodes)
-      Cracks_CalP_Aper_3D(i_C)%row(Fl_El_Nodes(1:num_Flu_Nodes)) = &
-              Cracks_CalP_Aper_3D(i_C)%row(Fl_El_Nodes(1:num_Flu_Nodes)) +c_Aperture
-      count_All_Flu_Nodes(Fl_El_Nodes(1:num_Flu_Nodes)) = count_All_Flu_Nodes(Fl_El_Nodes(1:num_Flu_Nodes)) +1
-  enddo
-  
-  
-  do i_FluNode=1,num_All_Flu_Nodes
-      Cracks_CalP_Aper_3D(i_C)%row(i_FluNode) = Cracks_CalP_Aper_3D(i_C)%row(i_FluNode)/count_All_Flu_Nodes(i_FluNode)
-  enddo
-  
+
+    num_All_Flu_Nodes = Cracks_CalP_Num_3D(i_C)
+    Cracks_CalP_Aper_3D(i_C)%row(1:num_All_Flu_Nodes)  = ZR
+    count_All_Flu_Nodes(1:num_All_Flu_Nodes) = 0
+    do i_FluidEle = 1,Cracks_FluidEle_num_3D(i_C)
+        c_Aperture =  Cracks_FluidEle_Aper_3D(i_C)%row(i_FluidEle)
+        num_Flu_Nodes=Cracks_FluidEle_num_CalP_3D(i_C)%row(i_FluidEle)
+        Fl_El_Nodes(1:num_Flu_Nodes) = Cracks_FluidEle_CalP_3D(i_C)%row(i_FluidEle,1:num_Flu_Nodes)
+        Cracks_CalP_Aper_3D(i_C)%row(Fl_El_Nodes(1:num_Flu_Nodes)) = &
+        Cracks_CalP_Aper_3D(i_C)%row(Fl_El_Nodes(1:num_Flu_Nodes)) +c_Aperture
+        count_All_Flu_Nodes(Fl_El_Nodes(1:num_Flu_Nodes)) = count_All_Flu_Nodes(Fl_El_Nodes(1:num_Flu_Nodes)) +1
+    enddo
+
+
+    do i_FluNode=1,num_All_Flu_Nodes
+        Cracks_CalP_Aper_3D(i_C)%row(i_FluNode) = Cracks_CalP_Aper_3D(i_C)%row(i_FluNode)/count_All_Flu_Nodes(i_FluNode)
+    enddo
+
 end do  
 !$omp end parallel do       
 
 Cracks_Volume(1:num_Crack) = ZR
 !$OMP PARALLEL do DEFAULT(SHARED) PRIVATE(i_C,i_FluidEle,Flu_Ele_Area,c_El_Ave_Aperture)SCHEDULE(static)       
 do i_C = 1,num_Crack
-  
-  do i_FluidEle = 1,Cracks_FluidEle_num_3D(i_C)
-    Flu_Ele_Area = Cracks_FluidEle_Area_3D(i_C)%row(i_FluidEle)
-    c_El_Ave_Aperture = Cracks_FluidEle_Aper_3D(i_C)%row(i_FluidEle)
-    Cracks_Volume(i_C) = Cracks_Volume(i_C)  +c_El_Ave_Aperture*Flu_Ele_Area
-#ifndef Silverfrost
-    if (isnan(Cracks_Volume(i_C))) then
-        write(*,*) '    Warn-2022121601 :: Volume of crack ',i_C,'is NaN!'
-        Cracks_Volume(i_C) = ZR
-        exit
-    endif
-#endif    
-  enddo
+
+    do i_FluidEle = 1,Cracks_FluidEle_num_3D(i_C)
+        Flu_Ele_Area = Cracks_FluidEle_Area_3D(i_C)%row(i_FluidEle)
+        c_El_Ave_Aperture = Cracks_FluidEle_Aper_3D(i_C)%row(i_FluidEle)
+        Cracks_Volume(i_C) = Cracks_Volume(i_C)  +c_El_Ave_Aperture*Flu_Ele_Area
+        if (isnan(Cracks_Volume(i_C))) then
+            write(*,*) '    Warn-2022121601 :: Volume of crack ',i_C,'is NaN!'
+            Cracks_Volume(i_C) = ZR
+            exit
+        endif   
+    enddo
 end do
 !$omp end parallel do  
 
 if (Key_Save_Nothing==1) goto 555
 
 if (Key_Save_avol_file==0) goto 555
- 
+
 c_File_name_1   =  trim(Full_Pathname)//'.avol' 
 if(isub==1)then
     inquire(file=c_File_name_1, exist=alive)
     if(alive.EQV..True.)then
-          OPEN  (UNIT=105, FILE=c_File_name_1, STATUS='OLD') 
-          CLOSE (UNIT=105, STATUS='DELETE')
+        OPEN  (UNIT=105, FILE=c_File_name_1, STATUS='OLD') 
+        CLOSE (UNIT=105, STATUS='DELETE')
     endif
 endif
 open(301,file=c_File_name_1,status='unknown',position='append',action='write') 
 if(isub==1)then
-  write(301,*) '    i_Step   |   All Volume (m3)  |   Only Positive (m3)'   
+    write(301,*) '    i_Step   |   All Volume (m3)  |   Only Positive (m3)'   
 endif   
-write(301, '(I10,F18.5,5X,F18.5)') isub,sum(Cracks_Volume(1:num_Crack)),&
-                                        sum(Cracks_Volume(1:num_Crack),mask=(Cracks_Volume>ZR))
+write(301, '(I10,F18.5,5X,F18.5)') isub,sum(Cracks_Volume(1:num_Crack)), &
+sum(Cracks_Volume(1:num_Crack),mask=(Cracks_Volume>ZR))
 close(301)    
 
 555 continue
@@ -238,76 +206,77 @@ close(301)
 !$OMP               Relative_Disp,norm_Flu_Ele_Vector,Ele_Num_Cache)   &
 !$OMP             SCHEDULE(static)   
 do i_C = 1,num_Crack
-  
-  Ele_Num_Cache = 1
-  do i_Node =1,Crack3D_Meshed_Node_num(i_C)      
-      ori_n =Crack3D_Meshed_Node_Nor_Vector(i_C)%row(i_Node,1:3)
-      c_Node_Coor = Crack3D_Meshed_Node(i_C)%row(i_Node,1:3)
 
-      if(Key_Crack_Aperture_Method==1) then
-          call Cal_Crack_Point_Aperture_3D(c_DISP,i_C,c_Node_Coor,Relative_Disp,0,0,0,i_Node)
-      elseif(Key_Crack_Aperture_Method==2) then
-          delta_L = delta_L_Factor*Ave_Elem_L_Enrich
-          up_offset_P(1:3) = c_Node_Coor + delta_L*ori_n(1:3)
-          lw_offset_P(1:3) = c_Node_Coor - delta_L*ori_n(1:3)
-        
-          call Cal_Ele_Num_by_Coors_3D(up_offset_P(1),up_offset_P(2),up_offset_P(3),Ele_Num_Cache,up_Elem_num)        
-          call Cal_Ele_Num_by_Coors_3D(lw_offset_P(1),lw_offset_P(2),lw_offset_P(3),Ele_Num_Cache,lw_Elem_num)  
+    Ele_Num_Cache = 1
+    do i_Node =1,Crack3D_Meshed_Node_num(i_C)      
+        ori_n =Crack3D_Meshed_Node_Nor_Vector(i_C)%row(i_Node,1:3)
+        c_Node_Coor = Crack3D_Meshed_Node(i_C)%row(i_Node,1:3)
 
-          if(up_Elem_num<=0)then
-              c_Aperture = ZR
-              Crack3D_Meshed_Node_Value(i_C)%row(i_Node,1)  = ZR
-              cycle
-          endif
-          if(lw_Elem_num<=0)then
-              c_Aperture = ZR
-              Crack3D_Meshed_Node_Value(i_C)%row(i_Node,1)  = ZR 
-              cycle
-          endif
-          call Cal_KesiYita_by_Coor_3D(up_offset_P,up_Elem_num,up_Kesi,up_Yita,up_Zeta)
-          call Cal_KesiYita_by_Coor_3D(lw_offset_P,lw_Elem_num,lw_Kesi,lw_Yita,lw_Zeta)                
-          call Cal_Any_Point_Disp_KesiYita_3D(up_Elem_num,up_Kesi,up_Yita,up_Zeta,c_DISP,up_P_Disp)
-          call Cal_Any_Point_Disp_KesiYita_3D(lw_Elem_num,lw_Kesi,lw_Yita,lw_Zeta,c_DISP,lw_P_Disp)    
+        if(Key_Crack_Aperture_Method==1) then
+            call Cal_Crack_Point_Aperture_3D(c_DISP,i_C,c_Node_Coor,Relative_Disp,0,0,0,i_Node)
+        elseif(Key_Crack_Aperture_Method==2) then
+            delta_L = delta_L_Factor*Ave_Elem_L_Enrich
+            up_offset_P(1:3) = c_Node_Coor + delta_L*ori_n(1:3)
+            lw_offset_P(1:3) = c_Node_Coor - delta_L*ori_n(1:3)
 
-          Relative_Disp(1:3) = up_P_Disp- lw_P_Disp   
+            call Cal_Ele_Num_by_Coors_3D(up_offset_P(1),up_offset_P(2),up_offset_P(3),Ele_Num_Cache,up_Elem_num)        
+            call Cal_Ele_Num_by_Coors_3D(lw_offset_P(1),lw_offset_P(2),lw_offset_P(3),Ele_Num_Cache,lw_Elem_num)  
 
-      endif
-      
-      
-      
-      norm_Flu_Ele_Vector = ONE
-      c_Aperture=(Relative_Disp(1)*ori_n(1)+Relative_Disp(2)*ori_n(2)+Relative_Disp(3)*ori_n(3))/norm_Flu_Ele_Vector
-      
-      if(Key_Contact ==5 .or. Key_Non_Negtive_Aperture_3D  == 1) then
-          if(c_Aperture<=ZR) c_Aperture=ZR
-      endif
-      
-      Crack3D_Meshed_Node_Value(i_C)%row(i_Node,1)  = c_Aperture  
-  enddo
+            if(up_Elem_num<=0)then
+                c_Aperture = ZR
+                Crack3D_Meshed_Node_Value(i_C)%row(i_Node,1)  = ZR
+                cycle
+            endif
+            if(lw_Elem_num<=0)then
+                c_Aperture = ZR
+                Crack3D_Meshed_Node_Value(i_C)%row(i_Node,1)  = ZR 
+                cycle
+            endif
+            call Cal_KesiYita_by_Coor_3D(up_offset_P,up_Elem_num,up_Kesi,up_Yita,up_Zeta)
+            call Cal_KesiYita_by_Coor_3D(lw_offset_P,lw_Elem_num,lw_Kesi,lw_Yita,lw_Zeta)                
+            call Cal_Any_Point_Disp_KesiYita_3D(up_Elem_num,up_Kesi,up_Yita,up_Zeta,c_DISP,up_P_Disp)
+            call Cal_Any_Point_Disp_KesiYita_3D(lw_Elem_num,lw_Kesi,lw_Yita,lw_Zeta,c_DISP,lw_P_Disp)    
+
+            Relative_Disp(1:3) = up_P_Disp- lw_P_Disp   
+
+        endif
+
+
+
+        norm_Flu_Ele_Vector = ONE
+        c_Aperture=(Relative_Disp(1)*ori_n(1)+Relative_Disp(2)*ori_n(2)+Relative_Disp(3)*ori_n(3))/norm_Flu_Ele_Vector
+
+        if(Key_Contact ==5 .or. Key_Non_Negtive_Aperture_3D  == 1) then
+            if(c_Aperture<=ZR) c_Aperture=ZR
+        endif
+
+        Crack3D_Meshed_Node_Value(i_C)%row(i_Node,1)  = c_Aperture  
+    enddo
 end do   
 !$omp end parallel do        
 
 !$OMP PARALLEL do DEFAULT(SHARED) PRIVATE(i_C,i_FluidEle,c_node_1, &
 !$OMP       c_node_2,c_node_3,c_Ape_1,c_Ape_2,c_Ape_3,c_Ave_Ape) SCHEDULE(static)        
 do i_C = 1,num_Crack
-  do i_FluidEle =1,Cracks_FluidEle_num_3D(i_C)
-      c_node_1 = Cracks_FluidEle_CalP_3D(i_C)%row(i_FluidEle,1)
-      c_node_2 = Cracks_FluidEle_CalP_3D(i_C)%row(i_FluidEle,2)
-      c_node_3 = Cracks_FluidEle_CalP_3D(i_C)%row(i_FluidEle,3)
-      c_Ape_1  = Cracks_CalP_Aper_3D(i_C)%row(c_node_1) 
-      c_Ape_2  = Cracks_CalP_Aper_3D(i_C)%row(c_node_2) 
-      c_Ape_3  = Cracks_CalP_Aper_3D(i_C)%row(c_node_3) 
-      c_Ave_Ape= (c_Ape_1+c_Ape_2+c_Ape_3)/THR
-      Cracks_FluidEle_Aper_3D(i_C)%row(i_FluidEle) = c_Ave_Ape 
-  enddo
+    do i_FluidEle =1,Cracks_FluidEle_num_3D(i_C)
+        c_node_1 = Cracks_FluidEle_CalP_3D(i_C)%row(i_FluidEle,1)
+        c_node_2 = Cracks_FluidEle_CalP_3D(i_C)%row(i_FluidEle,2)
+        c_node_3 = Cracks_FluidEle_CalP_3D(i_C)%row(i_FluidEle,3)
+        c_Ape_1  = Cracks_CalP_Aper_3D(i_C)%row(c_node_1) 
+        c_Ape_2  = Cracks_CalP_Aper_3D(i_C)%row(c_node_2) 
+        c_Ape_3  = Cracks_CalP_Aper_3D(i_C)%row(c_node_3) 
+        c_Ave_Ape= (c_Ape_1+c_Ape_2+c_Ape_3)/THR
+        Cracks_FluidEle_Aper_3D(i_C)%row(i_FluidEle) = c_Ave_Ape 
+    enddo
 enddo
 !$omp end parallel do      
 
 do i_C = 1,num_Crack
     Crack_Max_Min_Aperture(i_C,1) = maxval(Cracks_FluidEle_Aper_3D(i_C)%row(1:Cracks_FluidEle_num_3D(i_C))) 
     Crack_Max_Min_Aperture(i_C,2) = minval(Cracks_FluidEle_Aper_3D(i_C)%row(1:Cracks_FluidEle_num_3D(i_C))) 
-    Crack_Max_Min_Aperture(i_C,3) = sum(Cracks_FluidEle_Aper_3D(i_C)%row(1:Cracks_FluidEle_num_3D(i_C)))/num_Crack
+    Crack_Max_Min_Aperture(i_C,3) = sum(Cracks_FluidEle_Aper_3D(i_C)%row(1:Cracks_FluidEle_num_3D(i_C)))/ &
+    Cracks_FluidEle_num_3D(i_C)
 enddo
-   
+
 return 
 end SUBROUTINE Cal_Crack_Aperture_3D               

@@ -1,47 +1,12 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
+!-----------------------------------------------------------
+! Brief: Read the 3D geometry and problem-definition files.
+!
+! Notes:   Reads the 3D node, element, boundary, focus, material, and
+!          crack data files and populates the 3D global model modules.
+!-----------------------------------------------------------
+
 SUBROUTINE Read_Geo_3D
-  
+
 !-----------------------------
 ! Read public variable module
 !-----------------------------
@@ -57,13 +22,14 @@ use Global_Contact
 use Global_POST
 use Global_Stress
 use omp_lib
+use Global_Dynamic
 
 !---------------------------
 ! Variable Type Declaration
 !---------------------------
 implicit none
 LOGICAL ALIVE
-character*200 temp_name
+character(len=200) temp_name
 integer Tool_Count_Lines
 
 !--------------------
@@ -96,9 +62,6 @@ integer temp_variable
 integer Uniqued_Vec_8(8)
 real(kind=FT) P1(3),P2(3)
 integer tem_Elem_Node(8),tem_Uniqued_Vec_8(8)
-#ifdef Silverfrost  
-real(kind=FT),ALLOCATABLE::tem_vector_real(:) 
-#endif
 integer i_Mat,c_Mat_Type
 
 
@@ -116,25 +79,25 @@ print *, "    Trying to read nodal files..."
 temp_name = trim(trim(Full_Pathname)//'.node')
 inquire(file=temp_name, exist=alive)
 if(alive.EQV..FALSE.)then
-  print *, "    Error :: Can not find nodal files!" 
-  print *, "             Check whether the following file exists or not:"
-  print *, "             ",temp_name       
-  call Warning_Message('S',Keywords_Blank) 
+    print *, "    Error :: Can not find nodal files!" 
+    print *, "             Check whether the following file exists or not:"
+    print *, "             ",temp_name       
+    call Warning_Message('S',Keywords_Blank) 
 else
-  ! Check whether the node file is a 3D problem file
-  open(101,file=temp_name,status='old')
-      read(101,'(A)') temp_string
-      !read(101,*) temp_value(3)
-  close(101)
-  
-  ! Count file lines
-  Num_Node = Tool_Count_Lines(temp_name)
-  IF(ALLOCATED(Coor)) DEALLOCATE(Coor)
-  ALLOCATE(Coor(Num_Node,3))
-  ALLOCATE(Temp_DATA(Num_Node,3))
-  Call Tool_Read_File(temp_name,"node",Num_Node,3,Temp_DATA,Flag_Blank)
-  Coor = Temp_DATA
-  DEALLOCATE(Temp_DATA)
+    ! Check whether the node file is a 3D problem file
+    open(101,file=temp_name,status='old')
+    read(101,'(A)') temp_string
+    !read(101,*) temp_value(3)
+    close(101)
+
+    ! Count file lines
+    Num_Node = Tool_Count_Lines(temp_name)
+    IF(ALLOCATED(Coor)) DEALLOCATE(Coor)
+    ALLOCATE(Coor(Num_Node,3))
+    ALLOCATE(Temp_DATA(Num_Node,3))
+    Call Tool_Read_File(temp_name,"node",Num_Node,3,Temp_DATA,Flag_Blank)
+    Coor = Temp_DATA
+    DEALLOCATE(Temp_DATA)
 endif
 
 !-----------------------------------------------------------------------   
@@ -146,21 +109,21 @@ print *, "    Trying to read element files..."
 temp_name = trim(trim(Full_Pathname)//'.elem')
 inquire(file=temp_name, exist=alive)  
 if(alive.EQV..FALSE.)then
-  print *, "    Error :: Can not find element files!!!" 
-  call Warning_Message('S',Keywords_Blank) 
+    print *, "    Error :: Can not find element files!!!" 
+    call Warning_Message('S',Keywords_Blank) 
 else
-  Num_Elem = Tool_Count_Lines(temp_name)
-  IF(ALLOCATED(Elem_Node)) DEALLOCATE(Elem_Node)
-  ALLOCATE(Elem_Node(Num_Elem,8))
-  IF(ALLOCATED(Elem_Mat)) DEALLOCATE(Elem_Mat)
-  ALLOCATE(Elem_Mat(Num_Elem)) 
-  ALLOCATE(Temp_DATA(Num_Elem,9))
-  Call Tool_Read_File(temp_name,"elem",Num_Elem,9,Temp_DATA,Flag_Blank)
-  Elem_Node = int(Temp_DATA(:,1:8))
-  Elem_Mat  = int(Temp_DATA(:,9))
-  num_of_Material = MaxVal(Elem_Mat)
-  DEALLOCATE(Temp_DATA)
-  !endif
+    Num_Elem = Tool_Count_Lines(temp_name)
+    IF(ALLOCATED(Elem_Node)) DEALLOCATE(Elem_Node)
+    ALLOCATE(Elem_Node(Num_Elem,8))
+    IF(ALLOCATED(Elem_Mat)) DEALLOCATE(Elem_Mat)
+    ALLOCATE(Elem_Mat(Num_Elem)) 
+    ALLOCATE(Temp_DATA(Num_Elem,9))
+    Call Tool_Read_File(temp_name,"elem",Num_Elem,9,Temp_DATA,Flag_Blank)
+    Elem_Node = int(Temp_DATA(:,1:8))
+    Elem_Mat  = int(Temp_DATA(:,9))
+    num_of_Material = MaxVal(Elem_Mat)
+    DEALLOCATE(Temp_DATA)
+    !endif
 endif  
 
 
@@ -174,15 +137,15 @@ print *, "    Trying to read boux files..."
 temp_name = trim(trim(Full_Pathname)//'.boux')
 inquire(file=temp_name, exist=alive)  
 if(alive.EQV..FALSE.)then
-  print *, "    Warning :: Can not find boux files!!!" 
+    print *, "    Warning :: Can not find boux files!!!" 
 else
-  Num_Bou_x = Tool_Count_Lines(temp_name) 
-  IF(ALLOCATED(Bou_x)) DEALLOCATE(Bou_x)
-  ALLOCATE( Bou_x(Num_Bou_x))
-  ALLOCATE( Temp_DATA(Num_Bou_x,1))
-  Call Tool_Read_File(temp_name,"boux",Num_Bou_x,1,Temp_DATA,Flag_Blank)
-  Bou_x  = int(Temp_DATA(:,1))
-  DEALLOCATE(Temp_DATA)
+    Num_Bou_x = Tool_Count_Lines(temp_name) 
+    IF(ALLOCATED(Bou_x)) DEALLOCATE(Bou_x)
+    ALLOCATE( Bou_x(Num_Bou_x))
+    ALLOCATE( Temp_DATA(Num_Bou_x,1))
+    Call Tool_Read_File(temp_name,"boux",Num_Bou_x,1,Temp_DATA,Flag_Blank)
+    Bou_x  = int(Temp_DATA(:,1))
+    DEALLOCATE(Temp_DATA)
 endif  
 
 !--------------------------------------------------------------------------------- 
@@ -194,15 +157,15 @@ print *, "    Trying to read bouy files..."
 temp_name = trim(trim(Full_Pathname)//'.bouy')
 inquire(file=temp_name, exist=alive)  
 if(alive.EQV..FALSE.)then
-  print *, "    Warning :: Can not find bouy files!!!" 
+    print *, "    Warning :: Can not find bouy files!!!" 
 else
-  Num_Bou_y = Tool_Count_Lines(temp_name) 
-  IF(ALLOCATED(Bou_y)) DEALLOCATE(Bou_y)
-  ALLOCATE( Bou_y(Num_Bou_y))
-  ALLOCATE( Temp_DATA(Num_Bou_y,1))
-  Call Tool_Read_File(temp_name,"bouy",Num_Bou_y,1,Temp_DATA,Flag_Blank)
-  Bou_y  = int(Temp_DATA(:,1))
-  DEALLOCATE(Temp_DATA)
+    Num_Bou_y = Tool_Count_Lines(temp_name) 
+    IF(ALLOCATED(Bou_y)) DEALLOCATE(Bou_y)
+    ALLOCATE( Bou_y(Num_Bou_y))
+    ALLOCATE( Temp_DATA(Num_Bou_y,1))
+    Call Tool_Read_File(temp_name,"bouy",Num_Bou_y,1,Temp_DATA,Flag_Blank)
+    Bou_y  = int(Temp_DATA(:,1))
+    DEALLOCATE(Temp_DATA)
 endif 
 
 !---------------------------------------------------------------------------------  
@@ -214,15 +177,15 @@ print *, "    Trying to read bouz files..."
 temp_name = trim(trim(Full_Pathname)//'.bouz')
 inquire(file=temp_name, exist=alive)  
 if(alive.EQV..FALSE.)then
-  print *, "    Warning :: Can not find bouz files!!!" 
+    print *, "    Warning :: Can not find bouz files!!!" 
 else
-  Num_Bou_z = Tool_Count_Lines(temp_name) 
-  IF(ALLOCATED(Bou_z)) DEALLOCATE(Bou_z)
-  ALLOCATE( Bou_z(Num_Bou_z))
-  ALLOCATE( Temp_DATA(Num_Bou_z,1))
-  Call Tool_Read_File(temp_name,"bouz",Num_Bou_z,1,Temp_DATA,Flag_Blank)
-  Bou_z  = int(Temp_DATA(:,1))
-  DEALLOCATE(Temp_DATA)
+    Num_Bou_z = Tool_Count_Lines(temp_name) 
+    IF(ALLOCATED(Bou_z)) DEALLOCATE(Bou_z)
+    ALLOCATE( Bou_z(Num_Bou_z))
+    ALLOCATE( Temp_DATA(Num_Bou_z,1))
+    Call Tool_Read_File(temp_name,"bouz",Num_Bou_z,1,Temp_DATA,Flag_Blank)
+    Bou_z  = int(Temp_DATA(:,1))
+    DEALLOCATE(Temp_DATA)
 endif 
 
 !-----------------------------------------------------------------------------------------
@@ -234,15 +197,15 @@ print *, "    Trying to read focx files..."
 temp_name = trim(trim(Full_Pathname)//'.focx')
 inquire(file=temp_name, exist=alive)  
 if(alive.EQV..FALSE.)then
-  print *, "    Warning :: Can not find focx files!!!" 
+    print *, "    Warning :: Can not find focx files!!!" 
 else
-  Num_Foc_x = Tool_Count_Lines(temp_name) 
-  IF(ALLOCATED(Foc_x)) DEALLOCATE(Foc_x)
-  ALLOCATE( Foc_x(Num_Foc_x,2))
-  ALLOCATE( Temp_DATA(Num_Foc_x,2))
-  Call Tool_Read_File(temp_name,"focx",Num_Foc_x,2,Temp_DATA,Flag_Blank)
-  Foc_x  = Temp_DATA(:,:)
-  DEALLOCATE(Temp_DATA)
+    Num_Foc_x = Tool_Count_Lines(temp_name) 
+    IF(ALLOCATED(Foc_x)) DEALLOCATE(Foc_x)
+    ALLOCATE( Foc_x(Num_Foc_x,2))
+    ALLOCATE( Temp_DATA(Num_Foc_x,2))
+    Call Tool_Read_File(temp_name,"focx",Num_Foc_x,2,Temp_DATA,Flag_Blank)
+    Foc_x  = Temp_DATA(:,:)
+    DEALLOCATE(Temp_DATA)
 endif  
 
 !-----------------------------------------------------------------------------------------
@@ -254,15 +217,15 @@ print *, "    Trying to read focy files..."
 temp_name = trim(trim(Full_Pathname)//'.focy')
 inquire(file=temp_name, exist=alive)  
 if(alive.EQV..FALSE.)then
-  print *, "    Warning :: Can not find focy files!!!" 
+    print *, "    Warning :: Can not find focy files!!!" 
 else
-  Num_Foc_y = Tool_Count_Lines(temp_name) 
-  IF(ALLOCATED(Foc_y)) DEALLOCATE(Foc_y)
-  ALLOCATE( Foc_y(Num_Foc_y,2))
-  ALLOCATE( Temp_DATA(Num_Foc_y,2))
-  Call Tool_Read_File(temp_name,"focy",Num_Foc_y,2,Temp_DATA,Flag_Blank)
-  Foc_y  = Temp_DATA(:,:)
-  DEALLOCATE(Temp_DATA)
+    Num_Foc_y = Tool_Count_Lines(temp_name) 
+    IF(ALLOCATED(Foc_y)) DEALLOCATE(Foc_y)
+    ALLOCATE( Foc_y(Num_Foc_y,2))
+    ALLOCATE( Temp_DATA(Num_Foc_y,2))
+    Call Tool_Read_File(temp_name,"focy",Num_Foc_y,2,Temp_DATA,Flag_Blank)
+    Foc_y  = Temp_DATA(:,:)
+    DEALLOCATE(Temp_DATA)
 endif 
 
 !--------------------------------------------------------------------------------
@@ -274,15 +237,15 @@ print *, "    Trying to read focz files..."
 temp_name = trim(trim(Full_Pathname)//'.focz')
 inquire(file=temp_name, exist=alive)  
 if(alive.EQV..FALSE.)then
-  print *, "    Warning :: Can not find focz files!!!" 
+    print *, "    Warning :: Can not find focz files!!!" 
 else
-  Num_Foc_z = Tool_Count_Lines(temp_name) 
-  IF(ALLOCATED(Foc_z)) DEALLOCATE(Foc_z)
-  ALLOCATE( Foc_z(Num_Foc_z,2))
-  ALLOCATE( Temp_DATA(Num_Foc_z,2))
-  Call Tool_Read_File(temp_name,"focz",Num_Foc_z,2,Temp_DATA,Flag_Blank)
-  Foc_z  = Temp_DATA(:,:)
-  DEALLOCATE(Temp_DATA)
+    Num_Foc_z = Tool_Count_Lines(temp_name) 
+    IF(ALLOCATED(Foc_z)) DEALLOCATE(Foc_z)
+    ALLOCATE( Foc_z(Num_Foc_z,2))
+    ALLOCATE( Temp_DATA(Num_Foc_z,2))
+    Call Tool_Read_File(temp_name,"focz",Num_Foc_z,2,Temp_DATA,Flag_Blank)
+    Foc_z  = Temp_DATA(:,:)
+    DEALLOCATE(Temp_DATA)
 endif 
 
 600 continue
@@ -339,7 +302,7 @@ IF(ALLOCATED(Elem_Centroid)) DEALLOCATE(Elem_Centroid)
 ALLOCATE(Elem_Centroid(Num_Elem,3))
 
 IF(ALLOCATED(EleGaus_yes_FEM_asemd)) then
-  DEALLOCATE(EleGaus_yes_FEM_asemd)
+    DEALLOCATE(EleGaus_yes_FEM_asemd)
 endif
 
 ! ALLOCATE(EleGaus_yes_FEM_asemd(Num_Elem, Num_Gau_Points_3D)) ! Used to mark whether the FEM
@@ -347,7 +310,7 @@ endif
 ! stiffness
 Num_Max_3D_gauss = max(Num_Gau_Points_3D,Num_Gau_Points_3D_MC)
 if(Key_Integral_Sol  ==3 ) then
- Num_Max_3D_gauss = max(Num_Max_3D_gauss,Num_Sub_3D_Cubes*Num_Gau_Points_3D_Cube) 
+    Num_Max_3D_gauss = max(Num_Max_3D_gauss,Num_Sub_3D_Cubes*Num_Gau_Points_3D_Cube) 
 endif
 ALLOCATE(EleGaus_yes_FEM_asemd(Num_Elem,Num_Max_3D_gauss))
 
@@ -365,7 +328,7 @@ ALLOCATE(z_max_Elements(Num_Elem))
 IF(ALLOCATED(z_min_Elements)) DEALLOCATE(z_min_Elements)
 ALLOCATE(z_min_Elements(Num_Elem)) 
 if(Key_Post_Elements_Gauss_Num== 1) then
-IF(ALLOCATED(Elements_Gauss_Num)) DEALLOCATE(Elements_Gauss_Num)
+    IF(ALLOCATED(Elements_Gauss_Num)) DEALLOCATE(Elements_Gauss_Num)
     ALLOCATE(Elements_Gauss_Num(Num_Elem))     
 endif
 
@@ -376,66 +339,66 @@ ALLOCATE(Elem_c_L_max(Num_Elem))
 !BUGFIX2022092401.
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,N1,N2,N3,N4,N5,N6,N7,N8,NN,EdgeL,Vol,P1,P2)   
 do i=1,Num_Elem
-  N1  = Elem_Node(i,1)                                                
-  N2  = Elem_Node(i,2)                                              
-  N3  = Elem_Node(i,3)                                             
-  N4  = Elem_Node(i,4)            
-  N5  = Elem_Node(i,5)   
-  N6  = Elem_Node(i,6)   
-  N7  = Elem_Node(i,7)   
-  N8  = Elem_Node(i,8)   
-  NN  = [N1,N2,N3,N4,N5,N6,N7,N8]                                                
-  G_NN(1:8,i)      = NN
-  G_X_NODES(1:8,i) = Coor(NN,1)
-  G_Y_NODES(1:8,i) = Coor(NN,2) 
-  G_Z_NODES(1:8,i) = Coor(NN,3) 
-  ! The range of x, y, z coordinates for each element
-  x_max_Elements(i) = maxval(G_X_NODES(1:8,i))
-  x_min_Elements(i) = minval(G_X_NODES(1:8,i))
-  y_max_Elements(i) = maxval(G_Y_NODES(1:8,i))
-  y_min_Elements(i) = minval(G_Y_NODES(1:8,i))
-  z_max_Elements(i) = maxval(G_Z_NODES(1:8,i))
-  z_min_Elements(i) = minval(G_Z_NODES(1:8,i))
-  ! element side length, obtaining the minimum element side length for explicit dynamic analysis
-  ! (2021-08-23)
-  P1 = Coor(N1,1:3); P2 = Coor(N2,1:3)
-  EdgeL(1)=Tool_Function_2Point_Dis_3D(P1,P2)
-  P1 = Coor(N2,1:3); P2 = Coor(N3,1:3)
-  EdgeL(2)=Tool_Function_2Point_Dis_3D(P1,P2)
-  P1 = Coor(N3,1:3); P2 = Coor(N4,1:3)
-  EdgeL(3)=Tool_Function_2Point_Dis_3D(P1,P2)
-  P1 = Coor(N4,1:3); P2 = Coor(N1,1:3)
-  EdgeL(4)=Tool_Function_2Point_Dis_3D(P1,P2)
-  P1 = Coor(N1,1:3); P2 = Coor(N5,1:3)
-  EdgeL(5)=Tool_Function_2Point_Dis_3D(P1,P2)
-  P1 = Coor(N2,1:3); P2 = Coor(N6,1:3)
-  EdgeL(6)=Tool_Function_2Point_Dis_3D(P1,P2)
-  P1 = Coor(N3,1:3); P2 = Coor(N7,1:3)
-  EdgeL(7)=Tool_Function_2Point_Dis_3D(P1,P2)
-  P1 = Coor(N4,1:3); P2 = Coor(N8,1:3)
-  EdgeL(8)=Tool_Function_2Point_Dis_3D(P1,P2)
-  P1 = Coor(N5,1:3); P2 = Coor(N6,1:3)
-  EdgeL(9)=Tool_Function_2Point_Dis_3D(P1,P2)
-  P1 = Coor(N6,1:3); P2 = Coor(N7,1:3)
-  EdgeL(10)=Tool_Function_2Point_Dis_3D(P1,P2)
-  P1 = Coor(N7,1:3); P2 = Coor(N8,1:3)
-  EdgeL(11)=Tool_Function_2Point_Dis_3D(P1,P2)
-  P1 = Coor(N5,1:3); P2 = Coor(N8,1:3)
-  EdgeL(12)=Tool_Function_2Point_Dis_3D(P1,P2)
-  ! Maximum element edge length. IMPROV2023022202.
-  Elem_Max_L(i) = maxval(EdgeL(1:12))
-  ! Minimum element edge length. IMPROV2023022702.
-  Elem_Min_L(i) = minval(EdgeL(1:12))
-  ! Average element edge length. IMPROV2023022702.
-  Elem_Ave_L(i) = sum(EdgeL(1:12))/12.0D0
-  Elem_c_L_min(i) = minval(EdgeL(1:12))
-  Elem_c_L_max(i) = maxval(EdgeL(1:12))
-  !Volume of element.
-  call Cal_Vol_8nodes(i,Coor(NN,1),Coor(NN,2),Coor(NN,3),Vol)
-  Elem_Vol(i) = Vol
-  !Centroid of element.
-  call Cal_Coor_by_KesiYita_3D(ZR,ZR,ZR,G_X_NODES(1:8,i),G_Y_NODES(1:8,i),G_Z_NODES(1:8,i), &
-                     Elem_Centroid(i,1),Elem_Centroid(i,2),Elem_Centroid(i,3))
+    N1  = Elem_Node(i,1)                                                
+    N2  = Elem_Node(i,2)                                              
+    N3  = Elem_Node(i,3)                                             
+    N4  = Elem_Node(i,4)            
+    N5  = Elem_Node(i,5)   
+    N6  = Elem_Node(i,6)   
+    N7  = Elem_Node(i,7)   
+    N8  = Elem_Node(i,8)   
+    NN  = [N1,N2,N3,N4,N5,N6,N7,N8]                                                
+    G_NN(1:8,i)      = NN
+    G_X_NODES(1:8,i) = Coor(NN,1)
+    G_Y_NODES(1:8,i) = Coor(NN,2) 
+    G_Z_NODES(1:8,i) = Coor(NN,3) 
+    ! The range of x, y, z coordinates for each element
+    x_max_Elements(i) = maxval(G_X_NODES(1:8,i))
+    x_min_Elements(i) = minval(G_X_NODES(1:8,i))
+    y_max_Elements(i) = maxval(G_Y_NODES(1:8,i))
+    y_min_Elements(i) = minval(G_Y_NODES(1:8,i))
+    z_max_Elements(i) = maxval(G_Z_NODES(1:8,i))
+    z_min_Elements(i) = minval(G_Z_NODES(1:8,i))
+    ! element side length, obtaining the minimum element side length for explicit dynamic analysis
+    ! (2021-08-23)
+    P1 = Coor(N1,1:3); P2 = Coor(N2,1:3)
+    EdgeL(1)=Tool_Function_2Point_Dis_3D(P1,P2)
+    P1 = Coor(N2,1:3); P2 = Coor(N3,1:3)
+    EdgeL(2)=Tool_Function_2Point_Dis_3D(P1,P2)
+    P1 = Coor(N3,1:3); P2 = Coor(N4,1:3)
+    EdgeL(3)=Tool_Function_2Point_Dis_3D(P1,P2)
+    P1 = Coor(N4,1:3); P2 = Coor(N1,1:3)
+    EdgeL(4)=Tool_Function_2Point_Dis_3D(P1,P2)
+    P1 = Coor(N1,1:3); P2 = Coor(N5,1:3)
+    EdgeL(5)=Tool_Function_2Point_Dis_3D(P1,P2)
+    P1 = Coor(N2,1:3); P2 = Coor(N6,1:3)
+    EdgeL(6)=Tool_Function_2Point_Dis_3D(P1,P2)
+    P1 = Coor(N3,1:3); P2 = Coor(N7,1:3)
+    EdgeL(7)=Tool_Function_2Point_Dis_3D(P1,P2)
+    P1 = Coor(N4,1:3); P2 = Coor(N8,1:3)
+    EdgeL(8)=Tool_Function_2Point_Dis_3D(P1,P2)
+    P1 = Coor(N5,1:3); P2 = Coor(N6,1:3)
+    EdgeL(9)=Tool_Function_2Point_Dis_3D(P1,P2)
+    P1 = Coor(N6,1:3); P2 = Coor(N7,1:3)
+    EdgeL(10)=Tool_Function_2Point_Dis_3D(P1,P2)
+    P1 = Coor(N7,1:3); P2 = Coor(N8,1:3)
+    EdgeL(11)=Tool_Function_2Point_Dis_3D(P1,P2)
+    P1 = Coor(N5,1:3); P2 = Coor(N8,1:3)
+    EdgeL(12)=Tool_Function_2Point_Dis_3D(P1,P2)
+    ! Maximum element edge length. IMPROV2023022202.
+    Elem_Max_L(i) = maxval(EdgeL(1:12))
+    ! Minimum element edge length. IMPROV2023022702.
+    Elem_Min_L(i) = minval(EdgeL(1:12))
+    ! Average element edge length. IMPROV2023022702.
+    Elem_Ave_L(i) = sum(EdgeL(1:12))/12.0D0
+    Elem_c_L_min(i) = minval(EdgeL(1:12))
+    Elem_c_L_max(i) = maxval(EdgeL(1:12))
+    !Volume of element.
+    call Cal_Vol_8nodes(i,Coor(NN,1),Coor(NN,2),Coor(NN,3),Vol)
+    Elem_Vol(i) = Vol
+    !Centroid of element.
+    call Cal_Coor_by_KesiYita_3D(ZR,ZR,ZR,G_X_NODES(1:8,i),G_Y_NODES(1:8,i),G_Z_NODES(1:8,i), &
+    Elem_Centroid(i,1),Elem_Centroid(i,2),Elem_Centroid(i,3))
 end do
 !$OMP END PARALLEL DO
 
@@ -487,18 +450,18 @@ num_Node_Elements(1:Num_Node) = 0
 
 IF(ALLOCATED(Node_Elements_3D)) DEALLOCATE(Node_Elements_3D)
 ALLOCATE(Node_Elements_3D(Num_Node))
- 
+
 !STEP 1.
 
 !STEP 1.1.
 !!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,c_NN,c_Node)   
 ! Not suitable for parallel computing. There are data conflicts.
 do j=1,Num_Elem                  
-  c_NN    = G_NN(1:8,j)
-  do i=1,8                
-      c_Node = c_NN(i)
-      num_Node_Elements(c_Node) = num_Node_Elements(c_Node) +1
-  end do
+    c_NN    = G_NN(1:8,j)
+    do i=1,8                
+        c_Node = c_NN(i)
+        num_Node_Elements(c_Node) = num_Node_Elements(c_Node) +1
+    end do
 end do   
 !!$omp end parallel do
 
@@ -513,14 +476,14 @@ enddo
 !STEP 1.3.
 num_Node_Elements(1:Num_Node) = 0  
 do j=1,Num_Elem                  
-  c_NN    = G_NN(1:8,j)
-  do i=1,8                
-      c_Node = c_NN(i)
-      num_Node_Elements(c_Node) = num_Node_Elements(c_Node) +1
-      Node_Elements_3D(c_Node)%row(num_Node_Elements(c_Node)) = j
-  end do
+    c_NN    = G_NN(1:8,j)
+    do i=1,8                
+        c_Node = c_NN(i)
+        num_Node_Elements(c_Node) = num_Node_Elements(c_Node) +1
+        Node_Elements_3D(c_Node)%row(num_Node_Elements(c_Node)) = j
+    end do
 end do         
-  
+
 ! STEP 2. Remove duplicates.
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,n,tem_vector1,tem_vector2,temp_variable)    
 do i=1,Num_Node  
@@ -539,12 +502,12 @@ enddo
 print *, '    Checking num_Node_Elements (<50)...'
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)     
 do i=1,Num_Node
-  ! If the number of elements around a node exceeds 50, a warning will pop up (under normal
-  ! circumstances, this is unlikely to happen). 2023-06-14.
-  if(num_Node_Elements(i)> 50)then
-    print *, '    Warning-2023061401 :: num_Node_Elements(i)> 50 in Read_Geo_3D.f!'
-    print *, '    Node number:', i
-  endif
+    ! If the number of elements around a node exceeds 50, a warning will pop up (under normal
+    ! circumstances, this is unlikely to happen). 2023-06-14.
+    if(num_Node_Elements(i)> 50)then
+        print *, '    Warning-2023061401 :: num_Node_Elements(i)> 50 in Read_Geo_3D.f!'
+        print *, '    Node number:', i
+    endif
 end do         
 !$omp end parallel do  
 
@@ -557,18 +520,7 @@ end do
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)  
 do i=1,Num_Node 
     !Node_Max_L(i) = maxval(Elem_Max_L(Node_Elements_3D(i,1:num_Node_Elements(i))))
-    
-#ifndef Silverfrost
     Node_Max_L(i) = maxval(Elem_Max_L(Node_Elements_3D(i)%row(1:num_Node_Elements(i))))
-#endif
-#ifdef Silverfrost  
-    ! For the Silverfrost compiler, maxval only applies to the entire array and is not suitable for
-    ! obtaining the extreme values of parts of the array. 2024-09-11.
-    allocate(tem_vector_real(num_Node_Elements(i)))
-    tem_vector_real = Elem_Max_L(Node_Elements_3D(i)%row(1:num_Node_Elements(i)))
-    Node_Max_L(i) = maxval(tem_vector_real)
-    deallocate(tem_vector_real)
-#endif
 enddo
 !$omp end parallel do  
 
@@ -583,32 +535,32 @@ ALLOCATE(Element_Edges(12,2,Num_Elem))
 Element_Edges =0 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)         
 do i=1,Num_Elem
-  Element_Edges(1,1,i) = Elem_Node(i,1)
-  Element_Edges(1,2,i) = Elem_Node(i,2)
-  Element_Edges(2,1,i) = Elem_Node(i,2)
-  Element_Edges(2,2,i) = Elem_Node(i,3)
-  Element_Edges(3,1,i) = Elem_Node(i,3)
-  Element_Edges(3,2,i) = Elem_Node(i,4)
-  Element_Edges(4,1,i) = Elem_Node(i,4)
-  Element_Edges(4,2,i) = Elem_Node(i,1)
-  !----
-  Element_Edges(5,1,i) = Elem_Node(i,1)
-  Element_Edges(5,2,i) = Elem_Node(i,5)
-  Element_Edges(6,1,i) = Elem_Node(i,2)
-  Element_Edges(6,2,i) = Elem_Node(i,6)
-  Element_Edges(7,1,i) = Elem_Node(i,3)
-  Element_Edges(7,2,i) = Elem_Node(i,7)
-  Element_Edges(8,1,i) = Elem_Node(i,4)
-  Element_Edges(8,2,i) = Elem_Node(i,8)
-  !----
-  Element_Edges(9,1,i)  = Elem_Node(i,5)
-  Element_Edges(9,2,i)  = Elem_Node(i,6)
-  Element_Edges(10,1,i) = Elem_Node(i,6)
-  Element_Edges(10,2,i) = Elem_Node(i,7)
-  Element_Edges(11,1,i) = Elem_Node(i,7)
-  Element_Edges(11,2,i) = Elem_Node(i,8)
-  Element_Edges(12,1,i) = Elem_Node(i,8)
-  Element_Edges(12,2,i) = Elem_Node(i,5)
+    Element_Edges(1,1,i) = Elem_Node(i,1)
+    Element_Edges(1,2,i) = Elem_Node(i,2)
+    Element_Edges(2,1,i) = Elem_Node(i,2)
+    Element_Edges(2,2,i) = Elem_Node(i,3)
+    Element_Edges(3,1,i) = Elem_Node(i,3)
+    Element_Edges(3,2,i) = Elem_Node(i,4)
+    Element_Edges(4,1,i) = Elem_Node(i,4)
+    Element_Edges(4,2,i) = Elem_Node(i,1)
+    !----
+    Element_Edges(5,1,i) = Elem_Node(i,1)
+    Element_Edges(5,2,i) = Elem_Node(i,5)
+    Element_Edges(6,1,i) = Elem_Node(i,2)
+    Element_Edges(6,2,i) = Elem_Node(i,6)
+    Element_Edges(7,1,i) = Elem_Node(i,3)
+    Element_Edges(7,2,i) = Elem_Node(i,7)
+    Element_Edges(8,1,i) = Elem_Node(i,4)
+    Element_Edges(8,2,i) = Elem_Node(i,8)
+    !----
+    Element_Edges(9,1,i)  = Elem_Node(i,5)
+    Element_Edges(9,2,i)  = Elem_Node(i,6)
+    Element_Edges(10,1,i) = Elem_Node(i,6)
+    Element_Edges(10,2,i) = Elem_Node(i,7)
+    Element_Edges(11,1,i) = Elem_Node(i,7)
+    Element_Edges(11,2,i) = Elem_Node(i,8)
+    Element_Edges(12,1,i) = Elem_Node(i,8)
+    Element_Edges(12,2,i) = Elem_Node(i,5)
 end do 
 !$omp end parallel do    
 
@@ -623,34 +575,28 @@ if(Key_Block_Model == 1)then
     !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_E) schedule(static)   &
     !$OMP reduction(+:Num_Elem_Block_Bou)   
     do i_E = 1,Num_Elem
-    if ((abs(x_max_Elements(i_E)  - Max_X_Coor) <= Tol_20 ) .or.    &
-            (abs(x_min_Elements(i_E)  - Min_X_Coor) <= Tol_20 ) .or.  & 
-             (abs(y_max_Elements(i_E)  - Max_Y_Coor) <= Tol_20 ) .or. &
-             (abs(y_min_Elements(i_E)  - Min_Y_Coor) <= Tol_20 ) .or. &  
-             (abs(z_max_Elements(i_E)  - Max_Z_Coor) <= Tol_20 ) .or. &
-             (abs(z_min_Elements(i_E)  - Min_Z_Coor) <= Tol_20 ))then 
-          Num_Elem_Block_Bou = Num_Elem_Block_Bou +1
+        if ((abs(x_max_Elements(i_E)  - Max_X_Coor) <= Tol_20 ) .or. (abs(x_min_Elements(i_E)  - Min_X_Coor) <= Tol_20 ) .or. &
+        (abs(y_max_Elements(i_E)  - Max_Y_Coor) <= Tol_20 ) .or. (abs(y_min_Elements(i_E)  - Min_Y_Coor) <= Tol_20 ) .or. &
+        (abs(z_max_Elements(i_E)  - Max_Z_Coor) <= Tol_20 ) .or. (abs(z_min_Elements(i_E)  - Min_Z_Coor) <= Tol_20 ))then
+        Num_Elem_Block_Bou = Num_Elem_Block_Bou +1
     endif
-    enddo
-    !$OMP END PARALLEL DO
+enddo
+!$OMP END PARALLEL DO
 
-    ALLOCATE(Elems_Block_Bou(Num_Elem_Block_Bou))  
-    i_count = 0
-    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_E) schedule(static)
-    do i_E = 1,Num_Elem
-    if ((abs(x_max_Elements(i_E)  - Max_X_Coor) <= Tol_20) .or.      &
-             (abs(x_min_Elements(i_E)  - Min_X_Coor) <= Tol_20) .or.   & 
-             (abs(y_max_Elements(i_E)  - Max_Y_Coor) <= Tol_20) .or.   &
-             (abs(y_min_Elements(i_E)  - Min_Y_Coor) <= Tol_20) .or.   &
-             (abs(z_max_Elements(i_E)  - Max_Z_Coor) <= Tol_20) .or.   &
-             (abs(z_min_Elements(i_E)  - Min_Z_Coor) <= Tol_20))then 
-          !$OMP Critical
-          i_count = i_count +1
-          Elems_Block_Bou(i_count) = i_E
-          !$OMP end Critical
-    endif
-    enddo    
-    !$OMP END PARALLEL DO        
+ALLOCATE(Elems_Block_Bou(Num_Elem_Block_Bou))  
+i_count = 0
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_E) schedule(static)
+do i_E = 1,Num_Elem
+    if ((abs(x_max_Elements(i_E)  - Max_X_Coor) <= Tol_20) .or. (abs(x_min_Elements(i_E)  - Min_X_Coor) <= Tol_20) .or. &
+    (abs(y_max_Elements(i_E)  - Max_Y_Coor) <= Tol_20) .or. (abs(y_min_Elements(i_E)  - Min_Y_Coor) <= Tol_20) .or. &
+    (abs(z_max_Elements(i_E)  - Max_Z_Coor) <= Tol_20) .or. (abs(z_min_Elements(i_E)  - Min_Z_Coor) <= Tol_20))then
+    !$OMP Critical
+    i_count = i_count +1
+    Elems_Block_Bou(i_count) = i_E
+    !$OMP end Critical
+endif
+enddo    
+!$OMP END PARALLEL DO        
 endif
 
 
@@ -666,191 +612,177 @@ print *, "    Get *.outl and *.outa files (preparing)..."
 !                              *
 !********************************
 if(Key_Block_Model == 0)then
-  !IMPROV2022100202. 2022-10-02. 
-  ! First, find the boundary cells.
-  Num_Elem_Block_Bou = 0
-  !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_E ,c_NN,j,c_Node) schedule(static)   &
-  !$OMP reduction(+:Num_Elem_Block_Bou)    
-  do i_E =1,Num_Elem  
-    c_NN = G_NN(1:8,i_E)
-    do j=1,8 
-        c_Node = c_NN(j)
-        ! If a node in the current cell has fewer than 7 neighboring cells, the current cell may be a
-        ! boundary cell.
-        if (num_Node_Elements(c_Node)<8)then
-            Num_Elem_Block_Bou = Num_Elem_Block_Bou + 1
-            exit
-        endif
+    !IMPROV2022100202. 2022-10-02. 
+    ! First, find the boundary cells.
+    Num_Elem_Block_Bou = 0
+    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_E ,c_NN,j,c_Node) schedule(static)   &
+    !$OMP reduction(+:Num_Elem_Block_Bou)    
+    do i_E =1,Num_Elem  
+        c_NN = G_NN(1:8,i_E)
+        do j=1,8 
+            c_Node = c_NN(j)
+            ! If a node in the current cell has fewer than 7 neighboring cells, the current cell may be a
+            ! boundary cell.
+            if (num_Node_Elements(c_Node)<8)then
+                Num_Elem_Block_Bou = Num_Elem_Block_Bou + 1
+                exit
+            endif
+        enddo
     enddo
-  enddo
-  !$OMP END PARALLEL DO
-      
-  ALLOCATE(Elems_Block_Bou(Num_Elem_Block_Bou))  
-  
-  i_count = 0
-  !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_E,c_NN,j,c_Node) schedule(static) 
-  do i_E =1,Num_Elem  
-    c_NN    = G_NN(1:8,i_E)
-    do j=1,8 
-        c_Node = c_NN(j)
-        ! If a node in the current cell has fewer than 7 neighboring cells, the current cell may be a
-        ! boundary cell.
-        if (num_Node_Elements(c_Node)<8)then
-            !$OMP Critical
-            i_count = i_count +1
-            Elems_Block_Bou(i_count) = i_E   
-            !$OMP end Critical
-            exit
-        endif
-    enddo
-  enddo
-  !$OMP END PARALLEL DO   
+    !$OMP END PARALLEL DO
 
-  ! Get the number of edges that meet the condition: tem_num_edges
-  Num_CkElem = Num_Elem_Block_Bou
-  tem_num_edges = 0
-  !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_E,c_E,i_Edge,c_node_1,c_node_2,&
-  !$OMP                      c_node_1_num_Ele,c_node_2_num_Ele) &
-  !$OMP reduction(+:tem_num_edges)  
-  do i_E = 1,Num_CkElem
-      c_E = Elems_Block_Bou(i_E)
-      do i_Edge = 1,12
-          c_node_1 = Elem_Node(c_E,Ele_3D_Edges_Node(i_Edge,1)) 
-          c_node_2 = Elem_Node(c_E,Ele_3D_Edges_Node(i_Edge,2)) 
-          ! Number of elements around c_node_1.
-          c_node_1_num_Ele = num_Node_Elements(c_node_1)
-          ! The number of elements around c_node_2.
-          c_node_2_num_Ele = num_Node_Elements(c_node_2)
-          ! Each of the two nodes on the boundary edge has no more than 4 adjacent elements. 2022-10-02.
-          if(c_node_1_num_Ele<=4 .and. c_node_2_num_Ele <=4) then
-              !!$OMP CRITICAL
-              tem_num_edges = tem_num_edges +1
-              !!$OMP END CRITICAL
-          endif
-      enddo
-  enddo  
-  !$OMP END PARALLEL DO   
-  
-  ! Create a temporary array based on the number of edges counted
-  ALLOCATE(tem1(tem_num_edges,2))
-  ALLOCATE(tem2(tem_num_edges))
-  
-  ! Store the edges of the element into the array tem1
-  Num_CkElem = Num_Elem_Block_Bou
-  tem_num_edges = 0
-  !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_E,c_E,i_Edge,c_node_1,c_node_2,&
-  !$OMP                      c_node_1_num_Ele,c_node_2_num_Ele) &
-  !$OMP  schedule(static)   
-  do i_E = 1,Num_CkElem
-      c_E = Elems_Block_Bou(i_E)
-      do i_Edge = 1,12
-          c_node_1 = Elem_Node(c_E,Ele_3D_Edges_Node(i_Edge,1)) 
-          c_node_2 = Elem_Node(c_E,Ele_3D_Edges_Node(i_Edge,2)) 
-          ! Number of elements around c_node_1.
-          c_node_1_num_Ele = num_Node_Elements(c_node_1)
-          ! The number of elements around c_node_2.
-          c_node_2_num_Ele = num_Node_Elements(c_node_2)
-          ! Each of the two nodes on the boundary edge has no more than 4 adjacent elements. 2022-10-02.
-          if(c_node_1_num_Ele<=4 .and. c_node_2_num_Ele <=4) then
-              !$OMP CRITICAL
-              tem_num_edges = tem_num_edges +1
-              ! Store the edges of the element into an array
-              tem1(tem_num_edges,1:2) = [c_node_1,c_node_2]   
-              !$OMP END CRITICAL
-          endif
-      enddo
-  enddo    
-  !$OMP END PARALLEL DO   
-  
-!********************************
-!                              *
-!   Key_Block_Model == 1       *
-!                              *
-!********************************
+    ALLOCATE(Elems_Block_Bou(Num_Elem_Block_Bou))  
+
+    i_count = 0
+    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_E,c_NN,j,c_Node) schedule(static) 
+    do i_E =1,Num_Elem  
+        c_NN    = G_NN(1:8,i_E)
+        do j=1,8 
+            c_Node = c_NN(j)
+            ! If a node in the current cell has fewer than 7 neighboring cells, the current cell may be a
+            ! boundary cell.
+            if (num_Node_Elements(c_Node)<8)then
+                !$OMP Critical
+                i_count = i_count +1
+                Elems_Block_Bou(i_count) = i_E   
+                !$OMP end Critical
+                exit
+            endif
+        enddo
+    enddo
+    !$OMP END PARALLEL DO   
+
+    ! Get the number of edges that meet the condition: tem_num_edges
+    Num_CkElem = Num_Elem_Block_Bou
+    tem_num_edges = 0
+    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_E,c_E,i_Edge,c_node_1,c_node_2,&
+    !$OMP                      c_node_1_num_Ele,c_node_2_num_Ele) &
+    !$OMP reduction(+:tem_num_edges)  
+    do i_E = 1,Num_CkElem
+        c_E = Elems_Block_Bou(i_E)
+        do i_Edge = 1,12
+            c_node_1 = Elem_Node(c_E,Ele_3D_Edges_Node(i_Edge,1)) 
+            c_node_2 = Elem_Node(c_E,Ele_3D_Edges_Node(i_Edge,2)) 
+            ! Number of elements around c_node_1.
+            c_node_1_num_Ele = num_Node_Elements(c_node_1)
+            ! The number of elements around c_node_2.
+            c_node_2_num_Ele = num_Node_Elements(c_node_2)
+            ! Each of the two nodes on the boundary edge has no more than 4 adjacent elements. 2022-10-02.
+            if(c_node_1_num_Ele<=4 .and. c_node_2_num_Ele <=4) then
+                !!$OMP CRITICAL
+                tem_num_edges = tem_num_edges +1
+                !!$OMP END CRITICAL
+            endif
+        enddo
+    enddo  
+    !$OMP END PARALLEL DO   
+
+    ! Create a temporary array based on the number of edges counted
+    ALLOCATE(tem1(tem_num_edges,2))
+    ALLOCATE(tem2(tem_num_edges))
+
+    ! Store the edges of the element into the array tem1
+    Num_CkElem = Num_Elem_Block_Bou
+    tem_num_edges = 0
+    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_E,c_E,i_Edge,c_node_1,c_node_2,&
+    !$OMP                      c_node_1_num_Ele,c_node_2_num_Ele) &
+    !$OMP  schedule(static)   
+    do i_E = 1,Num_CkElem
+        c_E = Elems_Block_Bou(i_E)
+        do i_Edge = 1,12
+            c_node_1 = Elem_Node(c_E,Ele_3D_Edges_Node(i_Edge,1)) 
+            c_node_2 = Elem_Node(c_E,Ele_3D_Edges_Node(i_Edge,2)) 
+            ! Number of elements around c_node_1.
+            c_node_1_num_Ele = num_Node_Elements(c_node_1)
+            ! The number of elements around c_node_2.
+            c_node_2_num_Ele = num_Node_Elements(c_node_2)
+            ! Each of the two nodes on the boundary edge has no more than 4 adjacent elements. 2022-10-02.
+            if(c_node_1_num_Ele<=4 .and. c_node_2_num_Ele <=4) then
+                !$OMP CRITICAL
+                tem_num_edges = tem_num_edges +1
+                ! Store the edges of the element into an array
+                tem1(tem_num_edges,1:2) = [c_node_1,c_node_2]   
+                !$OMP END CRITICAL
+            endif
+        enddo
+    enddo    
+    !$OMP END PARALLEL DO   
+
+    !********************************
+    !                              *
+    !   Key_Block_Model == 1       *
+    !                              *
+    !********************************
 elseif(Key_Block_Model == 1)then
-  Num_CkElem = Num_Elem_Block_Bou
-  !................................................................................
-  ! Count the number of cell edges located on the boundary faces of the cube model
-  !................................................................................
-  i_count = 0
-  
-  !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_E,c_E,i_Edge,c_node_1, &
-  !$OMP                             c_node_2,c_1_x,c_1_y,c_1_z, &
-  !$OMP                              c_2_x,c_2_y,c_2_z) &
-  !$OMP reduction(+:i_count)  
-  do i_E = 1,Num_CkElem
-      c_E = Elems_Block_Bou(i_E)
-      do i_Edge = 1,12
-          c_node_1 = Elem_Node(c_E,Ele_3D_Edges_Node(i_Edge,1)) 
-          c_node_2 = Elem_Node(c_E,Ele_3D_Edges_Node(i_Edge,2)) 
-          c_1_x = Coor(c_node_1,1)
-          c_1_y = Coor(c_node_1,2)
-          c_1_z = Coor(c_node_1,3)
-          c_2_x = Coor(c_node_2,1)
-          c_2_y = Coor(c_node_2,2)
-          c_2_z = Coor(c_node_2,3)
-          if ((abs(c_1_x-Max_X_Coor)<=Tol_20 .and.            &
-                 abs(c_2_x-Max_X_Coor)<=Tol_20)       .or.    &
-                 (abs(c_1_x-Min_X_Coor)<=Tol_20 .and.         &
-                  abs(c_2_x-Min_X_Coor)<=Tol_20)       .or.   &    
-                 (abs(c_1_y-Max_Y_Coor)<=Tol_20 .and.         &  
-                  abs(c_2_y-Max_Y_Coor)<=Tol_20)       .or.   &
-                 (abs(c_1_y-Min_Y_Coor)<=Tol_20 .and.         &
-                  abs(c_2_y-Min_Y_Coor)<=Tol_20)       .or.   &  
-                 (abs(c_1_z-Max_Z_Coor)<=Tol_20 .and.         &
-                  abs(c_2_z-Max_Z_Coor)<=Tol_20)       .or.   &
-                 (abs(c_1_z-Min_Z_Coor)<=Tol_20 .and.         &
-                  abs(c_2_z-Min_Z_Coor)<=Tol_20)    )then 
-                  i_count = i_count +1
-          endif                  
-      enddo
-  enddo
-  !$OMP END PARALLEL DO            
-  
-  !...............................................................
-  ! Create a temporary array based on the counted number of edges
-  !...............................................................
-  ALLOCATE(tem1(i_count,2))
-  ALLOCATE(tem2(i_count))
-  !....................................................
-  ! Store the edges of the element into the array tem1
-  !....................................................
-  tem_num_edges = 0
-  !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_E,c_E,i_Edge,c_node_1, &
-  !$OMP                             c_node_2,c_1_x,c_1_y,c_1_z, &
-  !$OMP                              c_2_x,c_2_y,c_2_z)   
-  do i_E = 1,Num_CkElem
-      c_E = Elems_Block_Bou(i_E)
-      do i_Edge = 1,12
-          c_node_1 = Elem_Node(c_E,Ele_3D_Edges_Node(i_Edge,1)) 
-          c_node_2 = Elem_Node(c_E,Ele_3D_Edges_Node(i_Edge,2)) 
-          c_1_x = Coor(c_node_1,1)
-          c_1_y = Coor(c_node_1,2)
-          c_1_z = Coor(c_node_1,3)
-          c_2_x = Coor(c_node_2,1)
-          c_2_y = Coor(c_node_2,2)
-          c_2_z = Coor(c_node_2,3)
-          if ((abs(c_1_x-Max_X_Coor)<=Tol_20 .and.            &
-                  abs(c_2_x-Max_X_Coor)<=Tol_20)       .or.   &
-                 (abs(c_1_x-Min_X_Coor)<=Tol_20 .and.         &
-                  abs(c_2_x-Min_X_Coor)<=Tol_20)       .or.   &    
-                 (abs(c_1_y-Max_Y_Coor)<=Tol_20 .and.         &
-                  abs(c_2_y-Max_Y_Coor)<=Tol_20)       .or.   &
-                 (abs(c_1_y-Min_Y_Coor)<=Tol_20 .and.         &
-                  abs(c_2_y-Min_Y_Coor)<=Tol_20)       .or.   &   
-                 (abs(c_1_z-Max_Z_Coor)<=Tol_20 .and.         &
-                  abs(c_2_z-Max_Z_Coor)<=Tol_20)       .or.   &
-                 (abs(c_1_z-Min_Z_Coor)<=Tol_20 .and.         &
-                  abs(c_2_z-Min_Z_Coor)<=Tol_20)    )then 
-                  !$OMP CRITICAL
-                  tem_num_edges = tem_num_edges +1
-                  ! Store the edges of the element into an array
-                  tem1(tem_num_edges,1:2) = [c_node_1,c_node_2]
-                  !$OMP END CRITICAL
-          endif                  
-      enddo
-  enddo
-  !$OMP END PARALLEL DO    
+    Num_CkElem = Num_Elem_Block_Bou
+    !................................................................................
+    ! Count the number of cell edges located on the boundary faces of the cube model
+    !................................................................................
+    i_count = 0
+
+    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_E,c_E,i_Edge,c_node_1, &
+    !$OMP                             c_node_2,c_1_x,c_1_y,c_1_z, &
+    !$OMP                              c_2_x,c_2_y,c_2_z) &
+    !$OMP reduction(+:i_count)  
+    do i_E = 1,Num_CkElem
+        c_E = Elems_Block_Bou(i_E)
+        do i_Edge = 1,12
+            c_node_1 = Elem_Node(c_E,Ele_3D_Edges_Node(i_Edge,1)) 
+            c_node_2 = Elem_Node(c_E,Ele_3D_Edges_Node(i_Edge,2)) 
+            c_1_x = Coor(c_node_1,1)
+            c_1_y = Coor(c_node_1,2)
+            c_1_z = Coor(c_node_1,3)
+            c_2_x = Coor(c_node_2,1)
+            c_2_y = Coor(c_node_2,2)
+            c_2_z = Coor(c_node_2,3)
+            if ((abs(c_1_x-Max_X_Coor)<=Tol_20 .and. &
+            abs(c_2_x-Max_X_Coor)<=Tol_20)       .or. (abs(c_1_x-Min_X_Coor)<=Tol_20 .and. abs(c_2_x-Min_X_Coor)<=Tol_20)  .or. &
+            (abs(c_1_y-Max_Y_Coor)<=Tol_20 .and. abs(c_2_y-Max_Y_Coor)<=Tol_20)       .or. (abs(c_1_y-Min_Y_Coor)<=Tol_20 .and. &
+            abs(c_2_y-Min_Y_Coor)<=Tol_20)       .or. (abs(c_1_z-Max_Z_Coor)<=Tol_20 .and. abs(c_2_z-Max_Z_Coor)<=Tol_20)  .or. &
+            (abs(c_1_z-Min_Z_Coor)<=Tol_20 .and. abs(c_2_z-Min_Z_Coor)<=Tol_20)    )then
+            i_count = i_count +1
+        endif                  
+    enddo
+enddo
+!$OMP END PARALLEL DO            
+
+!...............................................................
+! Create a temporary array based on the counted number of edges
+!...............................................................
+ALLOCATE(tem1(i_count,2))
+ALLOCATE(tem2(i_count))
+!....................................................
+! Store the edges of the element into the array tem1
+!....................................................
+tem_num_edges = 0
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_E,c_E,i_Edge,c_node_1, &
+!$OMP                             c_node_2,c_1_x,c_1_y,c_1_z, &
+!$OMP                              c_2_x,c_2_y,c_2_z)   
+do i_E = 1,Num_CkElem
+    c_E = Elems_Block_Bou(i_E)
+    do i_Edge = 1,12
+        c_node_1 = Elem_Node(c_E,Ele_3D_Edges_Node(i_Edge,1)) 
+        c_node_2 = Elem_Node(c_E,Ele_3D_Edges_Node(i_Edge,2)) 
+        c_1_x = Coor(c_node_1,1)
+        c_1_y = Coor(c_node_1,2)
+        c_1_z = Coor(c_node_1,3)
+        c_2_x = Coor(c_node_2,1)
+        c_2_y = Coor(c_node_2,2)
+        c_2_z = Coor(c_node_2,3)
+        if ((abs(c_1_x-Max_X_Coor)<=Tol_20 .and. &
+        abs(c_2_x-Max_X_Coor)<=Tol_20)       .or. (abs(c_1_x-Min_X_Coor)<=Tol_20 .and. abs(c_2_x-Min_X_Coor)<=Tol_20)       .or. &
+        (abs(c_1_y-Max_Y_Coor)<=Tol_20 .and. abs(c_2_y-Max_Y_Coor)<=Tol_20)       .or. (abs(c_1_y-Min_Y_Coor)<=Tol_20 .and. &
+        abs(c_2_y-Min_Y_Coor)<=Tol_20)       .or. (abs(c_1_z-Max_Z_Coor)<=Tol_20 .and. abs(c_2_z-Max_Z_Coor)<=Tol_20)       .or. &
+        (abs(c_1_z-Min_Z_Coor)<=Tol_20 .and. abs(c_2_z-Min_Z_Coor)<=Tol_20)    )then
+        !$OMP CRITICAL
+        tem_num_edges = tem_num_edges +1
+        ! Store the edges of the element into an array
+        tem1(tem_num_edges,1:2) = [c_node_1,c_node_2]
+        !$OMP END CRITICAL
+    endif                  
+enddo
+enddo
+!$OMP END PARALLEL DO    
 endif
 
 
@@ -872,36 +804,36 @@ print *, "    Get *.outl and *.outa files (extarcting outl)..."
 ALLOCATE(All_Outline(all_num_Outline,2))
 j=0
 do i=1,tem_num_edges
-  if (tem2(i).eq.1)then
-      j=j+1
-      All_Outline(j,1:2) = tem1(i,1:2)
-  end if
+    if (tem2(i).eq.1)then
+        j=j+1
+        All_Outline(j,1:2) = tem1(i,1:2)
+    end if
 end do
 num_Outline = j
 IF(ALLOCATED(Outline)) DEALLOCATE(Outline)
 ALLOCATE(Outline(num_Outline,2))
 do i=1,num_Outline
-  Outline(i,1:2) = All_Outline(i,1:2) 
+    Outline(i,1:2) = All_Outline(i,1:2) 
 end do
 DEALLOCATE(All_Outline)
 
 ! Save 3D model outer boundary file outl
 if(Key_Save_Nothing/= 1) then
-  print *, "    Saving outl file..." 
-  c_File_name_1   =  trim(Full_Pathname)//'.outl'
-  if (Key_Data_Format==1) then
-      open(101,file=c_File_name_1,status='unknown')  
-          do i=1,num_Outline
-              write(101, '(2I10)') (Outline(i,1:2))
-          end do
-      close(101)
-  elseif(Key_Data_Format==2)then
-      open(101,file=c_File_name_1,status='unknown',form='unformatted',access='stream')  
-          do i=1,num_Outline
-              write(101) (Outline(i,1:2))
-          end do
-      close(101)          
-  endif        
+    print *, "    Saving outl file..." 
+    c_File_name_1   =  trim(Full_Pathname)//'.outl'
+    if (Key_Data_Format==1) then
+        open(101,file=c_File_name_1,status='unknown')  
+        do i=1,num_Outline
+            write(101, '(2I10)') (Outline(i,1:2))
+        end do
+        close(101)
+    elseif(Key_Data_Format==2)then
+        open(101,file=c_File_name_1,status='unknown',form='unformatted',access='stream')  
+        do i=1,num_Outline
+            write(101) (Outline(i,1:2))
+        end do
+        close(101)          
+    endif        
 endif
 
 ! Exterior Surface Extraction
@@ -911,35 +843,35 @@ ALLOCATE(All_Outline(Num_CkElem*12,2))
 All_Outline(1:Num_CkElem*12,1:2) = 0
 j=0
 do i=1,tem_num_edges
-  if (tem2(i).eq.2)then
-      j=j+1
-      All_Outline(j,1:2) = tem1(i,1:2)
-  end if
+    if (tem2(i).eq.2)then
+        j=j+1
+        All_Outline(j,1:2) = tem1(i,1:2)
+    end if
 end do
 num_Outline = j
 IF(ALLOCATED(OutArea)) DEALLOCATE(OutArea)
 ALLOCATE(OutArea(num_Outline,2))
 do i=1,num_Outline
-  OutArea(i,1:2) = All_Outline(i,1:2) 
+    OutArea(i,1:2) = All_Outline(i,1:2) 
 end do
 DEALLOCATE(All_Outline)
 ! Save 3D model outer surface file outa
 if(Key_Save_Nothing/= 1) then
-  print *, "    Saving outa file..." 
-  c_File_name_1   =  trim(Full_Pathname)//'.outa'
-  if (Key_Data_Format==1) then
-      open(101,file=c_File_name_1,status='unknown')  
-      do i=1,num_Outline
-          write(101, '(2I10)') (OutArea(i,1:2))
-      end do
-      close(101)   
-  elseif(Key_Data_Format==2)then
-      open(101,file=c_File_name_1,status='unknown',form='unformatted',access='stream') 
-      do i=1,num_Outline
-          write(101) (OutArea(i,1:2))
-      end do    
-      close(101)
-  endif 
+    print *, "    Saving outa file..." 
+    c_File_name_1   =  trim(Full_Pathname)//'.outa'
+    if (Key_Data_Format==1) then
+        open(101,file=c_File_name_1,status='unknown')  
+        do i=1,num_Outline
+            write(101, '(2I10)') (OutArea(i,1:2))
+        end do
+        close(101)   
+    elseif(Key_Data_Format==2)then
+        open(101,file=c_File_name_1,status='unknown',form='unformatted',access='stream') 
+        do i=1,num_Outline
+            write(101) (OutArea(i,1:2))
+        end do    
+        close(101)
+    endif 
 endif
 
 
@@ -956,7 +888,7 @@ tem3(num_Outline+1:num_Outline*2) = OutArea(1:num_Outline,2)
 call Vector_Unique_Int(2*num_Outline,2*num_Outline,tem3(1:2*num_Outline),tem4,Num_Surface_Nodes)   
 ! Allocate memory for global variables
 if (.not. ALLOCATED(Surface_Nodes)) then
-  ALLOCATE(Surface_Nodes(Num_Surface_Nodes))
+    ALLOCATE(Surface_Nodes(Num_Surface_Nodes))
 endif
 Surface_Nodes(1:Num_Surface_Nodes) = 0
 Surface_Nodes(1:Num_Surface_Nodes) =tem4(1:Num_Surface_Nodes)
@@ -966,21 +898,21 @@ DEALLOCATE(tem3)
 DEALLOCATE(tem4)  
 ! Save the 3D model exterior surface node number file outn
 if(Key_Save_Nothing/= 1) then
-  print *, "    Saving outn file..." 
-  c_File_name_1   =  trim(Full_Pathname)//'.outn'
-  if (Key_Data_Format==1) then
-      open(101,file=c_File_name_1,status='unknown')  
-          do i=1,Num_Surface_Nodes
-              write(101, '(I10)') (Surface_Nodes(i))
-          end do
-      close(101) 
-  elseif(Key_Data_Format==2)then
-      open(101,file=c_File_name_1,status='unknown',form='unformatted',access='stream')  
-          do i=1,Num_Surface_Nodes
-              write(101) (Surface_Nodes(i))
-          end do
-      close(101)
-  endif   
+    print *, "    Saving outn file..." 
+    c_File_name_1   =  trim(Full_Pathname)//'.outn'
+    if (Key_Data_Format==1) then
+        open(101,file=c_File_name_1,status='unknown')  
+        do i=1,Num_Surface_Nodes
+            write(101, '(I10)') (Surface_Nodes(i))
+        end do
+        close(101) 
+    elseif(Key_Data_Format==2)then
+        open(101,file=c_File_name_1,status='unknown',form='unformatted',access='stream')  
+        do i=1,Num_Surface_Nodes
+            write(101) (Surface_Nodes(i))
+        end do
+        close(101)
+    endif   
 endif
 
 !----------------------------------------------------------------------------------------------------
@@ -993,7 +925,7 @@ endif
 !----------------------------------------------------------------------------------------------------
 print *, "    Setting elements domains..."    
 call D3_Set_Elements_Domains
- 
+
 !----------------------------------------
 !
 ! STEP 16: Calculate the half bandwidth.
@@ -1097,10 +1029,10 @@ if (Key_Thermal_Stress==1) then
     Elem_Initial_T(1:Num_Elem)    = ZR
     Elem_Current_T(1:Num_Elem)    = ZR
     Elem_T_for_Stress(1:Num_Elem) = ZR
-    
+
     ! If XA calls the Fortran lib, then exit.
     if(Key_Cpp_Call_Fortran_Lib==1) goto 2001
-    
+
     ! Set according to the material number.
     if(Key_Initial_Temperature==1)then
         !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i_E) 
@@ -1109,7 +1041,7 @@ if (Key_Thermal_Stress==1) then
         enddo
         !$omp end parallel do  
         Elem_Current_T = Elem_Initial_T
-    ! Read from an external file.
+        ! Read from an external file.
     elseif(Key_Initial_Temperature==2)then
         !TOBEDN2023031301.
     endif
@@ -1119,7 +1051,7 @@ if (Key_Thermal_Stress==1) then
     elseif(Key_Scheme_Thermal_Stress == 2) then
         Elem_T_for_Stress = Elem_Current_T - Elem_Initial_T
     endif
-    
+
     2001 continue 
 endif
 
@@ -1140,7 +1072,7 @@ if (Key_PoreP==1) then
     Elem_Initial_PoreP(1:Num_Elem)    = ZR
     Elem_Current_PoreP(1:Num_Elem)    = ZR
     Elem_Biots(1:Num_Elem)            = ZR
-    
+
     Elem_Initial_PoreP = Initial_PoreP
     Elem_Current_PoreP = Elem_Initial_PoreP
     Elem_Biots         = Initial_Biot_Coeff
@@ -1166,7 +1098,7 @@ if (Key_XA  == 2) then
     ALLOCATE(Elem_KIc_XA(Num_Elem))
     IF(ALLOCATED(Elem_St_XA)) DEALLOCATE(Elem_St_XA)
     ALLOCATE(Elem_St_XA(Num_Elem))
-    
+
     ! Given the initial values. These are basically set arbitrarily. Here, they are temporarily set to
     ! the parameters of Material 1 (which may not actually be provided).
     ! In fact, the relevant parameters are passed in by C.
@@ -1175,7 +1107,7 @@ if (Key_XA  == 2) then
     Elem_St_XA = Material_Para(1,5)
     Elem_KIc_XA = Material_Para(1,6)
     Elem_TEC_XA = Material_Para(1,8)
-    
+
     !IMPROV2023031904.
     IF(ALLOCATED(Elem_D_XA)) DEALLOCATE(Elem_D_XA)
     ALLOCATE(Elem_D_XA(Num_Elem,6,6))
@@ -1214,7 +1146,7 @@ if(Key_Element_Break==1  .or. Key_Post_CS_G_Strs==1) then
     IF(ALLOCATED(Elem_Break)) DEALLOCATE(Elem_Break)
     ALLOCATE(Elem_Break(Num_Elem))
     IF(ALLOCATED(Elem_Ave_Gauss_Stress)) then
-    DEALLOCATE(Elem_Ave_Gauss_Stress)
+        DEALLOCATE(Elem_Ave_Gauss_Stress)
     endif
     ALLOCATE(Elem_Ave_Gauss_Stress(Num_Elem,6))
     IF(ALLOCATED(Elem_Ave_Gauss_S1)) DEALLOCATE(Elem_Ave_Gauss_S1)
@@ -1222,6 +1154,206 @@ if(Key_Element_Break==1  .or. Key_Post_CS_G_Strs==1) then
     Elem_Ave_Gauss_Stress(1:Num_Elem,1:6) = ZR 
     Elem_Ave_Gauss_S1(1:Num_Elem) = ZR
     Elem_Break(1:Num_Elem) = .False.
+endif
+
+!---------------------------------------------------------------------------------------
+!Check if the initial velocity file in the x direction exists; if it does, read it (used for
+!dynamic analysis)
+!---------------------------------------------------------------------------------------
+print *, "    Trying to read ivex files..." 
+temp_name = trim(trim(Full_Pathname)//'.ivex')
+inquire(file=temp_name, exist=alive)  
+if(alive.EQV..FALSE.)then
+else
+    Num_Ivex = Tool_Count_Lines(temp_name) 
+    IF(ALLOCATED(Ive_x)) DEALLOCATE(Ive_x)
+    ALLOCATE(Ive_x(Num_Ivex,2))
+    ALLOCATE(Temp_DATA(Num_Ivex,2))
+    Call Tool_Read_File(temp_name,"ivex",Num_Ivex,2,Temp_DATA,Flag_Blank)
+    Ive_x  = Temp_DATA(:,:)
+    DEALLOCATE(Temp_DATA)
+endif  
+
+!---------------------------------------------------------------------------------------
+!Check if the initial velocity file in the y-direction exists; if it does, read it (used for
+!dynamic analysis)
+!---------------------------------------------------------------------------------------
+print *, "    Trying to read ivey files..." 
+temp_name = trim(trim(Full_Pathname)//'.ivey')
+inquire(file=temp_name, exist=alive)  
+if(alive.EQV..FALSE.)then
+else
+    Num_Ivey = Tool_Count_Lines(temp_name) 
+    IF(ALLOCATED(Ive_y)) DEALLOCATE(Ive_y)
+    ALLOCATE(Ive_y(Num_Ivey,2))
+    ALLOCATE(Temp_DATA(Num_Ivey,2))
+    Call Tool_Read_File(temp_name,"ivey",Num_Ivey,2,Temp_DATA,Flag_Blank)
+    Ive_y  = Temp_DATA(:,:)
+    DEALLOCATE(Temp_DATA)
+endif 
+
+!---------------------------------------------------------------------------------------
+!Check if the initial velocity file in the z-direction exists; if it does, read it (used for
+!dynamic analysis). 2026-04-16.
+!---------------------------------------------------------------------------------------
+print *, "    Trying to read ivez files..." 
+temp_name = trim(trim(Full_Pathname)//'.ivez')
+inquire(file=temp_name, exist=alive)  
+if(alive.EQV..FALSE.)then
+else
+    Num_Ivez = Tool_Count_Lines(temp_name) 
+    IF(ALLOCATED(Ive_z)) DEALLOCATE(Ive_z)
+    ALLOCATE(Ive_z(Num_Ivez,2))
+    ALLOCATE(Temp_DATA(Num_Ivez,2))
+    Call Tool_Read_File(temp_name,"ivez",Num_Ivez,2,Temp_DATA,Flag_Blank)
+    Ive_z  = Temp_DATA(:,:)
+    DEALLOCATE(Temp_DATA)
+endif 
+
+!---------------------------------------------------------------------------------------------
+!Check whether the initial acceleration file in the x-direction exists. If it exists, read it (for
+!dynamic analysis).
+!---------------------------------------------------------------------------------------------
+print *, "    Trying to read iacx files..." 
+temp_name = trim(trim(Full_Pathname)//'.iacx')
+inquire(file=temp_name, exist=alive)  
+if(alive.EQV..FALSE.)then
+else
+    Num_Iacx = Tool_Count_Lines(temp_name) 
+    IF(ALLOCATED(Iac_x)) DEALLOCATE(Iac_x)
+    ALLOCATE(Iac_x(Num_Iacx,2))
+    ALLOCATE(Temp_DATA(Num_Iacx,2))
+    Call Tool_Read_File(temp_name,"iacx",Num_Iacx,2,Temp_DATA,Flag_Blank)
+    Iac_x  = Temp_DATA(:,:)
+    DEALLOCATE(Temp_DATA)
+endif  
+
+
+!----------------------------------------------------------------------------------------------
+!Check whether the initial acceleration file in the Y direction exists. If it exists, read it (for
+!dynamic analysis).
+!----------------------------------------------------------------------------------------------
+print *, "    Trying to read iacy files..." 
+temp_name = trim(trim(Full_Pathname)//'.iacy')
+inquire(file=temp_name, exist=alive)  
+if(alive.EQV..FALSE.)then
+else
+    Num_Iacy = Tool_Count_Lines(temp_name) 
+    IF(ALLOCATED(Iac_y)) DEALLOCATE(Iac_y)
+    ALLOCATE(Iac_y(Num_Iacy,2))
+    ALLOCATE(Temp_DATA(Num_Iacy,2))
+    Call Tool_Read_File(temp_name,"iacy",Num_Iacy,2,Temp_DATA,Flag_Blank)
+    Iac_y  = Temp_DATA(:,:)
+    DEALLOCATE(Temp_DATA)
+endif 
+
+!----------------------------------------------------------------------------------------------
+!Check whether the initial acceleration file in the z direction exists. If it exists, read it (for
+!dynamic analysis).
+!----------------------------------------------------------------------------------------------
+print *, "    Trying to read iacz files..." 
+temp_name = trim(trim(Full_Pathname)//'.iacz')
+inquire(file=temp_name, exist=alive)  
+if(alive.EQV..FALSE.)then
+else
+    Num_Iacz = Tool_Count_Lines(temp_name) 
+    IF(ALLOCATED(Iac_z)) DEALLOCATE(Iac_z)
+    ALLOCATE(Iac_z(Num_Iacz,2))
+    ALLOCATE(Temp_DATA(Num_Iacz,2))
+    Call Tool_Read_File(temp_name,"iacz",Num_Iacz,2,Temp_DATA,Flag_Blank)
+    Iac_z  = Temp_DATA(:,:)
+    DEALLOCATE(Temp_DATA)
+endif 
+
+
+!NEWFTU-2026041701.
+!---------------------------------------------------------------------------------------------
+!Check whether the initial displacement file in the x-direction exists. If it exists, read it (for
+!dynamic analysis).
+!---------------------------------------------------------------------------------------------
+print *, "    Trying to read idpx files..." 
+temp_name = trim(trim(Full_Pathname)//'.idpx')
+inquire(file=temp_name, exist=alive)  
+if(alive.EQV..FALSE.)then
+else
+    Num_Idpx = Tool_Count_Lines(temp_name) 
+    IF(ALLOCATED(Idp_x)) DEALLOCATE(Idp_x)
+    ALLOCATE(Idp_x(Num_Idpx,2))
+    ALLOCATE(Temp_DATA(Num_Idpx,2))
+    Call Tool_Read_File(temp_name,"idpx",Num_Idpx,2,Temp_DATA,Flag_Blank)
+    Idp_x  = Temp_DATA(:,:)
+    DEALLOCATE(Temp_DATA)
+endif  
+!---------------------------------------------------------------------------------------------
+!Check whether the initial displacement file in the y-direction exists. If it exists, read it (for
+!dynamic analysis).
+!---------------------------------------------------------------------------------------------
+print *, "    Trying to read idpy files..." 
+temp_name = trim(trim(Full_Pathname)//'.idpy')
+inquire(file=temp_name, exist=alive)  
+if(alive.EQV..FALSE.)then
+else
+    Num_Idpy = Tool_Count_Lines(temp_name) 
+    IF(ALLOCATED(Idp_y)) DEALLOCATE(Idp_y)
+    ALLOCATE(Idp_y(Num_Idpy,2))
+    ALLOCATE(Temp_DATA(Num_Idpy,2))
+    Call Tool_Read_File(temp_name,"idpy",Num_Idpy,2,Temp_DATA,Flag_Blank)
+    Idp_y  = Temp_DATA(:,:)
+    DEALLOCATE(Temp_DATA)
+endif  
+!---------------------------------------------------------------------------------------------
+!Check whether the initial displacement file in the z-direction exists. If it exists, read it (for
+!dynamic analysis).
+!---------------------------------------------------------------------------------------------
+print *, "    Trying to read idpz files..." 
+temp_name = trim(trim(Full_Pathname)//'.idpz')
+inquire(file=temp_name, exist=alive)  
+if(alive.EQV..FALSE.)then
+else
+    Num_Idpz = Tool_Count_Lines(temp_name) 
+    IF(ALLOCATED(Idp_z)) DEALLOCATE(Idp_z)
+    ALLOCATE(Idp_z(Num_Idpz,2))
+    ALLOCATE(Temp_DATA(Num_Idpz,2))
+    Call Tool_Read_File(temp_name,"idpz",Num_Idpz,2,Temp_DATA,Flag_Blank)
+    Idp_z  = Temp_DATA(:,:)
+    DEALLOCATE(Temp_DATA)
+endif  
+
+!----------------------------------------------------------------------------------------------
+!Read eqnl file. Get num_EQ_Ac_nodes and EQ_Ac_nodes(5000) . NEWFTU-2026041601.
+! eqnl file format.
+!      1
+!      2
+!      3
+!      4
+!      5
+!      6
+!      7
+!----------------------------------------------------------------------------------------------
+if (EQ_Ac_nodes_list_method==2) then
+    print *, "    Trying to read eqnl files..." 
+    temp_name = trim(trim(Full_Pathname)//'.eqnl')
+    inquire(file=temp_name, exist=alive)  
+    if(alive.EQV..FALSE.)then
+        print *, '    Error :: cannot find eqnl file:',temp_name
+        call Warning_Message('S',Keywords_Blank)
+    else
+        ! Get the number of nodes with applied acceleration
+        num_EQ_Ac_nodes = Tool_Count_Lines(temp_name)
+        ! Check if the number of nodes exceeds 5000
+        if (num_EQ_Ac_nodes > 5000) then
+            print *, '    Error :: Number of acceleration nodes exceeds 5000!'
+            print *, '    Current number of nodes:', num_EQ_Ac_nodes
+            call Warning_Message('S',Keywords_Blank)
+        endif
+        ! Allocate temporary array for reading data
+        ALLOCATE(Temp_DATA(num_EQ_Ac_nodes,1))
+        Call Tool_Read_File(temp_name,"eqnl",num_EQ_Ac_nodes,1,Temp_DATA,Flag_Blank)
+        ! Convert to integer and store in EQ_Ac_nodes array
+        EQ_Ac_nodes(1:num_EQ_Ac_nodes) = INT(Temp_DATA(1:num_EQ_Ac_nodes,1))
+        ! Deallocate temporary array
+        DEALLOCATE(Temp_DATA)
+    endif 
 endif
 
 RETURN

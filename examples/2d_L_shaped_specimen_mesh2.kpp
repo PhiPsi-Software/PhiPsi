@@ -14,6 +14,9 @@
 *Key_Analysis_Type
 1
 
+*Key_Force_Control
+5
+
 % Plane strain.
 *Key_Type_2D
 2
@@ -42,22 +45,16 @@
 
 % Material(1-E,2-v,3-density,4-thick,5-St,6-KIc,7-Sc,8-20(blank))
 *Material_Para_1   
-25.85e9,0.18,2000.0,1.0,1.0e6,0.1e6,100.0e6,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+25.85e9,0.18,2000.0,1.0,1.0e6,1.0e6,100.0e6,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
 
 % Coordinates of initial cracks.
 *CRACK_1
 -0.001,-0.001,0.02475,0.01442
 
-% Play sound (using python2.7).
-*Key_Play_Sounds
-1
 
-% Close the DOS Window when the calculation is finished.
+% Close the terminal when the calculation is finished.
 *Key_Close_Window
 1
-
-
-
 
 *MATERIAL_TYPE_1
 1
@@ -65,6 +62,8 @@
 *KEY_DIMENSION
 2
 
-
+% Compute energy.
+*Key_Cal_Energy
+1
 
 

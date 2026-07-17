@@ -1,21 +1,20 @@
- 
 subroutine Tool_chrpak_digit_to_ch(digit, ch)
 
-  implicit none
+implicit none
 
-  character ch
-  integer digit
+character ch
+integer digit
 
-  if ( 0 <= digit .and. digit <= 9 ) then
+if ( 0 <= digit .and. digit <= 9 ) then
 
     ch = achar ( digit + 48 )
 
-  else
+else
 
     ch = '*'
 
-  end if
+end if
 
-  return
+return
 end subroutine Tool_chrpak_digit_to_ch
 

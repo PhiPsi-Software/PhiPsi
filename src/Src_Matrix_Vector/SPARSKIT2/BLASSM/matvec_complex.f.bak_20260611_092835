@@ -1,0 +1,97 @@
+c----------------------------------------------------------------------c
+c                          S P A R S K I T                             c
+c----------------------------------------------------------------------c
+c          BASIC MATRIX-VECTOR OPERATIONS - MATVEC MODULE              c
+c         Matrix-vector Mulitiplications and Triang. Solves            c
+c----------------------------------------------------------------------c
+c contents: (as of Nov 18, 1991)                                       c
+c----------                                                            c
+c 1) Matrix-vector products:                                           c
+c---------------------------                                           c
+c SPARSKIT2_amux  : A times a vector. Compressed Sparse Row (CSR) format.        c
+c amuxms: A times a vector. Modified Compress Sparse Row format.       c
+c atmux : Transp(A) times a vector. CSR format.                        c
+c atmuxr: Transp(A) times a vector. CSR format. A rectangular.         c
+c amuxe : A times a vector. Ellpack/Itpack (ELL) format.               c
+c amuxd : A times a vector. Diagonal (DIA) format.                     c
+c amuxj : A times a vector. Jagged Diagonal (JAD) format.              c
+c vbrmv : Sparse matrix-full vector product, in VBR format             c
+c                                                                      c
+c 2) Triangular system solutions:                                      c
+c-------------------------------                                       c
+c lsol  : Unit Lower Triang. solve. Compressed Sparse Row (CSR) format.c
+c ldsol : Lower Triang. solve.  Modified Sparse Row (MSR) format.      c
+c lsolc : Unit Lower Triang. solve. Comp. Sparse Column (CSC) format.  c
+c ldsolc: Lower Triang. solve. Modified Sparse Column (MSC) format.    c
+c ldsoll: Lower Triang. solve with level scheduling. MSR format.       c
+c usol  : Unit Upper Triang. solve. Compressed Sparse Row (CSR) format.c
+c udsol : Upper Triang. solve.  Modified Sparse Row (MSR) format.      c
+c usolc : Unit Upper Triang. solve. Comp. Sparse Column (CSC) format.  c
+c udsolc: Upper Triang. solve.  Modified Sparse Column (MSC) format.   c
+c----------------------------------------------------------------------c
+c 1)     M A T R I X    B Y    V E C T O R     P R O D U C T S         c
+c----------------------------------------------------------------------c
+      subroutine SPARSKIT2_amux_complex(n, x, y, nnz,a,ja,ia) 
+      implicit none
+      integer(8),intent(in)::nnz
+      integer,intent(in)::n
+      complex*16 ,intent(in)::x(n),a(nnz) 
+      integer,intent(in)::ja(nnz)
+      integer(kind=8),intent(in)::ia(n+1)
+      complex*16 ,intent(inout)::y(n)
+      
+c-----------------------------------
+c         A times a vector: y = A*x
+c-----------------------------------
+c multiplies a matrix by a vector using the dot product form
+c Matrix A is stored in compressed sparse row storage.
+c
+c on entry:
+c---------------------------------------------------------------
+c n     = row dimension of A
+c x     = real array of length equal to the column dimension of
+c         the A matrix.
+c a, ja,
+c    ia = input matrix in compressed sparse row format.
+c
+c on return:
+c---------------------------------------------------------------
+c y     = real array of length n, containing the product y=Ax
+c
+c-----------------------------------------------------------------------
+c local variables
+c
+      complex*16 t
+      integer i
+      integer(8) k
+c-----------------------------------------------------------------------
+      
+      
+      do i = 1,n
+c
+c     compute the inner product of row i with vector x
+c 
+         t = (0.0d0,0.0d0)
+         do k=ia(i), ia(i+1)-1 
+            t = t + a(k)*x(ja(k))
+         enddo
+c
+c     store result in y(i) 
+c
+         y(i) = t
+      enddo
+c
+      return
+c---------end-of-SPARSKIT2_amux_complex---------------------------------------------------
+c-----------------------------------------------------------------------
+      end subroutine SPARSKIT2_amux_complex
+      
+      
+      
+      
+      
+      
+      
+      
+      
+

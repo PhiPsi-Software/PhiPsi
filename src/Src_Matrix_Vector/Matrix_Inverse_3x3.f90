@@ -1,45 +1,14 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
+!-----------------------------------------------------------
+! Brief: Compute the inverse of a 3x3 matrix by the cofactor formula.
+!
+! Parameters:
+!   Input:  Matrix_A  - input 3x3 matrix
+!   Output: Matrix_invA - inverse matrix (3,3)
+!
+! Notes:   Computes the cofactor matrix and divides by the
+!          determinant; assumes the matrix is non-singular.
+!-----------------------------------------------------------
+
 SUBROUTINE Matrix_Inverse_3x3(Matrix_A,Matrix_invA)   
 ! Find the inverse matrix of the 3x3 matrix A.
 ! https://ardoris.wordpress.com/2008/07/18/general-formula-for-the-inverse-of-a-3x3-matrix/    
@@ -52,8 +21,8 @@ real(kind=FT),intent(out)::Matrix_invA(3,3)
 real(kind=FT) tem
 
 tem =  Matrix_A(1,1)*(Matrix_A(2,2)*Matrix_A(3,3) -Matrix_A(2,3)*Matrix_A(3,2))- &
-       Matrix_A(1,2)*(Matrix_A(2,1)*Matrix_A(3,3) -Matrix_A(2,3)*Matrix_A(3,1))+ &
-       Matrix_A(1,3)*(Matrix_A(2,1)*Matrix_A(3,2) -Matrix_A(2,2)*Matrix_A(3,1))
+Matrix_A(1,2)*(Matrix_A(2,1)*Matrix_A(3,3) -Matrix_A(2,3)*Matrix_A(3,1))+ &
+Matrix_A(1,3)*(Matrix_A(2,1)*Matrix_A(3,2) -Matrix_A(2,2)*Matrix_A(3,1))
 
 Matrix_invA(1,1) = Matrix_A(2,2)*Matrix_A(3,3) -Matrix_A(2,3)*Matrix_A(3,2)
 Matrix_invA(2,1) = Matrix_A(2,3)*Matrix_A(3,1) -Matrix_A(2,1)*Matrix_A(3,3)
@@ -68,6 +37,6 @@ Matrix_invA = Matrix_invA/tem
 
 return
 END SUBROUTINE Matrix_Inverse_3x3
-    
+
 
 

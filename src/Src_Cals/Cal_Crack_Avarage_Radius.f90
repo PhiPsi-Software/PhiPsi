@@ -1,45 +1,15 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
+!-----------------------------------------------------------
+! Brief: Estimate the average radius of a 3D crack from its meshed boundary.
+!
+! Parameters:
+!   Input:  i_Crack      - crack index (1-based)
+!   Output: Crack_Radius - average distance from crack center to front nodes
+!
+! Notes:   Sums the 3D distances from the stored circle center to each
+!          meshed boundary node and divides by the number of front nodes.
+!          Rough estimate only; assumes a circular crack geometry.
+!-----------------------------------------------------------
+
 subroutine Cal_Crack_Avarage_Radius(i_Crack,Crack_Radius)
 ! Calculate crack radius (3D). NEWFTU2024021501.
 ! Rough calculation: Calculate the average distance from the crack front to the center of the crack.
@@ -77,15 +47,15 @@ center_y = Crack3D_Cir_Coor(i_Crack,2)
 center_z = Crack3D_Cir_Coor(i_Crack,3) 
 Num_CrMesh_Outlines = Crack3D_Meshed_Outline_num(i_Crack)
 do i_Out_Node = 1,Num_CrMesh_Outlines
-  c_Mesh_Node = Crack3D_Meshed_Outline(i_Crack)%row(i_Out_Node,1)
-  c_x_front  = Crack3D_Meshed_Node(i_Crack)%row(c_Mesh_Node,1) 
-  c_y_front   = Crack3D_Meshed_Node(i_Crack)%row(c_Mesh_Node,2) 
-  c_z_front   = Crack3D_Meshed_Node(i_Crack)%row(c_Mesh_Node,3)
-  tem_dis = Tool_Function_2Point_Dis_3D([center_x,center_y,center_z],[c_x_front,c_y_front,c_z_front])
-  dis_Sum = dis_Sum + tem_dis
+    c_Mesh_Node = Crack3D_Meshed_Outline(i_Crack)%row(i_Out_Node,1)
+    c_x_front  = Crack3D_Meshed_Node(i_Crack)%row(c_Mesh_Node,1) 
+    c_y_front   = Crack3D_Meshed_Node(i_Crack)%row(c_Mesh_Node,2) 
+    c_z_front   = Crack3D_Meshed_Node(i_Crack)%row(c_Mesh_Node,3)
+    tem_dis = Tool_Function_2Point_Dis_3D([center_x,center_y,center_z],[c_x_front,c_y_front,c_z_front])
+    dis_Sum = dis_Sum + tem_dis
 enddo
 
 Crack_Radius = dis_Sum/Num_CrMesh_Outlines
-   
+
 return 
 end SUBROUTINE Cal_Crack_Avarage_Radius             

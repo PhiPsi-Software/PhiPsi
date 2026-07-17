@@ -1,45 +1,19 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
+!-----------------------------------------------------------
+! Brief: Compute crack opening at a 3D point on a crack surface.
+!
+! Parameters:
+!   Input:  c_Crack  - crack index
+!           c_Point  - 3D coordinates of the query point
+!           c_DISP   - global displacement vector
+!           ori_n    - local crack normal vector
+!           T        - 3x3 transformation matrix
+!   Output: Aperture - normal opening at the point
+!
+! Notes:   Offsets up/down by delta_L along ori_n, resolves
+!          the host element, and computes the relative normal
+!          displacement to obtain the 3D crack aperture.
+!-----------------------------------------------------------
+
 subroutine Cal_Point_Aperture_3D(c_Crack,c_Point,c_DISP,ori_n,T,Aperture,print_tab)
 ! Calculate the opening at a point on the crack (3D).
 ! 2020-01-18.
@@ -83,42 +57,40 @@ call Cal_Ele_Num_by_Coors_3D(low_offset_P(1),low_offset_P(2),low_offset_P(3),Ele
 call Cal_KesiYita_by_Coor_3D(up_offset_P,up_Elem_num,up_Kesi,up_Yita,up_Zeta)
 call Cal_KesiYita_by_Coor_3D(low_offset_P,low_Elem_num,low_Kesi,low_Yita,low_Zeta)  
 if(up_Elem_num<=0)then
-      offset_dis = delta_L/TWO
-      call Cal_Ele_Num_by_Coors_3D_Try(up_offset_P(1), &
-                  up_offset_P(2),up_offset_P(3),offset_dis,     &
-                  up_offset_P(1),up_offset_P(2),up_offset_P(3),up_Elem_num)
-      if(up_Elem_num<=0)then
+    offset_dis = delta_L/TWO
+    call Cal_Ele_Num_by_Coors_3D_Try(up_offset_P(1), up_offset_P(2),up_offset_P(3),offset_dis, &
+    up_offset_P(1),up_offset_P(2),up_offset_P(3),up_Elem_num)
+    if(up_Elem_num<=0)then
         if (print_tab==5)then
-          print *,"     WARNING :: illegal up_Elem_num in Cal_Point_Aperture_3D.f"
+            print *,"     WARNING :: illegal up_Elem_num in Cal_Point_Aperture_3D.f"
         elseif(print_tab==10)then
-          print *,"           WARNING :: illegal up_Elem_num in Cal_Point_Aperture_3D.f"          
+            print *,"           WARNING :: illegal up_Elem_num in Cal_Point_Aperture_3D.f"          
         endif
         return            
-      endif
+    endif
 endif
 if(low_Elem_num<=0)then
-      offset_dis = delta_L/TWO
-      call Cal_Ele_Num_by_Coors_3D_Try(low_offset_P(1),  &
-                                       low_offset_P(2),low_offset_P(3),offset_dis,  &
-                                       low_offset_P(1),low_offset_P(2),low_offset_P(3),low_Elem_num)
-      if(low_Elem_num<=0)then                      
-          if (print_tab==5)then
+    offset_dis = delta_L/TWO
+    call Cal_Ele_Num_by_Coors_3D_Try(low_offset_P(1), low_offset_P(2),low_offset_P(3),offset_dis, &
+    low_offset_P(1),low_offset_P(2),low_offset_P(3),low_Elem_num)
+    if(low_Elem_num<=0)then                      
+        if (print_tab==5)then
             print *,"     WARNING :: illegal low_Elem_num in Cal_Point_Aperture_3D.f"
-          elseif(print_tab==10)then
+        elseif(print_tab==10)then
             print *,"           WARNING :: illegal low_Elem_num in Cal_Point_Aperture_3D.f"         
-          endif     
-          return
-      endif
+        endif     
+        return
+    endif
 endif
 
 call Cal_Any_Point_Disp_KesiYita_3D(up_Elem_num,up_Kesi,up_Yita,up_Zeta,c_DISP,up_P_Disp)
 call Cal_Any_Point_Disp_KesiYita_3D(low_Elem_num,low_Kesi,low_Yita,low_Zeta,c_DISP,low_P_Disp)    
-    
+
 Relative_Disp(1:3) = up_P_Disp- low_P_Disp      
 
 norm_Flu_Ele_Vector = ONE
 Aperture   = (Relative_Disp(1)*ori_n(1)+ Relative_Disp(2)*ori_n(2)+ Relative_Disp(3)*ori_n(3))/norm_Flu_Ele_Vector
-  
+
 
 return 
 end SUBROUTINE Cal_Point_Aperture_3D           

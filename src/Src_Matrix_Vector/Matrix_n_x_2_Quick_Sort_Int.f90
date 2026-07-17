@@ -1,4 +1,4 @@
- 
+
 subroutine Matrix_n_x_2_Quick_Sort_Int(Matrix, n, Index)
 
     implicit none

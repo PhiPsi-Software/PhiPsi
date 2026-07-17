@@ -1,48 +1,22 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
-SUBROUTINE Ele_by_Ele_FEM_PCG(c_isub,c_Lambda,c_cg_tol, &
-                              c_max_num_PCG,c_num_FreeD,c_freeDOF,c_F,c_disp, &
-                              c_Total_Num_G_P)
+!-----------------------------------------------------------
+! Brief: 2D FEM element-by-element diagonally preconditioned PCG solver.
+!
+! Parameters:
+!   Input:  c_isub            - load step index
+!           c_Lambda          - load factor
+!           c_cg_tol          - PCG convergence tolerance
+!           c_max_num_PCG     - maximum PCG iterations
+!           c_num_FreeD       - number of free DOF
+!           c_freeDOF         - list of free DOF indices
+!           c_F               - global load vector (free DOF)
+!   Output: c_disp            - solution displacement vector
+!           c_Total_Num_G_P   - total number of Gauss points
+!
+! Notes:   Uses the true residual norm for the convergence test;
+!          element stiffness and preconditioner are computed inline.
+!-----------------------------------------------------------
+
+SUBROUTINE Ele_by_Ele_FEM_PCG(c_isub,c_Lambda,c_cg_tol, c_max_num_PCG,c_num_FreeD,c_freeDOF,c_F,c_disp, c_Total_Num_G_P)
 !Element by Element, diagonally preconditioned conjugate gradient solver.
 !Ref: Programming the finite element method_2014_Smith_5th, Program 5.6.
 !First written on 2020-03-25.
@@ -89,15 +63,14 @@ real(kind=FT),ALLOCATABLE::temp_p(:), temp_u(:)
 print *, "    >>>> Start of element by element PCG solver <<<<"
 
 print *, "    Step 1: prepare data..."
-ALLOCATE(p(0:c_num_FreeD),loads(0:c_num_FreeD), &
-         x(0:c_num_FreeD),xnew(0:c_num_FreeD),u(0:c_num_FreeD), &
-         diag_precon(0:c_num_FreeD),pcg_d(0:c_num_FreeD))   
+ALLOCATE(p(0:c_num_FreeD),loads(0:c_num_FreeD), x(0:c_num_FreeD),xnew(0:c_num_FreeD),u(0:c_num_FreeD), &
+diag_precon(0:c_num_FreeD),pcg_d(0:c_num_FreeD))
 diag_precon = ZR
 
 c_Total_Num_G_P = 0
 do i_E = 1, Num_Elem    
-  Ele_GP_Start_Num(i_E) = c_Total_Num_G_P + 1
-  c_Total_Num_G_P = c_Total_Num_G_P + Num_Gauss_P_FEM
+    Ele_GP_Start_Num(i_E) = c_Total_Num_G_P + 1
+    c_Total_Num_G_P = c_Total_Num_G_P + Num_Gauss_P_FEM
 enddo
 
 max_threads = omp_get_max_threads()
@@ -117,56 +90,51 @@ all_local(1:ndof, 1:Num_Elem) = 0
 c_thread = omp_get_thread_num() + 1
 !$OMP DO SCHEDULE(static)
 do i_E = 1, Num_Elem
-  mat_num = Elem_Mat(i_E)
-  c_thick = thick(Elem_Mat(i_E))
-  
-  c_D(1:3, 1:3) = D(Elem_Mat(i_E), 1:3, 1:3)
-  
-  if(Flag_Weibull_E) then
-      if (Key_Weibull_E(Elem_Mat(i_E)) == 1) then
-          c_D = Weibull_Elements_D_Matrix(i_E, 1:3, 1:3)
-      endif
-  endif
-          
-  c_NN = G_NN(1:4, i_E)
-  c_X_NODES = G_X_NODES(1:4, i_E)
-  c_Y_NODES = G_Y_NODES(1:4, i_E)
-  
-  a_local = [c_NN(1)*2-1, c_NN(1)*2, c_NN(2)*2-1, c_NN(2)*2, &
-             c_NN(3)*2-1, c_NN(3)*2, c_NN(4)*2-1, c_NN(4)*2]
-  
-  local(1:ndof) = 0
-  DO k = 1, ndof
-      if (any(c_freeDOF(1:c_num_FreeD) == a_local(k))) then
-          c_loca = minloc(c_freeDOF(1:c_num_FreeD), 1, &
-                         MASK=(c_freeDOF(1:c_num_FreeD).eq.a_local(k)))
-      else
-          c_loca = 0
-      endif     
-      local(k) = c_loca
-  enddo
-  
-  all_local(1:ndof, i_E) = local(1:ndof)
-  localK(1:ndof, 1:ndof) = ZR
-  
-  call Cal_Ele_Stiffness_Matrix_N4(c_X_NODES, c_Y_NODES, c_thick, &
-                                    c_D, kesi, yita, weight, localK)
-  storK(1:ndof, 1:ndof, i_E) = localK(1:ndof, 1:ndof)
-  
-  DO j = 1, ndof
-      c_loca = local(j)
-      if(c_loca > 0) then
-          diag_precon_thread(c_loca, c_thread) = &
-              diag_precon_thread(c_loca, c_thread) + localK(j, j)
-      endif
-  END DO
+    mat_num = Elem_Mat(i_E)
+    c_thick = thick(Elem_Mat(i_E))
+
+    c_D(1:3, 1:3) = D(Elem_Mat(i_E), 1:3, 1:3)
+
+    if(Flag_Weibull_E) then
+        if (Key_Weibull_E(Elem_Mat(i_E)) == 1) then
+            c_D = Weibull_Elements_D_Matrix(i_E, 1:3, 1:3)
+        endif
+    endif
+
+    c_NN = G_NN(1:4, i_E)
+    c_X_NODES = G_X_NODES(1:4, i_E)
+    c_Y_NODES = G_Y_NODES(1:4, i_E)
+
+    a_local = [c_NN(1)*2-1, c_NN(1)*2, c_NN(2)*2-1, c_NN(2)*2, c_NN(3)*2-1, c_NN(3)*2, c_NN(4)*2-1, c_NN(4)*2]
+
+    local(1:ndof) = 0
+    DO k = 1, ndof
+        if (any(c_freeDOF(1:c_num_FreeD) == a_local(k))) then
+            c_loca = minloc(c_freeDOF(1:c_num_FreeD), 1, MASK=(c_freeDOF(1:c_num_FreeD).eq.a_local(k)))
+        else
+            c_loca = 0
+        endif     
+        local(k) = c_loca
+    enddo
+
+    all_local(1:ndof, i_E) = local(1:ndof)
+    localK(1:ndof, 1:ndof) = ZR
+
+    call Cal_Ele_Stiffness_Matrix_N4(c_X_NODES, c_Y_NODES, c_thick, c_D, kesi, yita, weight, localK)
+    storK(1:ndof, 1:ndof, i_E) = localK(1:ndof, 1:ndof)
+
+    DO j = 1, ndof
+        c_loca = local(j)
+        if(c_loca > 0) then
+            diag_precon_thread(c_loca, c_thread) = diag_precon_thread(c_loca, c_thread) + localK(j, j)
+        endif
+    END DO
 enddo
 !$omp end do
 !$omp end parallel
 
 DO i_Thread = 1, max_threads
-    diag_precon(0:c_num_FreeD) = diag_precon(0:c_num_FreeD) + &
-                                  diag_precon_thread(0:c_num_FreeD, i_Thread)
+    diag_precon(0:c_num_FreeD) = diag_precon(0:c_num_FreeD) + diag_precon_thread(0:c_num_FreeD, i_Thread)
 ENDDO
 
 print *, "    Step 3: Invert the preconditioner and get starting loads..."
@@ -196,76 +164,76 @@ if (initial_residual_norm<Tol_20) initial_residual_norm = Tol_20
 ALLOCATE(temp_p(ndof), temp_u(ndof))
 
 do i_PCG = 1, c_max_num_PCG
-  cg_iters = cg_iters + 1
-  u = ZR
+    cg_iters = cg_iters + 1
+    u = ZR
 
-  u_thread(0:c_num_FreeD, 1:max_threads) = ZR
-  
-  !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(c_thread,i_E,local,localK,temp_p,temp_u,j)
-  c_thread = omp_get_thread_num() + 1
-  !$OMP DO         
-  do i_E = 1, Num_Elem
-      local = all_local(1:ndof, i_E)
-      localK = storK(1:ndof, 1:ndof, i_E)
-      
-      do j = 1, ndof
-          if(local(j) > 0) then
-              temp_p(j) = p(local(j))
-          else
-              temp_p(j) = 0.0_FT
-          endif
-      enddo
-      
-      temp_u = MATMUL(localK, temp_p)
-      
-      do j = 1, ndof
-          if(local(j) > 0) then
-              u_thread(local(j), c_thread) = u_thread(local(j), c_thread) + temp_u(j)
-          endif
-      enddo
-  enddo
-  !$omp end do
-  !$omp end parallel
-  
-  DO i_Thread = 1, max_threads
-      u = u + u_thread(:, i_Thread)
-  ENDDO
-  
-  up = DOT_PRODUCT(loads(1:c_num_FreeD), pcg_d(1:c_num_FreeD))
-  alpha = up / DOT_PRODUCT(p(1:c_num_FreeD), u(1:c_num_FreeD))
-  xnew = x + p * alpha
-  loads = loads - u * alpha
-  
-  current_residual_norm = SQRT(DOT_PRODUCT(loads(1:c_num_FreeD), loads(1:c_num_FreeD)))
-  Tol = current_residual_norm / initial_residual_norm
-  
-  pcg_d(1:c_num_FreeD) = diag_precon(1:c_num_FreeD) * loads(1:c_num_FreeD)
-  pcg_d(0) = ZR
-  
-  beta = DOT_PRODUCT(loads(1:c_num_FreeD), pcg_d(1:c_num_FreeD)) / up
-  p = pcg_d + p * beta
-  x = xnew
-  
-  if(cg_iters <= 300) then
-      if(mod(cg_iters, 50) == 0 .OR. cg_iters == 1) then
-          write(*,103) cg_iters, Tol, c_cg_tol
-      endif
-  else
-      if(mod(cg_iters, 100) == 0) then
-          write(*,103) cg_iters, Tol, c_cg_tol
-      endif
-  endif
-  
-  if(Tol < c_cg_tol) then
-      exit
-  endif
-  
-  if(cg_iters == c_max_num_PCG) then
-      print *, '    -------------------------------------'
-      print *, '        Warning :: PCG-EBE failed!       '
-      print *, '    -------------------------------------'
-      exit
-  endif
+    u_thread(0:c_num_FreeD, 1:max_threads) = ZR
+
+    !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(c_thread,i_E,local,localK,temp_p,temp_u,j)
+    c_thread = omp_get_thread_num() + 1
+    !$OMP DO         
+    do i_E = 1, Num_Elem
+        local = all_local(1:ndof, i_E)
+        localK = storK(1:ndof, 1:ndof, i_E)
+
+        do j = 1, ndof
+            if(local(j) > 0) then
+                temp_p(j) = p(local(j))
+            else
+                temp_p(j) = 0.0_FT
+            endif
+        enddo
+
+        temp_u = MATMUL(localK, temp_p)
+
+        do j = 1, ndof
+            if(local(j) > 0) then
+                u_thread(local(j), c_thread) = u_thread(local(j), c_thread) + temp_u(j)
+            endif
+        enddo
+    enddo
+    !$omp end do
+    !$omp end parallel
+
+    DO i_Thread = 1, max_threads
+        u = u + u_thread(:, i_Thread)
+    ENDDO
+
+    up = DOT_PRODUCT(loads(1:c_num_FreeD), pcg_d(1:c_num_FreeD))
+    alpha = up / DOT_PRODUCT(p(1:c_num_FreeD), u(1:c_num_FreeD))
+    xnew = x + p * alpha
+    loads = loads - u * alpha
+
+    current_residual_norm = SQRT(DOT_PRODUCT(loads(1:c_num_FreeD), loads(1:c_num_FreeD)))
+    Tol = current_residual_norm / initial_residual_norm
+
+    pcg_d(1:c_num_FreeD) = diag_precon(1:c_num_FreeD) * loads(1:c_num_FreeD)
+    pcg_d(0) = ZR
+
+    beta = DOT_PRODUCT(loads(1:c_num_FreeD), pcg_d(1:c_num_FreeD)) / up
+    p = pcg_d + p * beta
+    x = xnew
+
+    if(cg_iters <= 300) then
+        if(mod(cg_iters, 50) == 0 .OR. cg_iters == 1) then
+            write(*,103) cg_iters, Tol, c_cg_tol
+        endif
+    else
+        if(mod(cg_iters, 100) == 0) then
+            write(*,103) cg_iters, Tol, c_cg_tol
+        endif
+    endif
+
+    if(Tol < c_cg_tol) then
+        exit
+    endif
+
+    if(cg_iters == c_max_num_PCG) then
+        print *, '    -------------------------------------'
+        print *, '        Warning :: PCG-EBE failed!       '
+        print *, '    -------------------------------------'
+        exit
+    endif
 enddo
 
 DEALLOCATE(temp_p, temp_u)

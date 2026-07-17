@@ -1,0 +1,49 @@
+% Working directory.
+*Work_Directory
+/mnt/x/PhiPsi_Project/GitHub_Prep/examples/2d_T_Shaped_Crack
+
+% Filename of input files.
+*Filename
+T_Shaped_Crack
+
+% Number of initial cracks.
+*num_Crack
+2
+
+% Analysis type (Quasi-static).
+*Key_Analysis_Type
+1
+
+% Plane stress.
+*Key_Type_2D
+1
+
+% Linear system solver (MUMPS).
+*Key_SLOE
+6
+
+% Factor of propagation length (propagation length = factor * the average element size)
+*Factor_Propagation
+1.5
+
+% Number of propagation steps.
+*Num_Substeps
+1
+
+% Crack propagation criterion.
+*CFCP
+2
+
+% Material(1-E,2-v,3-density,4-thick,5-St,6-KIc,7-Sc,8-20(blank))
+*Material_Para_1
+20.0e9,0.2,2000.0,1.0,1.0e6,1.0e6,100.0e6,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+
+% Coordinates of initial cracks.
+*CRACK_1
+-0.1e-3,10.5e-3,10.5e-3,10.5e-3
+*CRACK_2
+10.5e-3,5.5e-3,10.5e-3,15.5e-3
+
+*Key_Close_Window
+1
+

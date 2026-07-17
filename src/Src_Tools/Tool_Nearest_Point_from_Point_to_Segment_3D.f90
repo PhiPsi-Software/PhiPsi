@@ -1,45 +1,16 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
+!-----------------------------------------------------------
+! Brief: Find the closest point on a 3D line segment to a given query point
+!
+! Parameters:
+!   Input:  point         - Query point in 3D
+!   Input:  line          - Segment endpoints as a 2x3 array
+!   Output: nearestPoint  - Closest point on the segment
+!   Output: distance      - Distance from the query point to nearestPoint
+!
+! Notes:   Projects the query onto the supporting line and clamps the
+!          result to the segment's endpoints if it falls outside the segment.
+!-----------------------------------------------------------
+
 subroutine Tool_Nearest_Point_from_Point_to_Segment_3D(point,line,nearestPoint,distance)
 ! Calculate the closest point from a point to a 3D line segment.
 !ref:
@@ -71,9 +42,7 @@ v = Point-P1
 t = dot_product(v,direction_vector)
 
 nearestPoint = P1+t*direction_vector
-distance = sqrt((point(1)-nearestPoint(1))**2 +&
-                (point(2)-nearestPoint(2))**2 +&
-                (point(3)-nearestPoint(3))**2)
+distance = sqrt((point(1)-nearestPoint(1))**2 + (point(2)-nearestPoint(2))**2 + (point(3)-nearestPoint(3))**2)
 
 dis_to_P1 = sqrt((point(1)-P1(1))**2 +(point(2)-P1(2))**2 +(point(3)-P1(3))**2)
 dis_to_P2 = sqrt((point(1)-P2(1))**2 +(point(2)-P2(2))**2 +(point(3)-P2(3))**2)

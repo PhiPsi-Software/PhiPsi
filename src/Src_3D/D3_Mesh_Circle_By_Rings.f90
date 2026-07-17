@@ -1,44 +1,18 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
+!-----------------------------------------------------------
+! Brief: Mesh a circular 3D crack surface using concentric rings.
+!
+! Parameters:
+!   Input:  i_C          - crack index
+!           cir_center   - circle center (x,y,z)
+!           cir_vec      - circle normal vector
+!           radius       - circle radius
+!           elemL        - target element edge length
+!   In/Out: Ele_Num_Cache - element-number cache (grows as needed)
+!
+! Notes:   Builds an orthonormal (a,b) basis on the circle plane,
+!          then lays out a center node plus nR radial rings of
+!          nTheta nodes each, with consistent CCW numbering.
+!-----------------------------------------------------------
 
 subroutine D3_Mesh_Circle_By_Rings(i_C, cir_center, cir_vec, radius, elemL, Ele_Num_Cache)
 ! Circular crack meshing (no crossing, consistent numbering).
@@ -115,12 +89,9 @@ do iRing = 1, nR
     r = dr*dble(iRing)
     do j = 1, nTheta
         theta = dble(j-1)*TWO*pi/dble(nTheta)
-        Crack3D_Meshed_Node(i_C)%row(ringStart(iRing)+j-1,1) = &
-            cir_center(1) + r*a(1)*cos(theta) + r*b(1)*sin(theta)
-        Crack3D_Meshed_Node(i_C)%row(ringStart(iRing)+j-1,2) = &
-            cir_center(2) + r*a(2)*cos(theta) + r*b(2)*sin(theta)
-        Crack3D_Meshed_Node(i_C)%row(ringStart(iRing)+j-1,3) = &
-            cir_center(3) + r*a(3)*cos(theta) + r*b(3)*sin(theta)
+Crack3D_Meshed_Node(i_C)%row(ringStart(iRing)+j-1,1) = cir_center(1) + r*a(1)*cos(theta) + r*b(1)*sin(theta)
+Crack3D_Meshed_Node(i_C)%row(ringStart(iRing)+j-1,2) = cir_center(2) + r*a(2)*cos(theta) + r*b(2)*sin(theta)
+Crack3D_Meshed_Node(i_C)%row(ringStart(iRing)+j-1,3) = cir_center(3) + r*a(3)*cos(theta) + r*b(3)*sin(theta)
     enddo
 enddo
 
@@ -181,11 +152,8 @@ call D3_Find_Crack_Mesh_Outline(i_C,eleCount,nodeCount,Crack3D_Meshed_Ele(i_C)%r
 
 ! Locate nodes in background elements and compute local coordinates
 do i_Cr_Node = 1, nodeCount
-    call Cal_Ele_Num_by_Coors_3D( &
-        Crack3D_Meshed_Node(i_C)%row(i_Cr_Node,1), &
-        Crack3D_Meshed_Node(i_C)%row(i_Cr_Node,2), &
-        Crack3D_Meshed_Node(i_C)%row(i_Cr_Node,3), &
-        Ele_Num_Cache, in_Elem_num)
+call Cal_Ele_Num_by_Coors_3D( Crack3D_Meshed_Node(i_C)%row(i_Cr_Node,1), Crack3D_Meshed_Node(i_C)%row(i_Cr_Node,2), &
+Crack3D_Meshed_Node(i_C)%row(i_Cr_Node,3), Ele_Num_Cache, in_Elem_num)
 
     if(in_Elem_num==0 .and. Key_Warning_Level>=3) then
         print *,'    WARN :: in_Elem_num=0 in D3_Mesh_Circle_By_Rings!'

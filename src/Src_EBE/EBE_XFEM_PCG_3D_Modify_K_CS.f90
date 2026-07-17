@@ -1,47 +1,19 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
-subroutine EBE_XFEM_PCG_3D_Modify_K_CS(isub,num_freeD,freeDOF,size_local_0, &
-       all_local_0,diag_precon_no_invert)
+!-----------------------------------------------------------
+! Brief: Apply CS_Contact_Elements penalty modifications to the 3D XFEM stiffness.
+!
+! Parameters:
+!   Input:  isub                  - load step index
+!           num_freeD             - number of free degrees of freedom
+!           freeDOF               - list of free DOF indices
+!           size_local_0          - per-element local DOF size
+!           all_local_0           - per-element local DOF map
+!   Output: diag_precon_no_invert - diagonal preconditioner (uninverted)
+!
+! Notes:   Updates the global storK_XFEM_Updated array with compressive
+!          and shear penalty contributions based on Elem_Conta_Sta.
+!-----------------------------------------------------------
+
+subroutine EBE_XFEM_PCG_3D_Modify_K_CS(isub,num_freeD,freeDOF,size_local_0, all_local_0,diag_precon_no_invert)
 ! Apply compressive and shear penalty function modifications to the CS_Contact_Elements stiffness
 ! matrix according to Elem_Conta_Sta.
 ! Used for Key_Contact=6.
@@ -101,10 +73,10 @@ enddo
 
 max_threads = omp_get_max_threads()
 if(Key_EBE_Precondition == 1)then
-  ALLOCATE(diag_precon_no_invert_thread(0:num_FreeD,1:max_threads))
-  diag_precon_no_invert_thread(0:num_FreeD,1:max_threads)= ZR 
+    ALLOCATE(diag_precon_no_invert_thread(0:num_FreeD,1:max_threads))
+    diag_precon_no_invert_thread(0:num_FreeD,1:max_threads)= ZR 
 endif
-      
+
 print *,"    PCG-EBE: get c_Penalty_CS for Penalty function treatment..."   
 Yes_DOF_Dealed(1:Total_FD) = 0
 
@@ -115,180 +87,174 @@ print *,"    PCG-EBE: Penalty function treatment for XFEM elements..."
 
 
 do i_C=1,num_Crack
-  do i_E = 1,num_XFEM_Elem
-      c_Elem = XFEM_Elem_List(i_E)
-      if(Elem_Conta_Sta(c_Elem,i_C)==1) then
-          cEle_Loc = Elem_Location(c_Elem,1)           
-          
-          if(Elem_Type_3D(c_Elem,i_C)==0) then
-              cycle
-          endif
-      
-          c_NN(1:8)    = G_NN(1:8,c_Elem)
+    do i_E = 1,num_XFEM_Elem
+        c_Elem = XFEM_Elem_List(i_E)
+        if(Elem_Conta_Sta(c_Elem,i_C)==1) then
+            cEle_Loc = Elem_Location(c_Elem,1)           
 
-          cnt = 0
-          c_LocXFEM(1:3) = 0
-          do i_N = 1,8
-            if (Enriched_Node_Type_3D(c_NN(i_N),i_C) .eq. 2)then  
-                cnt = cnt + 1
-                c_DOFs(1) = 3*c_POS_3D(c_NN(i_N),i_C) - 2
-                c_DOFs(2) = 3*c_POS_3D(c_NN(i_N),i_C) - 1
-                c_DOFs(3) = 3*c_POS_3D(c_NN(i_N),i_C)  
-                
-                c_LocXFEM(1) = 24 + 3*cnt -2
-                c_LocXFEM(2) = 24 + 3*cnt -1
-                c_LocXFEM(3) = 24 + 3*cnt                    
-                
-                  Yes_DOF_Dealed(c_DOFs(1))=1
-                  c_Beta(1:3) = Enriched_Node_Crack_n_Vector_3D(c_NN(i_N))%row(i_C,1:3)
-                  if(Key_Penalty_CS_Method==1) then
-                      do j=1,3
-                          do i=1,3       
-                              storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i),c_LocXFEM(j)) = &
-                                storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i),c_LocXFEM(j)) &
-                                   + c_Penalty_CS*c_Beta(i)*c_Beta(j)
-                          enddo
-                      enddo
-                  elseif(Key_Penalty_CS_Method==2) then
-                      do j=3,3
-                          do i=3,3           
-                              storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i),c_LocXFEM(j)) = &
-                              storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i),c_LocXFEM(j)) &
-                                   + c_Penalty_CS*c_Beta(i)*c_Beta(j)
-                          enddo
-                      enddo
-                  endif
-            elseif(Enriched_Node_Type_3D(c_NN(i_N),i_C).eq.1)then 
-                do i_f=1,Num_F_Functions
+            if(Elem_Type_3D(c_Elem,i_C)==0) then
+                cycle
+            endif
+
+            c_NN(1:8)    = G_NN(1:8,c_Elem)
+
+            cnt = 0
+            c_LocXFEM(1:3) = 0
+            do i_N = 1,8
+                if (Enriched_Node_Type_3D(c_NN(i_N),i_C) .eq. 2)then  
                     cnt = cnt + 1
-                    c_DOFs(1) = 3*(c_POS_3D(c_NN(i_N),i_C)+i_f-1) - 2
-                    c_DOFs(2) = 3*(c_POS_3D(c_NN(i_N),i_C)+i_f-1) - 1
-                    c_DOFs(3) = 3*(c_POS_3D(c_NN(i_N),i_C)+i_f-1)   
-                    
+                    c_DOFs(1) = 3*c_POS_3D(c_NN(i_N),i_C) - 2
+                    c_DOFs(2) = 3*c_POS_3D(c_NN(i_N),i_C) - 1
+                    c_DOFs(3) = 3*c_POS_3D(c_NN(i_N),i_C)  
+
                     c_LocXFEM(1) = 24 + 3*cnt -2
                     c_LocXFEM(2) = 24 + 3*cnt -1
                     c_LocXFEM(3) = 24 + 3*cnt                    
-                    
-                    if (Yes_DOF_Dealed(c_DOFs(1))==0) then
-                      Yes_DOF_Dealed(c_DOFs(1))=1
-                      c_Beta(1:3) = Enriched_Node_Crack_n_Vector_3D(c_NN(i_N))%row(i_C,1:3)
-                      if(Key_Penalty_CS_Method==1) then
-                          do j=1,3
-                              do i=1,3       
-                                  storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i),c_LocXFEM(j)) = &
-                                    storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i),c_LocXFEM(j)) &
-                                       + c_Penalty_CS*c_Beta(i)*c_Beta(j)
-                              enddo
-                          enddo
-                      elseif(Key_Penalty_CS_Method==2) then
-                          do j=3,3
-                              do i=3,3           
-                                  storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i),c_LocXFEM(j)) = &
-                                  storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i),c_LocXFEM(j)) &
-                                       + c_Penalty_CS*c_Beta(i)*c_Beta(j)
-                              enddo
-                          enddo
-                      endif    
+
+                    Yes_DOF_Dealed(c_DOFs(1))=1
+                    c_Beta(1:3) = Enriched_Node_Crack_n_Vector_3D(c_NN(i_N))%row(i_C,1:3)
+                    if(Key_Penalty_CS_Method==1) then
+                        do j=1,3
+                            do i=1,3       
+                                storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i),c_LocXFEM(j)) = &
+                                storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i),c_LocXFEM(j)) + c_Penalty_CS*c_Beta(i)*c_Beta(j)
+                            enddo
+                        enddo
+                    elseif(Key_Penalty_CS_Method==2) then
+                        do j=3,3
+                            do i=3,3           
+                                storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i),c_LocXFEM(j)) = &
+                                storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i),c_LocXFEM(j)) + c_Penalty_CS*c_Beta(i)*c_Beta(j)
+                            enddo
+                        enddo
                     endif
-                end do  
-              
-            elseif(Enriched_Node_Type_3D(c_NN(i_N),i_C).eq.3)then 
-                cnt = cnt + 1
-                c_DOFs(1) = 3*c_POS_3D(c_NN(i_N),i_C) - 2
-                c_DOFs(2) = 3*c_POS_3D(c_NN(i_N),i_C) - 1
-                c_DOFs(3) = 3*c_POS_3D(c_NN(i_N),i_C)        
-                
-                c_LocXFEM(1) = 24 + 3*cnt -2
-                c_LocXFEM(2) = 24 + 3*cnt -1
-                c_LocXFEM(3) = 24 + 3*cnt                    
-                
-                  Yes_DOF_Dealed(c_DOFs(1))=1
-                  c_Beta(1:3) = Enriched_Node_Crack_n_Vector_3D(c_NN(i_N))%row(i_C,1:3)
-                  if(Key_Penalty_CS_Method==1) then
-                      do j=1,3
-                          do i=1,3       
-                              storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i),c_LocXFEM(j)) = &
-                                storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i),c_LocXFEM(j)) &
-                                   + c_Penalty_CS*c_Beta(i)*c_Beta(j)
-                          enddo
-                      enddo
-                  elseif(Key_Penalty_CS_Method==2) then
-                      do j=3,3
-                          do i=3,3           
-                              storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i),c_LocXFEM(j)) = &
-                              storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i),c_LocXFEM(j)) &
-                                   + c_Penalty_CS*c_Beta(i)*c_Beta(j)
-                          enddo
-                      enddo
-                  endif              
-            else
-                cycle
-            end if
-          end do
-      endif
-  enddo
+                elseif(Enriched_Node_Type_3D(c_NN(i_N),i_C).eq.1)then 
+                    do i_f=1,Num_F_Functions
+                        cnt = cnt + 1
+                        c_DOFs(1) = 3*(c_POS_3D(c_NN(i_N),i_C)+i_f-1) - 2
+                        c_DOFs(2) = 3*(c_POS_3D(c_NN(i_N),i_C)+i_f-1) - 1
+                        c_DOFs(3) = 3*(c_POS_3D(c_NN(i_N),i_C)+i_f-1)   
+
+                        c_LocXFEM(1) = 24 + 3*cnt -2
+                        c_LocXFEM(2) = 24 + 3*cnt -1
+                        c_LocXFEM(3) = 24 + 3*cnt                    
+
+                        if (Yes_DOF_Dealed(c_DOFs(1))==0) then
+                            Yes_DOF_Dealed(c_DOFs(1))=1
+                            c_Beta(1:3) = Enriched_Node_Crack_n_Vector_3D(c_NN(i_N))%row(i_C,1:3)
+                            if(Key_Penalty_CS_Method==1) then
+                                do j=1,3
+                                    do i=1,3       
+                                        storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i),c_LocXFEM(j)) = &
+                                        storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i),c_LocXFEM(j))+c_Penalty_CS*c_Beta(i)*c_Beta(j)
+                                    enddo
+                                enddo
+                            elseif(Key_Penalty_CS_Method==2) then
+                                do j=3,3
+                                    do i=3,3           
+                                        storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i),c_LocXFEM(j)) = &
+                                        storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i),c_LocXFEM(j))+c_Penalty_CS*c_Beta(i)*c_Beta(j)
+                                    enddo
+                                enddo
+                            endif    
+                        endif
+                    end do  
+
+                elseif(Enriched_Node_Type_3D(c_NN(i_N),i_C).eq.3)then 
+                    cnt = cnt + 1
+                    c_DOFs(1) = 3*c_POS_3D(c_NN(i_N),i_C) - 2
+                    c_DOFs(2) = 3*c_POS_3D(c_NN(i_N),i_C) - 1
+                    c_DOFs(3) = 3*c_POS_3D(c_NN(i_N),i_C)        
+
+                    c_LocXFEM(1) = 24 + 3*cnt -2
+                    c_LocXFEM(2) = 24 + 3*cnt -1
+                    c_LocXFEM(3) = 24 + 3*cnt                    
+
+                    Yes_DOF_Dealed(c_DOFs(1))=1
+                    c_Beta(1:3) = Enriched_Node_Crack_n_Vector_3D(c_NN(i_N))%row(i_C,1:3)
+                    if(Key_Penalty_CS_Method==1) then
+                        do j=1,3
+                            do i=1,3       
+                                storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i),c_LocXFEM(j)) = &
+                                storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i),c_LocXFEM(j)) + c_Penalty_CS*c_Beta(i)*c_Beta(j)
+                            enddo
+                        enddo
+                    elseif(Key_Penalty_CS_Method==2) then
+                        do j=3,3
+                            do i=3,3           
+                                storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i),c_LocXFEM(j)) = &
+                                storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i),c_LocXFEM(j)) + c_Penalty_CS*c_Beta(i)*c_Beta(j)
+                            enddo
+                        enddo
+                    endif              
+                else
+                    cycle
+                end if
+            end do
+        endif
+    enddo
 enddo
 
 
 
 if(Key_EBE_Precondition == 1)then
-  
-  diag_precon_no_invert(0:num_FreeD)= ZR      
-  print *,"    PCG-EBE: geting preconditioner for FEM elements..."          
-  diag_precon_no_invert_thread(0:num_FreeD,1:max_threads)= ZR 
-  !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(c_thread,c_Elem,i_E,num_Loc_ESM,local,localK,kk,Diag_localK) 
-  c_thread = omp_get_thread_num()+1
-  !$OMP do  
-  do i_E=1,num_FEM_Elem
-      c_Elem = FEM_Elem_List(i_E)
-      num_Loc_ESM = size_local_0(c_Elem)
-      local(1:num_Loc_ESM)=all_local_0(1:num_Loc_ESM,c_Elem) 
-      
-      if(Key_EBE_Sym_Storage_K==0)then
-          DO kk=1,num_Loc_ESM     
-              Diag_localK(kk) =storK_FEM(kk,kk,Elem_Location(c_Elem,2)) 
-          enddo       
-      elseif(Key_EBE_Sym_Storage_K==1)then
-          DO kk=1,num_Loc_ESM     
-              Diag_localK(kk) =storK_FEM_Sym((kk-1)*24 -(kk-1)*kk/2 +kk,Elem_Location(c_Elem,2)) 
-          enddo   
-      endif
-      
-      diag_precon_no_invert_thread(local(1:num_Loc_ESM),c_thread)  =   &
-                 diag_precon_no_invert_thread(local(1:num_Loc_ESM),c_thread) + Diag_localK(1:num_Loc_ESM)       
-  enddo
-  !$omp end do
-  !$omp end parallel    
-  
-  DO i_Thread = 1,omp_get_max_threads()
-     diag_precon_no_invert(0:num_FreeD)  =  diag_precon_no_invert(0:num_FreeD)  + diag_precon_no_invert_thread(0:num_FreeD,i_Thread)
-  ENDDO
-  
-  print *,"    PCG-EBE: geting preconditioner for XFEM elements..."          
-  diag_precon_no_invert_thread(0:num_FreeD,1:max_threads)= ZR 
-  !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(c_thread,c_Elem,i_E,num_Loc_ESM,local,localK,kk,Diag_localK) 
-  c_thread = omp_get_thread_num()+1
-  !$OMP do
-  do i_E=1,num_XFEM_Elem
-      c_Elem = XFEM_Elem_List(i_E)
-      num_Loc_ESM = size_local_0(c_Elem)
-      local(1:num_Loc_ESM)=all_local_0(1:num_Loc_ESM,c_Elem) 
-      DO kk=1,num_Loc_ESM     
-          Diag_localK(kk) =storK_XFEM_Updated(Elem_Location(c_Elem,1))%row(kk,kk) 
-      enddo         
-      diag_precon_no_invert_thread(local(1:num_Loc_ESM),c_thread)  =   &
-                 diag_precon_no_invert_thread(local(1:num_Loc_ESM),c_thread) + Diag_localK(1:num_Loc_ESM)       
-  enddo
-  !$omp end do
-  !$omp end parallel    
-  
-  DO i_Thread = 1,omp_get_max_threads()
-     diag_precon_no_invert(0:num_FreeD)  =  diag_precon_no_invert(0:num_FreeD)  + diag_precon_no_invert_thread(0:num_FreeD,i_Thread)
-  ENDDO  
-  
-  forall(jj=1:num_FreeD,abs(diag_precon_no_invert(jj))<=Tol_10)
-      diag_precon_no_invert(jj)=Tol_10
-  end forall
+
+    diag_precon_no_invert(0:num_FreeD)= ZR      
+    print *,"    PCG-EBE: geting preconditioner for FEM elements..."          
+    diag_precon_no_invert_thread(0:num_FreeD,1:max_threads)= ZR 
+    !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(c_thread,c_Elem,i_E,num_Loc_ESM,local,localK,kk,Diag_localK) 
+    c_thread = omp_get_thread_num()+1
+    !$OMP do  
+    do i_E=1,num_FEM_Elem
+        c_Elem = FEM_Elem_List(i_E)
+        num_Loc_ESM = size_local_0(c_Elem)
+        local(1:num_Loc_ESM)=all_local_0(1:num_Loc_ESM,c_Elem) 
+
+        if(Key_EBE_Sym_Storage_K==0)then
+            DO kk=1,num_Loc_ESM     
+                Diag_localK(kk) =storK_FEM(kk,kk,Elem_Location(c_Elem,2)) 
+            enddo       
+        elseif(Key_EBE_Sym_Storage_K==1)then
+            DO kk=1,num_Loc_ESM     
+                Diag_localK(kk) =storK_FEM_Sym((kk-1)*24 -(kk-1)*kk/2 +kk,Elem_Location(c_Elem,2)) 
+            enddo   
+        endif
+
+        diag_precon_no_invert_thread(local(1:num_Loc_ESM),c_thread)  = &
+        diag_precon_no_invert_thread(local(1:num_Loc_ESM),c_thread) + Diag_localK(1:num_Loc_ESM)
+    enddo
+    !$omp end do
+    !$omp end parallel    
+
+    DO i_Thread = 1,omp_get_max_threads()
+        diag_precon_no_invert(0:num_FreeD) = diag_precon_no_invert(0:num_FreeD) + diag_precon_no_invert_thread(0:num_FreeD,i_Thread)
+    ENDDO
+
+    print *,"    PCG-EBE: geting preconditioner for XFEM elements..."          
+    diag_precon_no_invert_thread(0:num_FreeD,1:max_threads)= ZR 
+    !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(c_thread,c_Elem,i_E,num_Loc_ESM,local,localK,kk,Diag_localK) 
+    c_thread = omp_get_thread_num()+1
+    !$OMP do
+    do i_E=1,num_XFEM_Elem
+        c_Elem = XFEM_Elem_List(i_E)
+        num_Loc_ESM = size_local_0(c_Elem)
+        local(1:num_Loc_ESM)=all_local_0(1:num_Loc_ESM,c_Elem) 
+        DO kk=1,num_Loc_ESM     
+            Diag_localK(kk) =storK_XFEM_Updated(Elem_Location(c_Elem,1))%row(kk,kk) 
+        enddo         
+        diag_precon_no_invert_thread(local(1:num_Loc_ESM),c_thread)  = &
+        diag_precon_no_invert_thread(local(1:num_Loc_ESM),c_thread) + Diag_localK(1:num_Loc_ESM)
+    enddo
+    !$omp end do
+    !$omp end parallel    
+
+    DO i_Thread = 1,omp_get_max_threads()
+        diag_precon_no_invert(0:num_FreeD) = diag_precon_no_invert(0:num_FreeD)  +diag_precon_no_invert_thread(0:num_FreeD,i_Thread)
+    ENDDO  
+
+    forall(jj=1:num_FreeD,abs(diag_precon_no_invert(jj))<=Tol_10)
+        diag_precon_no_invert(jj)=Tol_10
+    end forall
 endif
 
 return 

@@ -1,3 +1,18 @@
+!-----------------------------------------------------------
+! Brief: Offset a single point by delta along the normal to AB.
+!
+! Parameters:
+!   Input:  C              - point to be offset (2D)
+!           Line_AB        - reference line segment (2x2)
+!           offset_delta   - signed offset distance
+!   Output: Offsetted_C_Up   - point shifted to the left of AB
+!           Offsetted_C_Down - point shifted to the right of AB
+!
+! Notes:   If C coincides with an endpoint of Line_AB, the
+!          offset is performed along the line direction first
+!          before the normal shift to avoid degenerate cases.
+!-----------------------------------------------------------
+
 subroutine Cal_Offseted_Single_Point(C, Line_AB, offset_delta, Offsetted_C_Up, Offsetted_C_Down)
 !=========================================================================
 ! Offset the point C along the up and down normal of line_AB by the 

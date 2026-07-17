@@ -1,47 +1,21 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
-SUBROUTINE D3_HF_Const_Pres_to_F_Vector(isub,c_Pres,num_FreeD,  &
-                           in_Total_FD,in_num_Tol_CalP_Water,freeDOF,in_F_U,F)
+!-----------------------------------------------------------
+! Brief: Assemble constant fluid pressure into the global force vector.
+!
+! Parameters:
+!   Input:  isub                 - current load substep
+!           c_Pres               - imposed constant pressure
+!           num_FreeD            - number of free DOFs
+!           in_Total_FD          - total DOFs
+!           in_num_Tol_CalP_Water - total HF calculation points
+!           freeDOF              - free-DOF index list
+!           in_F_U               - input force vector
+!   Output: F                    - assembled force vector
+!
+! Notes:   Subtracts in-situ normal stress from the imposed pressure
+!          to get the net pressure; iterates over HF-type cracks only.
+!-----------------------------------------------------------
+
+SUBROUTINE D3_HF_Const_Pres_to_F_Vector(isub,c_Pres,num_FreeD, in_Total_FD,in_num_Tol_CalP_Water,freeDOF,in_F_U,F)
 
 ! Convert constant water pressure to F vector.
 ! It turns out this part of the code is in the main program.
@@ -130,9 +104,9 @@ end do
 do i_Dof =1,num_FreeD
     if(allocated(Coupled_Q_3D(freeDOF(i_Dof))%row))then 
         !BUGFIX2022111101.                        
-        F(freeDOF(i_Dof)) =  in_F_U(freeDOF(i_Dof))+   &
-                    dot_product(Coupled_Q_3D(freeDOF(i_Dof))%row(1:3), &
-                                CalP_Pres(Coupled_Q_3D_Index(freeDOF(i_Dof))%row(1:3)))
+F(freeDOF(i_Dof)) =  in_F_U(freeDOF(i_Dof))+ &
+dot_product(Coupled_Q_3D(freeDOF(i_Dof))%row(1:3), &
+CalP_Pres(Coupled_Q_3D_Index(freeDOF(i_Dof))%row(1:3)))
     endif
 enddo
 

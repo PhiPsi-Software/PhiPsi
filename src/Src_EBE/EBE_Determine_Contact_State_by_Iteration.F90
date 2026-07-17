@@ -1,50 +1,21 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
-SUBROUTINE EBE_Determine_Contact_State_by_Iteration(isub, &
-                  c_cg_tol,max_num_PCG, &
-                  num_FreeD,freeDOF,globalF,DISP,      &
-                  storK,size_local,all_local, &
-                  diag_precon)
+!-----------------------------------------------------------
+! Brief: EBE-based Newton iteration driver for 2D contact state.
+!
+! Parameters:
+!   Input:  isub, max_num_PCG - substep and PCG iteration cap
+!           num_FreeD, freeDOF - free DOF count and map
+!           c_cg_tol         - PCG convergence tolerance
+!           globalF          - global load vector
+!   In/Out: DISP             - displacement (in/out)
+!           storK, size_local, all_local - EBE K and layout
+!           diag_precon      - diagonal preconditioner
+!
+! Notes:   Iteratively solves the EBE system with contact-aware
+!          Jacobian until contact convergence or PCG cap.
+!-----------------------------------------------------------
+
+SUBROUTINE EBE_Determine_Contact_State_by_Iteration(isub, c_cg_tol,max_num_PCG, num_FreeD,freeDOF,globalF,DISP, &
+storK,size_local,all_local, diag_precon)
 
 
 ! This subroutine determines the contact state of the fracture surface through iterative
@@ -52,7 +23,7 @@ SUBROUTINE EBE_Determine_Contact_State_by_Iteration(isub, &
 ! Contact detection algorithm for crack surfaces  Keywords: Key_Contact
 !         1: Penalty method.
 !         2: Reduced Penalty method (under testing).
-                          
+
 !     -----------------------------
 !      Read Public Variable Module
 !     -----------------------------
@@ -132,9 +103,7 @@ storK_0 = storK
 diag_precon_0(0:num_FreeD) =diag_precon(0:num_FreeD)
 size_local_0  = size_local
 all_local_0   = all_local
-ALLOCATE(p(0:num_FreeD),loads(0:num_FreeD),  &
-          x(0:num_FreeD),xnew(0:num_FreeD),u(0:num_FreeD), &
-          pcg_d(0:num_FreeD))   
+ALLOCATE(p(0:num_FreeD),loads(0:num_FreeD), x(0:num_FreeD),xnew(0:num_FreeD),u(0:num_FreeD), pcg_d(0:num_FreeD))
 max_threads = omp_get_max_threads()
 if (allocated(u_thread)) deallocate(u_thread)
 ALLOCATE(u_thread(0:num_FreeD,max_threads))
@@ -145,170 +114,146 @@ fric_mu = fric_mu_Cont
 Conve_Tolerance = Conve_Tol_Penalty
 select case (Key_Contact)
 case(1)
-  do i_NR_P = 1,Max_Contact_Iter
-      write(*,4001) i_NR_P,Max_Contact_Iter
-      if(i_NR_P==1)then 
-          NR_DISP(1:Total_FD)    = ZR
-          delta_disp(1:Total_FD)  = ZR
-          
-          
-          Last_R_PSI(1:Total_FD) = ZR
-          Elem_Conta_Sta(1:Num_Elem,1:Max_Num_Cr) = 0 
-          Kt_Gauss(1:num_Crack,1:Max_Num_Cr_CalP-1,1:2) = kt
-          Kn_Gauss(1:num_Crack,1:Max_Num_Cr_CalP-1,1:2) = kn
-          call Cal_Contact_Contact_State_Gauss(isub,1,1,i_NR_P,   &
-                    Contact_DISP_0,Yes_Contact,Elem_Conta_Sta,CT_State_Gauss)    
-          if(Yes_Contact.eqv..False.)then
-              write(*,4012)
-              goto 9999
-          endif
-      endif
-      
-      print *,'           Get contact force and update Kt.'
-      call Cal_Contact_PN_and_PT(isub,1,1,  &
-                  i_NR_P,Total_FD,num_freeD, &
-                  Kn,Kn_Gauss,Kt_Gauss,fric_mu,NR_DISP,delta_disp,&
-                  CT_State_Gauss,Elem_Conta_Sta,PC_Gauss_x,PC_Gauss_y)
-
-      
-      write(*,5001) count(Elem_Conta_Sta==1),count(Elem_Conta_Sta==2)
-
-      print *,'           Assemble Jacobian matrix.'
-      call EBE_Cal_Contact_Jacobian(     &
-                  isub,i_NR_P, &
-                  num_freeD,freeDOF,&
-                  storK_0,size_local_0,all_local_0,diag_precon_0,&
-                  storK,diag_precon,     &
-                  Kn,Kn_Gauss,Kt_Gauss,&
-                  CT_State_Gauss)
-      
-      
-      print *,'           Get residual.'
-      call Cal_Contact_Resid(isub,1,1,i_NR_P,  &
-           Total_FD,num_freeD,globalF, &
-           NR_DISP,freeDOF(1:num_FreeD),PC_Gauss_x,PC_Gauss_y,R_PSI)
-     
-      
-
-      print *, "           Get the preconditioner and get starting loads..."
-      p = ZR
-      loads=ZR 
-      loads(1:num_FreeD) = -R_PSI(freeDOF(1:num_FreeD))
-      
-      diag_precon(1:)=ONE/diag_precon(1:) 
-      diag_precon(0) =ZR 
+    do i_NR_P = 1,Max_Contact_Iter
+        write(*,4001) i_NR_P,Max_Contact_Iter
+        if(i_NR_P==1)then 
+            NR_DISP(1:Total_FD)    = ZR
+            delta_disp(1:Total_FD)  = ZR
 
 
-      
-      pcg_d=diag_precon*loads 
-      p=pcg_d
-      x=ZR
-      cg_iters=0
-      
-      print *, "           PCG equation solution..."
-      do i_PCG =1,max_num_PCG
-          cg_iters=cg_iters+1 
-          u=ZR  
-          u_thread(0:num_FreeD,1:max_threads)= ZR  
-          !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(c_thread,i_E,num_Loc_ESM,local) 
-          c_thread = omp_get_thread_num()+1
-          !$OMP DO         
-          do i_E=1,Num_Elem
-                 num_Loc_ESM = size_local(i_E)
-                 local(1:num_Loc_ESM)=all_local(1:num_Loc_ESM,i_E) 
-                 u_thread(local(1:num_Loc_ESM),c_thread)=u_thread(local(1:num_Loc_ESM),c_thread)+ &
-                       MATMUL(storK(1:num_Loc_ESM,1:num_Loc_ESM,i_E) ,p(local(1:num_Loc_ESM)))  
-          enddo  
-          !$omp end do
-          !$omp end parallel       
-            
-          DO i_Thread = 1,omp_get_max_threads()
-              u  =  u  + u_thread(:,i_Thread)
-          ENDDO   
-  
-#ifdef Silverfrost
-          up=DOT_PRODUCT(loads,pcg_d)
-#endif
-#ifndef Silverfrost
-          up=ddot(num_FreeD,loads(1:num_FreeD),1,pcg_d(1:num_FreeD),1)
-#endif
-          
-#ifdef Silverfrost
-          alpha=up/DOT_PRODUCT(p,u) 
-#endif
-#ifndef Silverfrost
-          alpha=up/ddot(num_FreeD,p(1:num_FreeD),1,u(1:num_FreeD),1)
-#endif          
-          xnew=x+p*alpha 
-          loads=loads-u*alpha
-          pcg_d=diag_precon*loads 
-          
-#ifdef Silverfrost
-          beta=DOT_PRODUCT(loads,pcg_d)/up 
-#endif
-#ifndef Silverfrost
-          beta=ddot(num_FreeD,loads(1:num_FreeD),1,pcg_d(1:num_FreeD),1)/up
-#endif          
-          p=pcg_d+p*beta
+            Last_R_PSI(1:Total_FD) = ZR
+            Elem_Conta_Sta(1:Num_Elem,1:Max_Num_Cr) = 0 
+            Kt_Gauss(1:num_Crack,1:Max_Num_Cr_CalP-1,1:2) = kt
+            Kn_Gauss(1:num_Crack,1:Max_Num_Cr_CalP-1,1:2) = kn
+            call Cal_Contact_Contact_State_Gauss(isub,1,1,i_NR_P, &
+            Contact_DISP_0,Yes_Contact,Elem_Conta_Sta,CT_State_Gauss)
+            if(Yes_Contact.eqv..False.)then
+                write(*,4012)
+                goto 9999
+            endif
+        endif
 
-          
-          
-          
-          tem_value_1 = MAXVAL(ABS(x(0:num_FreeD)))
-          if(tem_value_1==ZR) tem_value_1=Tol_20
-          Tol = MAXVAL(ABS(x(0:num_FreeD)-xnew(0:num_FreeD)))/tem_value_1
-          
-          
-          x=xnew
-     
-          
-          if(Tol<c_cg_tol.OR.cg_iters==max_num_PCG)then
-              exit
-          endif
-      enddo
-      print *, "           Number of CG iterations to convergence was",cg_iters
-      loads=xnew
-      delta_disp = ZR
-      print *, "           Update nodal displacement..."     
-      delta_disp(freeDOF(1:num_FreeD)) =loads(1:num_FreeD)
-      NR_DISP = NR_DISP + delta_disp
+        print *,'           Get contact force and update Kt.'
+        call Cal_Contact_PN_and_PT(isub,1,1, i_NR_P,Total_FD,num_freeD, &
+        Kn,Kn_Gauss,Kt_Gauss,fric_mu,NR_DISP,delta_disp, CT_State_Gauss,Elem_Conta_Sta,PC_Gauss_x,PC_Gauss_y)
 
-      print *,'           Check convergence.'
-      call Cal_Contact_Conve_Factor( &
-                isub,1,1,i_NR_P,Conve_Tolerance, &
-                Total_FD,freeDOF(1:num_freeD),num_freeD, &
-                globalF,R_PSI,Last_R_PSI, &
-                delta_disp,NR_DISP,Contact_DISP_0, &
-                Yes_Conve,Conve_Factor)
 
-      write(*,4022) Conve_Factor
-      Saved_Conv_Factor(i_NR_P) =Conve_Factor
-      if(Yes_Conve)then
-          write(*,1997)
-          write(*,4032) i_NR_P
-          write(*,4033) count(Elem_Conta_Sta/=0)
-          write(*,1997)
-          exit
-      endif
-      if (i_NR_P>=6)then
-          print *,'           Check oscillation.'
-          call Tool_Check_Oscillation_by_6_Variables(Saved_Conv_Factor(i_NR_P-5:i_NR_P),Yes_Oscill)
-          if (Yes_Oscill) then
-              write(*,1998)
-              write(*,2003)
-              write(*,1998)
-              exit
-          endif
-      endif
-      Last_R_PSI = R_PSI
-  enddo
-  
-  if(.not.Yes_Conve)then
-      write(*,2002)
-  endif
-  
-  DISP = NR_DISP
-  DEALLOCATE(p,loads,x,xnew,u,pcg_d)            
+        write(*,5001) count(Elem_Conta_Sta==1),count(Elem_Conta_Sta==2)
+
+        print *,'           Assemble Jacobian matrix.'
+        call EBE_Cal_Contact_Jacobian( isub,i_NR_P, num_freeD,freeDOF, &
+        storK_0,size_local_0,all_local_0,diag_precon_0, storK,diag_precon, Kn,Kn_Gauss,Kt_Gauss, CT_State_Gauss)
+
+
+        print *,'           Get residual.'
+        call Cal_Contact_Resid(isub,1,1,i_NR_P, &
+        Total_FD,num_freeD,globalF, NR_DISP,freeDOF(1:num_FreeD),PC_Gauss_x,PC_Gauss_y,R_PSI)
+
+
+
+        print *, "           Get the preconditioner and get starting loads..."
+        p = ZR
+        loads=ZR 
+        loads(1:num_FreeD) = -R_PSI(freeDOF(1:num_FreeD))
+
+        diag_precon(1:)=ONE/diag_precon(1:) 
+        diag_precon(0) =ZR 
+
+
+
+        pcg_d=diag_precon*loads 
+        p=pcg_d
+        x=ZR
+        cg_iters=0
+
+        print *, "           PCG equation solution..."
+        do i_PCG =1,max_num_PCG
+            cg_iters=cg_iters+1 
+            u=ZR  
+            u_thread(0:num_FreeD,1:max_threads)= ZR  
+            !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(c_thread,i_E,num_Loc_ESM,local) 
+            c_thread = omp_get_thread_num()+1
+            !$OMP DO         
+            do i_E=1,Num_Elem
+                num_Loc_ESM = size_local(i_E)
+                local(1:num_Loc_ESM)=all_local(1:num_Loc_ESM,i_E) 
+                u_thread(local(1:num_Loc_ESM),c_thread)=u_thread(local(1:num_Loc_ESM),c_thread)+ &
+                MATMUL(storK(1:num_Loc_ESM,1:num_Loc_ESM,i_E) ,p(local(1:num_Loc_ESM)))
+            enddo  
+            !$omp end do
+            !$omp end parallel       
+
+            DO i_Thread = 1,omp_get_max_threads()
+                u  =  u  + u_thread(:,i_Thread)
+            ENDDO   
+
+
+            up=ddot(num_FreeD,loads(1:num_FreeD),1,pcg_d(1:num_FreeD),1)
+
+
+            alpha=up/ddot(num_FreeD,p(1:num_FreeD),1,u(1:num_FreeD),1)
+            xnew=x+p*alpha 
+            loads=loads-u*alpha
+            pcg_d=diag_precon*loads 
+
+
+            beta=ddot(num_FreeD,loads(1:num_FreeD),1,pcg_d(1:num_FreeD),1)/up
+            p=pcg_d+p*beta
+
+
+
+
+            tem_value_1 = MAXVAL(ABS(x(0:num_FreeD)))
+            if(tem_value_1==ZR) tem_value_1=Tol_20
+            Tol = MAXVAL(ABS(x(0:num_FreeD)-xnew(0:num_FreeD)))/tem_value_1
+
+
+            x=xnew
+
+
+            if(Tol<c_cg_tol.OR.cg_iters==max_num_PCG)then
+                exit
+            endif
+        enddo
+        print *, "           Number of CG iterations to convergence was",cg_iters
+        loads=xnew
+        delta_disp = ZR
+        print *, "           Update nodal displacement..."     
+        delta_disp(freeDOF(1:num_FreeD)) =loads(1:num_FreeD)
+        NR_DISP = NR_DISP + delta_disp
+
+        print *,'           Check convergence.'
+        call Cal_Contact_Conve_Factor( isub,1,1,i_NR_P,Conve_Tolerance, Total_FD,freeDOF(1:num_freeD),num_freeD, &
+        globalF,R_PSI,Last_R_PSI, delta_disp,NR_DISP,Contact_DISP_0, Yes_Conve,Conve_Factor)
+
+        write(*,4022) Conve_Factor
+        Saved_Conv_Factor(i_NR_P) =Conve_Factor
+        if(Yes_Conve)then
+            write(*,1997)
+            write(*,4032) i_NR_P
+            write(*,4033) count(Elem_Conta_Sta/=0)
+            write(*,1997)
+            exit
+        endif
+        if (i_NR_P>=6)then
+            print *,'           Check oscillation.'
+            call Tool_Check_Oscillation_by_6_Variables(Saved_Conv_Factor(i_NR_P-5:i_NR_P),Yes_Oscill)
+            if (Yes_Oscill) then
+                write(*,1998)
+                write(*,2003)
+                write(*,1998)
+                exit
+            endif
+        endif
+        Last_R_PSI = R_PSI
+    enddo
+
+    if(.not.Yes_Conve)then
+        write(*,2002)
+    endif
+
+    DISP = NR_DISP
+    DEALLOCATE(p,loads,x,xnew,u,pcg_d)            
 case(2)
 
 end select

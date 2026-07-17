@@ -97,9 +97,10 @@
 *Frac_Zone_MaxY
 46.0e-3                 
 
-% Do not close the DOS Window when the calculation is finished (default).
+% Close the terminal when the calculation is finished (default).
 *Key_Close_Window
-0
+1
+
 
 
 

@@ -1,45 +1,16 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
+!-----------------------------------------------------------
+! Brief: Assemble the coupled matrix Q for 3D HF problems.
+!
+! Parameters:
+!   Input:  Counter            - current load/iteration step index
+!           c_Total_FD         - total displacement DOFs
+!           c_num_Tol_CalP_Water - total fluid calculation points
+!
+! Notes:   Uses a staggered-array representation stored in
+!          Global_Crack_3D. Loops over HF cracks and integrates
+!          the coupling over the crack-mesh Gauss points.
+!-----------------------------------------------------------
+
 subroutine Cal_HF_Matrix_Q_Linear_3D(Counter,c_Total_FD,c_num_Tol_CalP_Water)
 ! This subroutine is used to calculate the matrix Q for 3D problems.
 ! Coupled_Q_3D is represented by a staggered array and stored in Global_Crack_3D.
@@ -93,7 +64,6 @@ integer i_Dof
 integer num_HF_Cracks,HF_Cracks_List(num_Crack)
 integer c_Crack
 
-#ifndef Silverfrost
 print *,'    Calculating coupled matrix Q......'
 
 HF_Cracks_List = 0
@@ -118,18 +88,18 @@ enddo
 do i_C=1,num_HF_Cracks  
     c_Crack = HF_Cracks_List(i_C)
 
-    
+
     ALLOCATE(Local_P(c_num_Tol_CalP_Water))  
     ALLOCATE(N_HF(c_num_Tol_CalP_Water))
     ALLOCATE(tem(60,c_num_Tol_CalP_Water)) 
     Local_P(1:c_num_Tol_CalP_Water) =0
     N_HF(1:c_num_Tol_CalP_Water) = ZR
     tem(1:60,1:c_num_Tol_CalP_Water)  = ZR
-    
+
     do i_FluidEle = 1,Cracks_FluidEle_num_3D(c_Crack)
         tem(1:60,1:c_num_Tol_CalP_Water)  = ZR
         num_Flu_Nodes = Cracks_FluidEle_num_CalP_3D(c_Crack)%row(i_FluidEle)
-        
+
         Local_P(1:num_Flu_Nodes) = Cracks_FluidEle_Glo_CalP_3D(c_Crack)%row(i_FluidEle,1:num_Flu_Nodes) 
 
 
@@ -140,12 +110,12 @@ do i_C=1,num_HF_Cracks
         Solid_El = Cracks_FluidEle_EleNum_3D(c_Crack)%row(i_FluidEle)     
         Flu_Ele_Area = Cracks_FluidEle_Area_3D(c_Crack)%row(i_FluidEle)    
 
-        
-        
+
+
         if (Flu_Ele_Area<=0.05D0*Ave_Elem_Area_Enrich) then
             cycle
         endif
-        
+
         HF_GAUSS_Elem = Cracks_FluidEle_EleNum_3D(c_Crack)%row(i_FluidEle)
         call Cal_KesiYita_by_Coor_3D(Flu_Ele_Centroid,HF_GAUSS_Elem,Kesi,Yita,Zeta)
         c_NN(1:8)    = G_NN(1:8,HF_GAUSS_Elem)
@@ -157,88 +127,85 @@ do i_C=1,num_HF_Cracks
         N_HF(1:num_Flu_Nodes) = ONE/num_Flu_Nodes   
         num_Local_W = 0
         N_W(1:3,1:60) =ZR
-        
+
         do i_N = 1,8
-          if (Enriched_Node_Type_3D(c_NN(i_N),c_Crack) ==2) then
-              num_Local_W = num_Local_W+1
-              Local_W(3*num_Local_W-2)=3*c_POS_3D(c_NN(i_N),c_Crack)-2
-              Local_W(3*num_Local_W-1)=3*c_POS_3D(c_NN(i_N),c_Crack)-1     
-              Local_W(3*num_Local_W)  =3*c_POS_3D(c_NN(i_N),c_Crack)
-              N_W(1,3*num_Local_W-2)   = TWO*tem_n(i_N)
-              N_W(2,3*num_Local_W-1)   = TWO*tem_n(i_N)
-              N_W(3,3*num_Local_W)     = TWO*tem_n(i_N)           
-          elseif(Enriched_Node_Type_3D(c_NN(i_N),c_Crack) ==3)then
-              num_Local_W = num_Local_W+1
-              Local_W(3*num_Local_W-2)=3*c_POS_3D(c_NN(i_N),c_Crack)-2
-              Local_W(3*num_Local_W-1)=3*c_POS_3D(c_NN(i_N),c_Crack)-1     
-              Local_W(3*num_Local_W)  =3*c_POS_3D(c_NN(i_N),c_Crack)
-              N_W(1,3*num_Local_W-2)   = TWO*tem_n(i_N)*1.0D0
-              N_W(2,3*num_Local_W-1)   = TWO*tem_n(i_N)*1.0D0
-              N_W(3,3*num_Local_W)     = TWO*tem_n(i_N)*1.0D0 
-          elseif(Enriched_Node_Type_3D(c_NN(i_N),c_Crack)==1) then
-              if ((Elem_Type_3D(Solid_El,c_Crack).eq.1 )) then
-                  ref_elem=Solid_El
-              else
-                  ref_elem=Ele_Num_Tip_Enriched_Node_3D(c_NN(i_N))%row(c_Crack)
-              endif
-              call Vector_Location_Int_v2(Solid_El_Max_num_Crs,Solid_El_Crs(ref_elem,1:Solid_El_Max_num_Crs), &
-                      c_Crack,c_Cr_Location)
-              BaseLine_A = Solid_El_Tip_BaseLine(ref_elem)%row(c_Cr_Location,1,1:3)
-              BaseLine_B = Solid_El_Tip_BaseLine(ref_elem)%row(c_Cr_Location,2,1:3)
-              BaseLine_Mid = (BaseLine_A+BaseLine_B)/TWO
-              BaseLine_x_Vec=Solid_El_Tip_BaseLine_x_Vec(ref_elem)%row(c_Cr_Location,1:3)
-              BaseLine_y_Vec=Solid_El_Tip_BaseLine_y_Vec(ref_elem)%row(c_Cr_Location,1:3)
-              BaseLine_z_Vec=Solid_El_Tip_BaseLine_z_Vec(ref_elem)%row(c_Cr_Location,1:3)
-              Tip_T_Matrx(1:3,1:3)=Solid_El_Tip_BaseLine_T_Matrix(ref_elem)%row(c_Cr_Location,1:3,1:3)
+            if (Enriched_Node_Type_3D(c_NN(i_N),c_Crack) ==2) then
+                num_Local_W = num_Local_W+1
+                Local_W(3*num_Local_W-2)=3*c_POS_3D(c_NN(i_N),c_Crack)-2
+                Local_W(3*num_Local_W-1)=3*c_POS_3D(c_NN(i_N),c_Crack)-1     
+                Local_W(3*num_Local_W)  =3*c_POS_3D(c_NN(i_N),c_Crack)
+                N_W(1,3*num_Local_W-2)   = TWO*tem_n(i_N)
+                N_W(2,3*num_Local_W-1)   = TWO*tem_n(i_N)
+                N_W(3,3*num_Local_W)     = TWO*tem_n(i_N)           
+            elseif(Enriched_Node_Type_3D(c_NN(i_N),c_Crack) ==3)then
+                num_Local_W = num_Local_W+1
+                Local_W(3*num_Local_W-2)=3*c_POS_3D(c_NN(i_N),c_Crack)-2
+                Local_W(3*num_Local_W-1)=3*c_POS_3D(c_NN(i_N),c_Crack)-1     
+                Local_W(3*num_Local_W)  =3*c_POS_3D(c_NN(i_N),c_Crack)
+                N_W(1,3*num_Local_W-2)   = TWO*tem_n(i_N)*1.0D0
+                N_W(2,3*num_Local_W-1)   = TWO*tem_n(i_N)*1.0D0
+                N_W(3,3*num_Local_W)     = TWO*tem_n(i_N)*1.0D0 
+            elseif(Enriched_Node_Type_3D(c_NN(i_N),c_Crack)==1) then
+                if ((Elem_Type_3D(Solid_El,c_Crack).eq.1 )) then
+                    ref_elem=Solid_El
+                else
+                    ref_elem=Ele_Num_Tip_Enriched_Node_3D(c_NN(i_N))%row(c_Crack)
+                endif
+                call Vector_Location_Int_v2(Solid_El_Max_num_Crs,Solid_El_Crs(ref_elem,1:Solid_El_Max_num_Crs), &
+                c_Crack,c_Cr_Location)
+                BaseLine_A = Solid_El_Tip_BaseLine(ref_elem)%row(c_Cr_Location,1,1:3)
+                BaseLine_B = Solid_El_Tip_BaseLine(ref_elem)%row(c_Cr_Location,2,1:3)
+                BaseLine_Mid = (BaseLine_A+BaseLine_B)/TWO
+                BaseLine_x_Vec=Solid_El_Tip_BaseLine_x_Vec(ref_elem)%row(c_Cr_Location,1:3)
+                BaseLine_y_Vec=Solid_El_Tip_BaseLine_y_Vec(ref_elem)%row(c_Cr_Location,1:3)
+                BaseLine_z_Vec=Solid_El_Tip_BaseLine_z_Vec(ref_elem)%row(c_Cr_Location,1:3)
+                Tip_T_Matrx(1:3,1:3)=Solid_El_Tip_BaseLine_T_Matrix(ref_elem)%row(c_Cr_Location,1:3,1:3)
 
-              Gauss_Coor_Local= MATMUL(Tip_T_Matrx,c_Center-BaseLine_Mid)
-              r_Gauss = sqrt(Gauss_Coor_Local(1)**2 + Gauss_Coor_Local(2)**2)
-              theta_Gauss = atan2(Gauss_Coor_Local(2),Gauss_Coor_Local(1))    
+                Gauss_Coor_Local= MATMUL(Tip_T_Matrx,c_Center-BaseLine_Mid)
+                r_Gauss = sqrt(Gauss_Coor_Local(1)**2 + Gauss_Coor_Local(2)**2)
+                theta_Gauss = atan2(Gauss_Coor_Local(2),Gauss_Coor_Local(1))    
 
-              num_Local_W = num_Local_W+1
-              Local_W(3*num_Local_W-2)=3*c_POS_3D(c_NN(i_N),c_Crack)-2
-              Local_W(3*num_Local_W-1)=3*c_POS_3D(c_NN(i_N),c_Crack)-1     
-              Local_W(3*num_Local_W)  =3*c_POS_3D(c_NN(i_N),c_Crack) 
+                num_Local_W = num_Local_W+1
+                Local_W(3*num_Local_W-2)=3*c_POS_3D(c_NN(i_N),c_Crack)-2
+                Local_W(3*num_Local_W-1)=3*c_POS_3D(c_NN(i_N),c_Crack)-1     
+                Local_W(3*num_Local_W)  =3*c_POS_3D(c_NN(i_N),c_Crack) 
 
-              N_W(1,3*num_Local_W-2)= TWO*sqrt(r_Gauss)*tem_n(i_N)
-              N_W(2,3*num_Local_W-1)= TWO*sqrt(r_Gauss)*tem_n(i_N)
-              N_W(3,3*num_Local_W)  = TWO*sqrt(r_Gauss)*tem_n(i_N)     
-          endif
+                N_W(1,3*num_Local_W-2)= TWO*sqrt(r_Gauss)*tem_n(i_N)
+                N_W(2,3*num_Local_W-1)= TWO*sqrt(r_Gauss)*tem_n(i_N)
+                N_W(3,3*num_Local_W)  = TWO*sqrt(r_Gauss)*tem_n(i_N)     
+            endif
         end do
-        
-        
-        call Vectors_Multi(MATMUL(transpose(N_W(1:3,1:3*num_Local_W)),ori_n), &
-                3*num_Local_W,N_HF(1:num_Flu_Nodes),num_Flu_Nodes,            &
-                tem(1:3*num_Local_W,1:num_Flu_Nodes)) 
 
 
-        
+        call Vectors_Multi(MATMUL(transpose(N_W(1:3,1:3*num_Local_W)),ori_n), 3*num_Local_W,N_HF(1:num_Flu_Nodes),num_Flu_Nodes, &
+        tem(1:3*num_Local_W,1:num_Flu_Nodes))
 
-        
+
+
+
+
         do i_Dof = 1,3*num_Local_W
-          if(.not. allocated(Coupled_Q_3D(Local_W(i_Dof))%row))then  
-            allocate(Coupled_Q_3D(Local_W(i_Dof))%row(3))
-            Coupled_Q_3D(Local_W(i_Dof))%row(1:3) = ZR
-            
-            allocate(Coupled_Q_3D_Index(Local_W(i_Dof))%row(3))
-            Coupled_Q_3D_Index(Local_W(i_Dof))%row(1:3) = 0
-            
+            if(.not. allocated(Coupled_Q_3D(Local_W(i_Dof))%row))then  
+                allocate(Coupled_Q_3D(Local_W(i_Dof))%row(3))
+                Coupled_Q_3D(Local_W(i_Dof))%row(1:3) = ZR
+
+                allocate(Coupled_Q_3D_Index(Local_W(i_Dof))%row(3))
+                Coupled_Q_3D_Index(Local_W(i_Dof))%row(1:3) = 0
 
 
 
-            
-            
-            Coupled_Q_3D(Local_W(i_Dof))%row(1:3) = tem(i_Dof,1:3)*Flu_Ele_Area 
-            Coupled_Q_3D_Index(Local_W(i_Dof))%row(1:3) = Local_P(1:3)
-          else
-            
-            Coupled_Q_3D(Local_W(i_Dof))%row(1:3) = &
-                         Coupled_Q_3D(Local_W(i_Dof))%row(1:3) +&
-                         tem(i_Dof,1:3)*Flu_Ele_Area 
-          endif
+
+
+
+                Coupled_Q_3D(Local_W(i_Dof))%row(1:3) = tem(i_Dof,1:3)*Flu_Ele_Area 
+                Coupled_Q_3D_Index(Local_W(i_Dof))%row(1:3) = Local_P(1:3)
+            else
+
+                Coupled_Q_3D(Local_W(i_Dof))%row(1:3) = Coupled_Q_3D(Local_W(i_Dof))%row(1:3) + tem(i_Dof,1:3)*Flu_Ele_Area
+            endif
         enddo
-              
-              
+
+
     enddo
     DEALLOCATE(Local_P)  
     DEALLOCATE(N_HF)
@@ -246,7 +213,6 @@ do i_C=1,num_HF_Cracks
 end do
 !$omp end parallel do   
 
-#endif
 
 return 
 end SUBROUTINE Cal_HF_Matrix_Q_Linear_3D           

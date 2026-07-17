@@ -1,45 +1,15 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
+!-----------------------------------------------------------
+! Brief: Compute the 3D fracture permeability tensor at each fluid node.
+!
+! Parameters:
+!   Input:  isub - current load step index
+!
+! Notes:   Builds a local crack-frame permeability tensor from the local
+!          aperture and rotates it to the global frame via the T-matrix.
+!          Stores (k_xx,k_yy,k_zz,k_xy,k_yz,k_xz) in Cracks_CalP_k_3D.
+!          Early-exits when Key_Get_Permeability==0. Parallelized with OpenMP.
+!-----------------------------------------------------------
+
 subroutine Cal_Crack_Permeability_3D(isub)
 ! Calculate the fracture permeability tensor. 2022-11-26. NEWFTU2022112601.
 ! Save to the staggered array Cracks_CalP_k_3D: k_xx, k_yy, k_zz, k_xy, k_yz, k_xz
@@ -100,11 +70,11 @@ tem_Cracks_CalP_k_3D = ZR
 !$OMP      k_xx,k_yy,k_zz,k_xy,k_yz,k_xz)                                        &
 !$OMP SCHEDULE(static)    
 do i_C = 1,num_Crack
-    
+
     do i_FluidEle =1,Cracks_FluidEle_num_3D(i_C) 
         c_T_Matrx   = Cracks_FluidEle_LCS_T_3D(i_C)%row(i_FluidEle,1:3,1:3)
         c_T_Matrx_T = transpose(c_T_Matrx)
-        
+
         do i_FluNode=1,3
             c_fluid_node = Cracks_FluidEle_CalP_3D(i_C)%row(i_FluidEle,i_FluNode)
             c_Aperture = Cracks_CalP_Aper_3D(i_C)%row(c_fluid_node)
@@ -117,23 +87,23 @@ do i_C = 1,num_Crack
             k_Matrix_Crack(2,2) = c_k
             k_Matrix_Crack(3,3) = ZR
             k_Matrix_Global(1:3,1:3) = ZR
-            
+
             k_Matrix_Global= MATMUL(c_T_Matrx_T,k_Matrix_Crack)
             k_Matrix_Global= MATMUL(k_Matrix_Global,c_T_Matrx)
-            
+
             k_xx = k_Matrix_Global(1,1)
             k_yy = k_Matrix_Global(2,2)
             k_zz = k_Matrix_Global(3,3)
             k_xy = k_Matrix_Global(1,2)
             k_yz = k_Matrix_Global(2,3)
             k_xz = k_Matrix_Global(1,3)
-             
-             tem_Cracks_CalP_k_3D(i_C,c_fluid_node,1)  = k_xx
-             tem_Cracks_CalP_k_3D(i_C,c_fluid_node,2)  = k_yy
-             tem_Cracks_CalP_k_3D(i_C,c_fluid_node,3)  = k_zz
-             tem_Cracks_CalP_k_3D(i_C,c_fluid_node,4)  = k_xy
-             tem_Cracks_CalP_k_3D(i_C,c_fluid_node,5)  = k_yz
-             tem_Cracks_CalP_k_3D(i_C,c_fluid_node,6)  = k_xz
+
+            tem_Cracks_CalP_k_3D(i_C,c_fluid_node,1)  = k_xx
+            tem_Cracks_CalP_k_3D(i_C,c_fluid_node,2)  = k_yy
+            tem_Cracks_CalP_k_3D(i_C,c_fluid_node,3)  = k_zz
+            tem_Cracks_CalP_k_3D(i_C,c_fluid_node,4)  = k_xy
+            tem_Cracks_CalP_k_3D(i_C,c_fluid_node,5)  = k_yz
+            tem_Cracks_CalP_k_3D(i_C,c_fluid_node,6)  = k_xz
         enddo
     enddo
 enddo   
@@ -144,37 +114,37 @@ if(Key_Save_Nothing /= 1)then
     c_File_name_1   =  trim(Full_Pathname)//'.ckxx'//'_'//ADJUSTL(temp)    
     open(101,file=c_File_name_1,status='unknown') 
     do i_C=1,num_Crack
-    write(101,'(50000E20.12)') (tem_Cracks_CalP_k_3D(i_C,j,1),j=1,Cracks_CalP_Num_3D(i_C))     
+        write(101,'(50000E20.12)') (tem_Cracks_CalP_k_3D(i_C,j,1),j=1,Cracks_CalP_Num_3D(i_C))     
     end do
     close(101) 
     c_File_name_1   =  trim(Full_Pathname)//'.ckyy'//'_'//ADJUSTL(temp)    
     open(102,file=c_File_name_1,status='unknown') 
     do i_C=1,num_Crack
-    write(102,'(50000E20.12)') (tem_Cracks_CalP_k_3D(i_C,j,2),j=1,Cracks_CalP_Num_3D(i_C))     
+        write(102,'(50000E20.12)') (tem_Cracks_CalP_k_3D(i_C,j,2),j=1,Cracks_CalP_Num_3D(i_C))     
     end do
     close(102) 
     c_File_name_1   =  trim(Full_Pathname)//'.ckzz'//'_'//ADJUSTL(temp)    
     open(103,file=c_File_name_1,status='unknown') 
     do i_C=1,num_Crack
-    write(103,'(50000E20.12)') (tem_Cracks_CalP_k_3D(i_C,j,3),j=1,Cracks_CalP_Num_3D(i_C))     
+        write(103,'(50000E20.12)') (tem_Cracks_CalP_k_3D(i_C,j,3),j=1,Cracks_CalP_Num_3D(i_C))     
     end do
     close(103) 
     c_File_name_1   =  trim(Full_Pathname)//'.ckxy'//'_'//ADJUSTL(temp)    
     open(104,file=c_File_name_1,status='unknown') 
     do i_C=1,num_Crack
-    write(104,'(50000E20.12)') (tem_Cracks_CalP_k_3D(i_C,j,4),j=1,Cracks_CalP_Num_3D(i_C))     
+        write(104,'(50000E20.12)') (tem_Cracks_CalP_k_3D(i_C,j,4),j=1,Cracks_CalP_Num_3D(i_C))     
     end do
     close(104) 
     c_File_name_1   =  trim(Full_Pathname)//'.ckyz'//'_'//ADJUSTL(temp)    
     open(105,file=c_File_name_1,status='unknown') 
     do i_C=1,num_Crack
-    write(105,'(50000E20.12)') (tem_Cracks_CalP_k_3D(i_C,j,5),j=1,Cracks_CalP_Num_3D(i_C))     
+        write(105,'(50000E20.12)') (tem_Cracks_CalP_k_3D(i_C,j,5),j=1,Cracks_CalP_Num_3D(i_C))     
     end do
     close(105) 
     c_File_name_1   =  trim(Full_Pathname)//'.ckxz'//'_'//ADJUSTL(temp)    
     open(106,file=c_File_name_1,status='unknown') 
     do i_C=1,num_Crack
-    write(106,'(50000E20.12)') (tem_Cracks_CalP_k_3D(i_C,j,6),j=1,Cracks_CalP_Num_3D(i_C))     
+        write(106,'(50000E20.12)') (tem_Cracks_CalP_k_3D(i_C,j,6),j=1,Cracks_CalP_Num_3D(i_C))     
     end do
     close(106)        
 endif
@@ -194,9 +164,9 @@ do i_C = 1,num_Crack
         c_Ele = Cracks_FluidEle_EleNum_3D(i_C)%row(i_FluidEle)
         c_Flu_Area= Cracks_FluidEle_Area_3D(i_C)%row(i_FluidEle)
         c_Flu_w   = Cracks_FluidEle_Aper_3D(i_C)%row(i_FluidEle)
-        
+
         if (c_Flu_w<=ZR) c_Flu_w = ZR
-        
+
         c_Ele_V   = Elem_Vol(c_Ele)
         c_flu_k_6(1:6) = ZR
         do i_FluNode=1,3
@@ -204,12 +174,12 @@ do i_C = 1,num_Crack
             c_flu_k_6(1:6) = c_flu_k_6(1:6) + tem_Cracks_CalP_k_3D(i_C,c_fluid_node,1:6)
         enddo
         c_flu_k_6(1:6) = c_flu_k_6(1:6)/THR
-        
-        
+
+
         c_flu_k_6(1:6) = c_flu_k_6(1:6)*c_Flu_Area*c_Flu_w/c_Ele_V
-        
+
         c_flu_k_6(1:6) = c_flu_k_6(1:6)*1.01325D15
-        
+
 
         Ele_Permeability_3D_Thread(c_Ele,1:6,c_thread) = Ele_Permeability_3D_Thread(c_Ele,1:6,c_thread) + c_flu_k_6(1:6) 
     enddo
@@ -220,7 +190,7 @@ DO i_Thread = 1,omp_get_max_threads()
     Ele_Permeability_3D  =  Ele_Permeability_3D  + Ele_Permeability_3D_Thread(:,:,i_Thread)
 ENDDO
 deallocate(Ele_Permeability_3D_Thread) 
-  
+
 if(Key_Save_Nothing /= 1)then
     c_File_name_1   =  trim(Full_Pathname)//'.elek'//'_'//ADJUSTL(temp)    
     select case(Key_Data_Format)
@@ -256,13 +226,13 @@ if (Key_Cpp_Call_Fortran_Lib==1) then
             c_Ele = Cracks_FluidEle_EleNum_3D(i_C)%row(i_FluidEle)
             c_Flu_Area= Cracks_FluidEle_Area_3D(i_C)%row(i_FluidEle)
             c_Flu_w   = Cracks_FluidEle_Aper_3D(i_C)%row(i_FluidEle)
-            
+
             if (c_Flu_w<=ZR) c_Flu_w = ZR
-            
+
             c_Ele_V   = Elem_Vol(c_Ele)
-            
+
             c_VolumeRatio = c_Flu_Area*c_Flu_w/c_Ele_V
-            
+
             Ele_VolumeRatio_3D_Thread(c_Ele,c_thread) = Ele_VolumeRatio_3D_Thread(c_Ele,c_thread) + c_VolumeRatio
         enddo
     enddo   
@@ -281,6 +251,6 @@ deallocate(tem_Cracks_CalP_k_3D)
 
 
 
-   
+
 return 
 end SUBROUTINE Cal_Crack_Permeability_3D              

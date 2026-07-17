@@ -1,3 +1,17 @@
+!-----------------------------------------------------------
+! Brief: Compute and save shaped (opened) crack geometry for 2D.
+!
+! Parameters:
+!   Input:  isub   - current sub-step index
+!           c_DISP - global displacement vector
+!
+! Notes:   For each crack, samples points along the segment,
+!          offsets upper and lower banks to obtain the current
+!          opening shape, and writes the shaped crack points
+!          and their displacements to sccx/sccy/scdx/scdy files
+!          for post-processing visualization.
+!-----------------------------------------------------------
+
 subroutine Cal_Shaped_Cracks_2D(isub,c_DISP)
 ! Calculate and save shaped cracks for post-processing display. 
 !
@@ -169,9 +183,8 @@ do i_C = 1,num_Crack
             allocate(Div_Points(Num_Division-1,2)) 
             allocate(Offsetted_D_P_Up(Num_Division-1,2)) 
             allocate(Offsetted_D_P_Down(Num_Division-1,2)) 
-            call Cal_Equal_Division_Points_and_Offset(Num_Division, Line_AB,&
-                    offset_delta,Div_Points, &
-                    Offsetted_D_P_Up, Offsetted_D_P_Down)
+call Cal_Equal_Division_Points_and_Offset(Num_Division, Line_AB, offset_delta,Div_Points, &
+Offsetted_D_P_Up, Offsetted_D_P_Down)
                                       
             
             
@@ -298,9 +311,8 @@ do i_C = 1,num_Crack
                 allocate(Div_Points(Num_Division-1,2)) 
                 allocate(Offsetted_D_P_Up(Num_Division-1,2)) 
                 allocate(Offsetted_D_P_Down(Num_Division-1,2)) 
-                call Cal_Equal_Division_Points_and_Offset(Num_Division, &
-                     Line_AB, offset_delta,Div_Points, Offsetted_D_P_Up, &
-                     Offsetted_D_P_Down)
+call Cal_Equal_Division_Points_and_Offset(Num_Division, Line_AB, offset_delta,Div_Points, Offsetted_D_P_Up, &
+Offsetted_D_P_Down)
                                           
                 
                 
@@ -421,9 +433,8 @@ do i_C = 1,num_Crack
                 allocate(Div_Points(Num_Division-1,2)) 
                 allocate(Offsetted_D_P_Up(Num_Division-1,2)) 
                 allocate(Offsetted_D_P_Down(Num_Division-1,2)) 
-                call Cal_Equal_Division_Points_and_Offset(Num_Division, &
-                    Line_AB, offset_delta,Div_Points,&
-                    Offsetted_D_P_Up, Offsetted_D_P_Down)
+call Cal_Equal_Division_Points_and_Offset(Num_Division, Line_AB, offset_delta,Div_Points, &
+Offsetted_D_P_Up, Offsetted_D_P_Down)
                 
                 Offsetted_UP3(p_count+1:p_count+(Num_Division-1),1) = Offsetted_D_P_Up(1:Num_Division-1,1)
                 Offsetted_UP3(p_count+1:p_count+(Num_Division-1),2) = Offsetted_D_P_Up(1:Num_Division-1,2)

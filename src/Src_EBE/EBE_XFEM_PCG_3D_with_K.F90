@@ -1,47 +1,22 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
-SUBROUTINE EBE_XFEM_PCG_3D_with_K(isub,Lambda,c_cg_tol,max_num_PCG,num_FreeD,freeDOF,F,disp,  &
-                                  diag_precon_no_invert)
+!-----------------------------------------------------------
+! Brief: Solve the 3D XFEM system via diagonally preconditioned PCG.
+!
+! Parameters:
+!   Input:  isub                  - load step index
+!           Lambda                - load factor
+!           c_cg_tol              - PCG convergence tolerance
+!           max_num_PCG           - maximum PCG iterations
+!           num_FreeD             - number of free DOF
+!           freeDOF               - list of free DOF indices
+!           F                     - global load vector (free DOF)
+!           diag_precon_no_invert - diagonal preconditioner (uninverted)
+!   Output: disp                  - solution displacement vector
+!
+! Notes:   Element-by-element matrix-vector multiply, no global assembly;
+!          uses pre-stored storK_XFEM and storK_FEM element matrices.
+!-----------------------------------------------------------
+
+SUBROUTINE EBE_XFEM_PCG_3D_with_K(isub,Lambda,c_cg_tol,max_num_PCG,num_FreeD,freeDOF,F,disp, diag_precon_no_invert)
 ! Element by Element, diagonally preconditioned conjugate gradient solver.
 ! Since storK_XFEM and storK_FEM are known, there is no need to assemble the stiffness matrix again.
 ! Ref: Programming the finite element method_2014_Smith_5th, Program 5.6.
@@ -56,7 +31,7 @@ use Global_Crack_3D
 use Function_MVMUL_LP
 use Global_XFEM_Elements
 use omp_lib
-      
+
 implicit none
 integer,intent(in)::isub,max_num_PCG,num_FreeD
 real(kind=FT),intent(in)::Lambda,c_cg_tol,F(num_FreeD)
@@ -95,13 +70,13 @@ integer c_i,c_j
 
 
 ALLOCATE(p(0:num_FreeD),loads(0:num_FreeD),x(0:num_FreeD),xnew(0:num_FreeD),u(0:num_FreeD), &
-          diag_precon(0:num_FreeD),pcg_d(0:num_FreeD))   
+diag_precon(0:num_FreeD),pcg_d(0:num_FreeD))
 
 ALLOCATE(Vector_x_xnew(0:num_FreeD))
 
 max_threads = omp_get_max_threads()
 ALLOCATE(u_thread(0:num_FreeD,1:max_threads))
-      
+
 
 
 loads=ZR 
@@ -110,20 +85,20 @@ loads(1:num_FreeD) = F(1:num_FreeD)
 
 
 if (Key_EBE_Precondition==0) then
-  diag_precon=ONE
-  diag_precon(0) =ZR 
+    diag_precon=ONE
+    diag_precon(0) =ZR 
 elseif(Key_EBE_Precondition==1) then
-  diag_precon(1:)=ONE/diag_precon_no_invert(1:)
-  diag_precon(0) =ZR 
+    diag_precon(1:)=ONE/diag_precon_no_invert(1:)
+    diag_precon(0) =ZR 
 endif
 
 pcg_d=diag_precon*loads 
 p=pcg_d
 x=ZR
 cg_iters=0
-      
-      
-      
+
+
+
 if (KEY_EBE_PCG_BLAS==0) then
     initial_residual_norm = SQRT(DOT_PRODUCT(loads(1:num_FreeD), loads(1:num_FreeD)))
     if (initial_residual_norm<Tol_20) initial_residual_norm = Tol_20
@@ -131,54 +106,54 @@ if (KEY_EBE_PCG_BLAS==0) then
         cg_iters=cg_iters+1 
         u=ZR
         select case(Key_EBE_Sym_Storage_K)
-    
+
         case(0)
-        u_thread(0:num_FreeD,1:max_threads)= ZR   
-        !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(c_thread,i_E,c_Elem,num_Loc_ESM,local,localK,cEle_Loc) 
-        c_thread = omp_get_thread_num()+1
-        !$OMP DO 
-        do i_E=1,num_FEM_Elem
-              c_Elem = FEM_Elem_List(i_E)
-              num_Loc_ESM = Size_Local_3D(c_Elem)
-              local(1:num_Loc_ESM)=All_Local_3D(1:num_Loc_ESM,c_Elem) 
-              cEle_Loc = Elem_Location(c_Elem,2) 
-              localK(1:num_Loc_ESM,1:num_Loc_ESM)= storK_FEM(1:num_Loc_ESM,1:num_Loc_ESM,cEle_Loc)      
-              u_thread(local(1:num_Loc_ESM),c_thread)=u_thread(local(1:num_Loc_ESM),c_thread)+&
-                               MATMUL(localK(1:num_Loc_ESM,1:num_Loc_ESM),p(local(1:num_Loc_ESM)))
-        enddo
-        !$omp end do
-        !$omp end parallel   
-        
+            u_thread(0:num_FreeD,1:max_threads)= ZR   
+            !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(c_thread,i_E,c_Elem,num_Loc_ESM,local,localK,cEle_Loc) 
+            c_thread = omp_get_thread_num()+1
+            !$OMP DO 
+            do i_E=1,num_FEM_Elem
+                c_Elem = FEM_Elem_List(i_E)
+                num_Loc_ESM = Size_Local_3D(c_Elem)
+                local(1:num_Loc_ESM)=All_Local_3D(1:num_Loc_ESM,c_Elem) 
+                cEle_Loc = Elem_Location(c_Elem,2) 
+                localK(1:num_Loc_ESM,1:num_Loc_ESM)= storK_FEM(1:num_Loc_ESM,1:num_Loc_ESM,cEle_Loc)      
+                u_thread(local(1:num_Loc_ESM),c_thread)=u_thread(local(1:num_Loc_ESM),c_thread)+ &
+                MATMUL(localK(1:num_Loc_ESM,1:num_Loc_ESM),p(local(1:num_Loc_ESM)))
+            enddo
+            !$omp end do
+            !$omp end parallel   
+
         case(1)
-        u_thread(0:num_FreeD,1:max_threads)= ZR   
-        !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(c_thread,i_E,c_Elem,num_Loc_ESM,local,localK,cEle_Loc,c_i,c_j) 
-        c_thread = omp_get_thread_num()+1
-        !$OMP DO 
-        do i_E=1,num_FEM_Elem
-              c_Elem = FEM_Elem_List(i_E)
-              num_Loc_ESM = Size_Local_3D(c_Elem)
-              local(1:num_Loc_ESM)=All_Local_3D(1:num_Loc_ESM,c_Elem) 
-              cEle_Loc = Elem_Location(c_Elem,2) 
-              do c_i=1,num_Loc_ESM
-                  do c_j=c_i,num_Loc_ESM
-                      localK(c_i,c_j) = storK_FEM_Sym((c_i-1)*24 -(c_i-1)*c_i/2 +c_j,cEle_Loc)  
-                  enddo
-              enddo
-              do c_i=1,num_Loc_ESM
-                  do c_j=1,c_i-1
-                      localK(c_i,c_j) =  localK(c_j,c_i) 
-                  enddo
-              enddo
-              u_thread(local(1:num_Loc_ESM),c_thread)=u_thread(local(1:num_Loc_ESM),c_thread)+&
-                               MATMUL(localK(1:num_Loc_ESM,1:num_Loc_ESM),p(local(1:num_Loc_ESM)))
-        enddo
-        !$omp end do
-        !$omp end parallel 
-        
+            u_thread(0:num_FreeD,1:max_threads)= ZR   
+            !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(c_thread,i_E,c_Elem,num_Loc_ESM,local,localK,cEle_Loc,c_i,c_j) 
+            c_thread = omp_get_thread_num()+1
+            !$OMP DO 
+            do i_E=1,num_FEM_Elem
+                c_Elem = FEM_Elem_List(i_E)
+                num_Loc_ESM = Size_Local_3D(c_Elem)
+                local(1:num_Loc_ESM)=All_Local_3D(1:num_Loc_ESM,c_Elem) 
+                cEle_Loc = Elem_Location(c_Elem,2) 
+                do c_i=1,num_Loc_ESM
+                    do c_j=c_i,num_Loc_ESM
+                        localK(c_i,c_j) = storK_FEM_Sym((c_i-1)*24 -(c_i-1)*c_i/2 +c_j,cEle_Loc)  
+                    enddo
+                enddo
+                do c_i=1,num_Loc_ESM
+                    do c_j=1,c_i-1
+                        localK(c_i,c_j) =  localK(c_j,c_i) 
+                    enddo
+                enddo
+                u_thread(local(1:num_Loc_ESM),c_thread)=u_thread(local(1:num_Loc_ESM),c_thread)+ &
+                MATMUL(localK(1:num_Loc_ESM,1:num_Loc_ESM),p(local(1:num_Loc_ESM)))
+            enddo
+            !$omp end do
+            !$omp end parallel 
+
         endselect
-        
+
         DO i_Thread = 1,omp_get_max_threads()
-             u(0:num_FreeD)  =  u(0:num_FreeD)  + u_thread(0:num_FreeD,i_Thread)
+            u(0:num_FreeD)  =  u(0:num_FreeD)  + u_thread(0:num_FreeD,i_Thread)
         ENDDO
 
         u_thread(0:num_FreeD,1:max_threads)= ZR   
@@ -186,64 +161,64 @@ if (KEY_EBE_PCG_BLAS==0) then
         c_thread = omp_get_thread_num()+1
         !$OMP DO
         do i_E=1,num_XFEM_Elem
-              c_Elem = XFEM_Elem_List(i_E)
-              num_Loc_ESM = Size_Local_3D(c_Elem)
-              local(1:num_Loc_ESM)=All_Local_3D(1:num_Loc_ESM,c_Elem) 
-              cEle_Loc = Elem_Location(c_Elem,1) 
-              
-              localK(1:num_Loc_ESM,1:num_Loc_ESM)= storK_XFEM(cEle_Loc)%row(1:num_Loc_ESM,1:num_Loc_ESM)  
-              
-              u_thread(local(1:num_Loc_ESM),c_thread)=u_thread(local(1:num_Loc_ESM),c_thread)+&
-                               MATMUL(localK(1:num_Loc_ESM,1:num_Loc_ESM),p(local(1:num_Loc_ESM)))
+            c_Elem = XFEM_Elem_List(i_E)
+            num_Loc_ESM = Size_Local_3D(c_Elem)
+            local(1:num_Loc_ESM)=All_Local_3D(1:num_Loc_ESM,c_Elem) 
+            cEle_Loc = Elem_Location(c_Elem,1) 
+
+            localK(1:num_Loc_ESM,1:num_Loc_ESM)= storK_XFEM(cEle_Loc)%row(1:num_Loc_ESM,1:num_Loc_ESM)  
+
+            u_thread(local(1:num_Loc_ESM),c_thread)=u_thread(local(1:num_Loc_ESM),c_thread)+ &
+            MATMUL(localK(1:num_Loc_ESM,1:num_Loc_ESM),p(local(1:num_Loc_ESM)))
         enddo
         !$omp end do
         !$omp end parallel   
         DO i_Thread = 1,omp_get_max_threads()
-             u(0:num_FreeD)  =  u(0:num_FreeD)  + u_thread(0:num_FreeD,i_Thread)
+            u(0:num_FreeD)  =  u(0:num_FreeD)  + u_thread(0:num_FreeD,i_Thread)
         ENDDO
 
-           
-          up=DOT_PRODUCT(loads,pcg_d)
-          alpha=up/DOT_PRODUCT(p,u) 
-          
-          xnew = x + p*alpha 
 
-          
-          loads=loads-u*alpha
-          
-          current_residual_norm = SQRT(DOT_PRODUCT(loads(1:num_FreeD), loads(1:num_FreeD)))
-          Tol = current_residual_norm / initial_residual_norm
-    
-          pcg_d=diag_precon*loads 
+        up=DOT_PRODUCT(loads,pcg_d)
+        alpha=up/DOT_PRODUCT(p,u) 
 
-          
-          beta=DOT_PRODUCT(loads,pcg_d)/up 
-          
-           p=pcg_d+p*beta
+        xnew = x + p*alpha 
 
-          
-          x=xnew
 
-          if(cg_iters<=300)then
+        loads=loads-u*alpha
+
+        current_residual_norm = SQRT(DOT_PRODUCT(loads(1:num_FreeD), loads(1:num_FreeD)))
+        Tol = current_residual_norm / initial_residual_norm
+
+        pcg_d=diag_precon*loads 
+
+
+        beta=DOT_PRODUCT(loads,pcg_d)/up 
+
+        p=pcg_d+p*beta
+
+
+        x=xnew
+
+        if(cg_iters<=300)then
             if(mod(cg_iters,50) == 0) then
                 write(*,103)  cg_iters,Tol,c_cg_tol 
             endif
-          else
+        else
             if(mod(cg_iters,100) == 0) then
                 write(*,103)  cg_iters,Tol,c_cg_tol 
             endif
-          endif   
-          
-          if(Tol<c_cg_tol)then  
-              exit
-          endif
-          
-          if(cg_iters==max_num_PCG)then
-              print *, '    -------------------------------------'
-              print *, '        Warning :: PCG-EBE failed!       '  
-              print *, '    -------------------------------------'
-              exit
-          endif          
+        endif   
+
+        if(Tol<c_cg_tol)then  
+            exit
+        endif
+
+        if(cg_iters==max_num_PCG)then
+            print *, '    -------------------------------------'
+            print *, '        Warning :: PCG-EBE failed!       '  
+            print *, '    -------------------------------------'
+            exit
+        endif          
     enddo
 endif 
 
@@ -257,20 +232,20 @@ if (KEY_EBE_PCG_BLAS==1) then
         cg_iters=cg_iters+1 
         u=ZR
         select case(Key_EBE_Sym_Storage_K)
-    
+
         case(0)
             u_thread(0:num_FreeD,1:max_threads)= ZR   
             !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(c_thread,i_E,c_Elem,num_Loc_ESM,local,localK,cEle_Loc) 
             c_thread = omp_get_thread_num()+1
             !$OMP DO 
             do i_E=1,num_FEM_Elem
-                  c_Elem = FEM_Elem_List(i_E)
-                  num_Loc_ESM = Size_Local_3D(c_Elem)
-                  local(1:num_Loc_ESM)=All_Local_3D(1:num_Loc_ESM,c_Elem) 
-                  cEle_Loc = Elem_Location(c_Elem,2) 
-                  localK(1:num_Loc_ESM,1:num_Loc_ESM)= storK_FEM(1:num_Loc_ESM,1:num_Loc_ESM,cEle_Loc)      
-                  u_thread(local(1:num_Loc_ESM),c_thread)=u_thread(local(1:num_Loc_ESM),c_thread)+&
-                                   MATMUL(localK(1:num_Loc_ESM,1:num_Loc_ESM),p(local(1:num_Loc_ESM)))
+                c_Elem = FEM_Elem_List(i_E)
+                num_Loc_ESM = Size_Local_3D(c_Elem)
+                local(1:num_Loc_ESM)=All_Local_3D(1:num_Loc_ESM,c_Elem) 
+                cEle_Loc = Elem_Location(c_Elem,2) 
+                localK(1:num_Loc_ESM,1:num_Loc_ESM)= storK_FEM(1:num_Loc_ESM,1:num_Loc_ESM,cEle_Loc)      
+                u_thread(local(1:num_Loc_ESM),c_thread)=u_thread(local(1:num_Loc_ESM),c_thread)+ &
+                MATMUL(localK(1:num_Loc_ESM,1:num_Loc_ESM),p(local(1:num_Loc_ESM)))
             enddo
             !$omp end do
             !$omp end parallel   
@@ -280,36 +255,32 @@ if (KEY_EBE_PCG_BLAS==1) then
             c_thread = omp_get_thread_num()+1
             !$OMP DO 
             do i_E=1,num_FEM_Elem
-                  c_Elem = FEM_Elem_List(i_E)
-                  num_Loc_ESM = Size_Local_3D(c_Elem)
-                  local(1:num_Loc_ESM)=All_Local_3D(1:num_Loc_ESM,c_Elem) 
-                  cEle_Loc = Elem_Location(c_Elem,2) 
-                  do c_i=1,num_Loc_ESM
-                      do c_j=c_i,num_Loc_ESM
-                          localK(c_i,c_j) = storK_FEM_Sym((c_i-1)*24 -(c_i-1)*c_i/2 +c_j,cEle_Loc)  
-                      enddo
-                  enddo
-                  do c_i=1,num_Loc_ESM
-                      do c_j=1,c_i-1
-                          localK(c_i,c_j) =  localK(c_j,c_i) 
-                      enddo
-                  enddo
-                  u_thread(local(1:num_Loc_ESM),c_thread)=u_thread(local(1:num_Loc_ESM),c_thread)+&
-                                   MATMUL(localK(1:num_Loc_ESM,1:num_Loc_ESM),p(local(1:num_Loc_ESM)))
+                c_Elem = FEM_Elem_List(i_E)
+                num_Loc_ESM = Size_Local_3D(c_Elem)
+                local(1:num_Loc_ESM)=All_Local_3D(1:num_Loc_ESM,c_Elem) 
+                cEle_Loc = Elem_Location(c_Elem,2) 
+                do c_i=1,num_Loc_ESM
+                    do c_j=c_i,num_Loc_ESM
+                        localK(c_i,c_j) = storK_FEM_Sym((c_i-1)*24 -(c_i-1)*c_i/2 +c_j,cEle_Loc)  
+                    enddo
+                enddo
+                do c_i=1,num_Loc_ESM
+                    do c_j=1,c_i-1
+                        localK(c_i,c_j) =  localK(c_j,c_i) 
+                    enddo
+                enddo
+                u_thread(local(1:num_Loc_ESM),c_thread)=u_thread(local(1:num_Loc_ESM),c_thread)+ &
+                MATMUL(localK(1:num_Loc_ESM,1:num_Loc_ESM),p(local(1:num_Loc_ESM)))
             enddo
             !$omp end do
             !$omp end parallel       
         endselect
-        
+
         DO i_Thread = 1,omp_get_max_threads()
-             
-#ifdef Silverfrost
-             u(0:num_FreeD)  =  u(0:num_FreeD)  + u_thread(0:num_FreeD,i_Thread)
-#endif
-#ifndef Silverfrost
-             call DAXPY(num_FreeD,ONE,u_thread(1:num_FreeD,i_Thread),1,u(1:num_FreeD),1) 
-             u(0) = u(0) + u_thread(0,i_Thread)
-#endif
+
+
+            call DAXPY(num_FreeD,ONE,u_thread(1:num_FreeD,i_Thread),1,u(1:num_FreeD),1) 
+            u(0) = u(0) + u_thread(0,i_Thread)
         ENDDO
 
         u_thread(0:num_FreeD,1:max_threads)= ZR   
@@ -317,122 +288,87 @@ if (KEY_EBE_PCG_BLAS==1) then
         c_thread = omp_get_thread_num()+1
         !$OMP DO
         do i_E=1,num_XFEM_Elem
-              c_Elem = XFEM_Elem_List(i_E)
-              num_Loc_ESM = Size_Local_3D(c_Elem)
-              local(1:num_Loc_ESM)=All_Local_3D(1:num_Loc_ESM,c_Elem) 
-              cEle_Loc = Elem_Location(c_Elem,1) 
-              
-              localK(1:num_Loc_ESM,1:num_Loc_ESM)= storK_XFEM(cEle_Loc)%row(1:num_Loc_ESM,1:num_Loc_ESM)
-              
-              u_thread(local(1:num_Loc_ESM),c_thread)=u_thread(local(1:num_Loc_ESM),c_thread)+&
-                               MATMUL(localK(1:num_Loc_ESM,1:num_Loc_ESM),p(local(1:num_Loc_ESM)))
+            c_Elem = XFEM_Elem_List(i_E)
+            num_Loc_ESM = Size_Local_3D(c_Elem)
+            local(1:num_Loc_ESM)=All_Local_3D(1:num_Loc_ESM,c_Elem) 
+            cEle_Loc = Elem_Location(c_Elem,1) 
+
+            localK(1:num_Loc_ESM,1:num_Loc_ESM)= storK_XFEM(cEle_Loc)%row(1:num_Loc_ESM,1:num_Loc_ESM)
+
+            u_thread(local(1:num_Loc_ESM),c_thread)=u_thread(local(1:num_Loc_ESM),c_thread)+ &
+            MATMUL(localK(1:num_Loc_ESM,1:num_Loc_ESM),p(local(1:num_Loc_ESM)))
         enddo
         !$omp end do
         !$omp end parallel   
         DO i_Thread = 1,omp_get_max_threads()
-             
-#ifdef Silverfrost  
-             u(0:num_FreeD)  =  u(0:num_FreeD)  + u_thread(0:num_FreeD,i_Thread)
-#endif
-#ifndef Silverfrost  
-             call DAXPY(num_FreeD,ONE,u_thread(1:num_FreeD,i_Thread),1,u(1:num_FreeD),1) 
-             u(0) = u(0) + u_thread(0,i_Thread)    
-#endif
+
+
+            call DAXPY(num_FreeD,ONE,u_thread(1:num_FreeD,i_Thread),1,u(1:num_FreeD),1) 
+            u(0) = u(0) + u_thread(0,i_Thread)    
         ENDDO
 
 
-           
-#ifdef Silverfrost
-          up=DOT_PRODUCT(loads,pcg_d)
-          alpha=up/DOT_PRODUCT(p,u)   
-#endif
-#ifndef Silverfrost
-          up      = ddot(num_FreeD,loads(1:num_FreeD),1,pcg_d(1:num_FreeD),1)      
-          up      = up + loads(0)*pcg_d(0)
-          dot_p_u = ddot(num_FreeD,p(1:num_FreeD),1,u(1:num_FreeD),1) 
-          dot_p_u = dot_p_u + p(0)*u(0)
-          alpha   = up/dot_p_u  
-#endif
-          
-#ifdef Silverfrost
-          xnew = x + p*alpha 
-#endif
-#ifndef Silverfrost
-          call DCOPY(num_FreeD,x(1:num_FreeD),1,xnew(1:num_FreeD),1)
-          xnew(0) = x(0)
-          call DAXPY(num_FreeD,alpha,p(1:num_FreeD),1,xnew(1:num_FreeD),1)
-          xnew(0) = xnew(0) + alpha*p(0)
-#endif
-#ifdef Silverfrost
-          loads=loads-u*alpha
-          pcg_d=diag_precon*loads  
-#endif
-#ifndef Silverfrost
-          call DAXPY(num_FreeD,-alpha,u(1:num_FreeD),1,loads(1:num_FreeD),1)  
-          loads(0) = loads(0) - alpha*u(0)
-          pcg_d=diag_precon*loads 
-#endif
-#ifdef Silverfrost
-          beta=DOT_PRODUCT(loads,pcg_d)/up    
-#endif
 
-#ifndef Silverfrost
-          beta = ddot(num_FreeD, loads(1:num_FreeD), 1, pcg_d(1:num_FreeD), 1)
-          beta = beta + loads(0)*pcg_d(0)
-          beta = beta/up
-#endif
-          
-#ifdef Silverfrost
-          p=pcg_d+p*beta     
-#endif      
-#ifndef Silverfrost
-          call DSCAL(num_FreeD,beta,p(1:num_FreeD),1)
-          p(0) = p(0)*beta
-          call DAXPY(num_FreeD,ONE,pcg_d(1:num_FreeD),1,p(1:num_FreeD),1)
-          p(0) = p(0)+pcg_d(0)
-#endif
-          
-#ifdef Silverfrost
-          Tol = MAXVAL(ABS(x(0:num_FreeD)-xnew(0:num_FreeD)))/MAXVAL(ABS(x(0:num_FreeD)))
-#endif
-#ifndef Silverfrost
-          call DCOPY(num_FreeD,x(1:num_FreeD),1,Vector_x_xnew(1:num_FreeD),1)
-          Vector_x_xnew(0) = x(0)
-          call DAXPY(num_FreeD,-ONE,xnew(1:num_FreeD),1,Vector_x_xnew(1:num_FreeD),1)   
-          Vector_x_xnew(0) = Vector_x_xnew(0) - xnew(0)
-          Tol = MAXVAL(ABS(Vector_x_xnew(0:num_FreeD)))/MAXVAL(ABS(x(0:num_FreeD)))
-#endif
-          
-          
-#ifdef Silverfrost
-          x=xnew
-#endif
-#ifndef Silverfrost
-          call DCOPY(num_FreeD,xnew(1:num_FreeD),1,x(1:num_FreeD),1)
-          x(0) = xnew(0)
-#endif
 
-          if(cg_iters<=300)then
+        up      = ddot(num_FreeD,loads(1:num_FreeD),1,pcg_d(1:num_FreeD),1)      
+        up      = up + loads(0)*pcg_d(0)
+        dot_p_u = ddot(num_FreeD,p(1:num_FreeD),1,u(1:num_FreeD),1) 
+        dot_p_u = dot_p_u + p(0)*u(0)
+        alpha   = up/dot_p_u  
+
+
+        call DCOPY(num_FreeD,x(1:num_FreeD),1,xnew(1:num_FreeD),1)
+        xnew(0) = x(0)
+        call DAXPY(num_FreeD,alpha,p(1:num_FreeD),1,xnew(1:num_FreeD),1)
+        xnew(0) = xnew(0) + alpha*p(0)
+
+        call DAXPY(num_FreeD,-alpha,u(1:num_FreeD),1,loads(1:num_FreeD),1)  
+        loads(0) = loads(0) - alpha*u(0)
+        pcg_d=diag_precon*loads 
+
+        beta = ddot(num_FreeD, loads(1:num_FreeD), 1, pcg_d(1:num_FreeD), 1)
+        beta = beta + loads(0)*pcg_d(0)
+        beta = beta/up
+
+
+        call DSCAL(num_FreeD,beta,p(1:num_FreeD),1)
+        p(0) = p(0)*beta
+        call DAXPY(num_FreeD,ONE,pcg_d(1:num_FreeD),1,p(1:num_FreeD),1)
+        p(0) = p(0)+pcg_d(0)
+
+
+        call DCOPY(num_FreeD,x(1:num_FreeD),1,Vector_x_xnew(1:num_FreeD),1)
+        Vector_x_xnew(0) = x(0)
+        call DAXPY(num_FreeD,-ONE,xnew(1:num_FreeD),1,Vector_x_xnew(1:num_FreeD),1)   
+        Vector_x_xnew(0) = Vector_x_xnew(0) - xnew(0)
+        Tol = MAXVAL(ABS(Vector_x_xnew(0:num_FreeD)))/MAXVAL(ABS(x(0:num_FreeD)))
+
+
+
+        call DCOPY(num_FreeD,xnew(1:num_FreeD),1,x(1:num_FreeD),1)
+        x(0) = xnew(0)
+
+        if(cg_iters<=300)then
             if(mod(cg_iters,50) == 0) then
                 write(*,103)  cg_iters,Tol,c_cg_tol 
             endif
-          else
+        else
             if(mod(cg_iters,100) == 0) then
                 write(*,103)  cg_iters,Tol,c_cg_tol 
             endif
-          endif   
-          
-    
-          if(Tol<c_cg_tol)then  
-              exit
-          endif
-          
-          if(cg_iters==max_num_PCG)then
-              print *, "    -------------------------------------"
-              print *, "    Warning :: PCG-EBE failed!           "     
-              print *, "    -------------------------------------"
-              exit
-          endif          
+        endif   
+
+
+        if(Tol<c_cg_tol)then  
+            exit
+        endif
+
+        if(cg_iters==max_num_PCG)then
+            print *, "    -------------------------------------"
+            print *, "    Warning :: PCG-EBE failed!           "     
+            print *, "    -------------------------------------"
+            exit
+        endif          
     enddo
 
 endif

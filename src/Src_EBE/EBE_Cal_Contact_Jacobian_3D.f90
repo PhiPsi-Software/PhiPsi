@@ -1,48 +1,19 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
+!-----------------------------------------------------------
+! Brief: EBE-form 3D contact Jacobian and diagonal preconditioner.
+!
+! Parameters:
+!   Input:  isub, i_NR_P    - substep and NR iteration indices
+!           num_freeD, freeDOF - free DOF count and map
+!           size_local_0, all_local_0 - baseline EBE layout
+!           diag_precon_no_invert_0 - baseline precon (no invert)
+!           Kn               - normal penalty stiffness
+!           Kt1_Gauss, Kt2_Gauss, Kn_Gauss - per-Gauss penalties
+!           CT_State_Gauss   - per-Gauss contact state
+!   Output: diag_precon_no_invert - contact-aware precon
+!-----------------------------------------------------------
+
 subroutine EBE_Cal_Contact_Jacobian_3D(isub,i_NR_P,num_freeD,freeDOF,size_local_0, &
-       all_local_0,diag_precon_no_invert_0,diag_precon_no_invert,                   &
-       Kn,Kn_Gauss,Kt1_Gauss,Kt2_Gauss,CT_State_Gauss)
+all_local_0,diag_precon_no_invert_0,diag_precon_no_invert, Kn,Kn_Gauss,Kt1_Gauss,Kt2_Gauss,CT_State_Gauss)
 ! Computation of the Jacobian matrix during contact iteration (3D).
 ! The nodes of the contact elements and the fluid elements completely coincide, which facilitates
 ! the programming.
@@ -76,9 +47,9 @@ real(kind=FT),intent(in)::diag_precon_no_invert_0(0:num_FreeD)
 integer,intent(in)::size_local_0(Num_Elem)
 integer,intent(in)::all_local_0(MDOF_3D,Num_Elem)      
 real(kind=FT),intent(out)::diag_precon_no_invert(0:num_FreeD)
-real(kind=FT),intent(in):: Kt1_Gauss(num_Crack,Max_Max_N_FluEl_3D),  &
-      Kt2_Gauss(num_Crack,Max_Max_N_FluEl_3D),         &
-      Kn_Gauss(num_Crack,Max_Max_N_FluEl_3D)
+real(kind=FT),intent(in):: Kt1_Gauss(num_Crack,Max_Max_N_FluEl_3D), &
+Kt2_Gauss(num_Crack,Max_Max_N_FluEl_3D), &
+Kn_Gauss(num_Crack,Max_Max_N_FluEl_3D)
 integer,intent(in)::CT_State_Gauss(num_Crack,Max_Max_N_FluEl_3D)
 integer i_N,i_C
 integer c_NN(8)
@@ -127,15 +98,15 @@ diag_precon_no_invert(0:num_FreeD) = diag_precon_no_invert_0(0:num_FreeD)
 
 max_threads = omp_get_max_threads()
 if(Key_EBE_Precondition == 1)then
-  ALLOCATE(diag_precon_no_invert_thread(0:num_FreeD,1:max_threads))
-  diag_precon_no_invert_thread(0:num_FreeD,1:max_threads)= ZR 
+    ALLOCATE(diag_precon_no_invert_thread(0:num_FreeD,1:max_threads))
+    diag_precon_no_invert_thread(0:num_FreeD,1:max_threads)= ZR 
 endif
 
 
 if(Key_Contact==7) then
     goto 100
 endif
-      
+
 !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(c_thread,i_C,i_CT_Elem,c_Center,ori_n,T,Solid_El,Flu_Ele_Area,c_kt1,c_kt2,c_kn,  &
 !$OMP             D_ep_o,Kesi,Yita,Zeta,c_NN,num_Loc_ESM,N_W,i_N,Local_W,ref_elem,BaseLine_A,BaseLine_B,BaseLine_Mid,   &
 !$OMP             BaseLine_x_Vec,BaseLine_y_Vec,BaseLine_z_Vec, Tip_T_Matrx,Gauss_Coor_Local,r_Gauss,theta_Gauss,       &
@@ -144,123 +115,124 @@ endif
 c_thread = omp_get_thread_num()+1
 !$OMP do SCHEDULE(static) 
 do i_C=1,num_Crack
-  do i_CT_Elem = 1,Cracks_FluidEle_num_3D(i_C)
-      c_Center = Cracks_FluidEle_Centroid_3D(i_C)%row(i_CT_Elem,1:3)
-      ori_n    = Cracks_FluidEle_Vector_3D(i_C)%row(i_CT_Elem,1:3)
-      T=Cracks_FluidEle_LCS_T_3D(i_C)%row(i_CT_Elem,1:3,1:3)
-      Solid_El = Cracks_FluidEle_EleNum_3D(i_C)%row(i_CT_Elem)     
-      Flu_Ele_Area = Cracks_FluidEle_Area_3D(i_C)%row(i_CT_Elem)  
-      
-      
-      
-      if(CT_State_Gauss(i_C,i_CT_Elem) /= 0)then
-          c_kt1 = ZR
-          c_kt2 = ZR
-          c_kn = Kn_Gauss(i_C,i_CT_Elem)
-          D_ep_o(1:3,1:3) =  ZR
-          D_ep_o(1,1:3) = [c_kt1,    ZR,       ZR]
-          D_ep_o(2,1:3) = [ZR,    c_kt2,       ZR]
-          D_ep_o(3,1:3) = [ZR,       ZR,     c_kn]
-          
-          call Cal_KesiYita_by_Coor_3D(c_Center,Solid_El,Kesi,Yita,Zeta)
-          c_NN(1:8)    = G_NN(1:8,Solid_El)
-          
-          num_Loc_ESM = size_local_0(Solid_El)
-          local(1:num_Loc_ESM)= all_local_0(1:num_Loc_ESM,Solid_El) 
+    do i_CT_Elem = 1,Cracks_FluidEle_num_3D(i_C)
+        c_Center = Cracks_FluidEle_Centroid_3D(i_C)%row(i_CT_Elem,1:3)
+        ori_n    = Cracks_FluidEle_Vector_3D(i_C)%row(i_CT_Elem,1:3)
+        T=Cracks_FluidEle_LCS_T_3D(i_C)%row(i_CT_Elem,1:3,1:3)
+        Solid_El = Cracks_FluidEle_EleNum_3D(i_C)%row(i_CT_Elem)     
+        Flu_Ele_Area = Cracks_FluidEle_Area_3D(i_C)%row(i_CT_Elem)  
 
-          call Cal_N_3D(Kesi,Yita,Zeta,N)     
-          tem_n(1) = N(1,1);    tem_n(2) = N(1,4)
-          tem_n(3) = N(1,7);    tem_n(4) = N(1,10)      
-          tem_n(5) = N(1,13);   tem_n(6) = N(1,16)
-          tem_n(7) = N(1,19);   tem_n(8) = N(1,22)  
-          
-          N_HF(1:3) = ONE/THR      
-          
-          D_ep = MATMUL(MATMUL(transpose(T),D_ep_o),T)
-          
-          num_Local_W = 0
-          N_W(1:3,1:MDOF_3D) =ZR
-          do i_N = 1,8
-              if(Enriched_Node_Type_3D(c_NN(i_N),i_C) ==2)then
-                  num_Local_W = num_Local_W+1
-                  Local_W(3*num_Local_W-2)=3*c_POS_3D(c_NN(i_N),i_C)-2
-                  Local_W(3*num_Local_W-1)=3*c_POS_3D(c_NN(i_N),i_C)-1     
-                  Local_W(3*num_Local_W)  =3*c_POS_3D(c_NN(i_N),i_C)
-                  N_W(1,3*num_Local_W-2)   = TWO*tem_n(i_N)
-                  N_W(2,3*num_Local_W-1)   = TWO*tem_n(i_N)
-                  N_W(3,3*num_Local_W)     = TWO*tem_n(i_N)     
-              elseif(Enriched_Node_Type_3D(c_NN(i_N),i_C) ==3)then
 
-              elseif(Enriched_Node_Type_3D(c_NN(i_N),i_C)==1) then
-                  if ((Elem_Type_3D(Solid_El,i_C).eq.1 )) then
-                      ref_elem=Solid_El
-                  else
-                      ref_elem=Ele_Num_Tip_Enriched_Node_3D(c_NN(i_N))%row(i_C)
-                  endif
-  
-                  call Vector_Location_Int_v2(Solid_El_Max_num_Crs,Solid_El_Crs(ref_elem,1:Solid_El_Max_num_Crs),i_C,c_Cr_Location)
-     
-                  BaseLine_A = Solid_El_Tip_BaseLine(ref_elem)%row(c_Cr_Location,1,1:3)
-                  BaseLine_B = Solid_El_Tip_BaseLine(ref_elem)%row(c_Cr_Location,2,1:3)
-                  BaseLine_Mid = (BaseLine_A+BaseLine_B)/TWO
-                  BaseLine_x_Vec = Solid_El_Tip_BaseLine_x_Vec(ref_elem)%row(c_Cr_Location,1:3)
-                  BaseLine_y_Vec = Solid_El_Tip_BaseLine_y_Vec(ref_elem)%row(c_Cr_Location,1:3)
-                  BaseLine_z_Vec = Solid_El_Tip_BaseLine_z_Vec(ref_elem)%row(c_Cr_Location,1:3)
-                  Tip_T_Matrx(1:3,1:3) = Solid_El_Tip_BaseLine_T_Matrix(ref_elem)%row(c_Cr_Location,1:3,1:3)
 
-                  Gauss_Coor_Local= MATMUL(Tip_T_Matrx,c_Center-BaseLine_Mid)
-                  r_Gauss = sqrt(Gauss_Coor_Local(1)**2 + Gauss_Coor_Local(2)**2)
-                  theta_Gauss = atan2(Gauss_Coor_Local(2),Gauss_Coor_Local(1))    
-                  num_Local_W = num_Local_W+1
-                  Local_W(3*num_Local_W-2)=3*c_POS_3D(c_NN(i_N),i_C)-2
-                  Local_W(3*num_Local_W-1)=3*c_POS_3D(c_NN(i_N),i_C)-1     
-                  Local_W(3*num_Local_W)  =3*c_POS_3D(c_NN(i_N),i_C) 
- 
-                  N_W(1,3*num_Local_W-2)= TWO*sqrt(r_Gauss)*tem_n(i_N)
-                  N_W(2,3*num_Local_W-1)= TWO*sqrt(r_Gauss)*tem_n(i_N)
-                  N_W(3,3*num_Local_W)  = TWO*sqrt(r_Gauss)*tem_n(i_N)     
-                  
-              endif
-          enddo
-          DO k=1,3*num_Local_W
-              
-              c_loca_W =  Location_FreeDOF(Local_W(k))
-              
-              local_FreeD(k) = c_loca_W
-          enddo
-          
-          DO k=1,3*num_Local_W
-              c_loca_W = minloc(local(1:num_Loc_ESM),1,MASK = (local(1:num_Loc_ESM).eq.local_FreeD(k)))
-              True_local_FreeD(k) = c_loca_W
-          enddo 
-          
-          allocate(localK_Temp(MDOF_3D,MDOF_3D))
-          localK_Temp(1:MDOF_3D,1:MDOF_3D) = ZR
-          localK_Temp(1:3*num_Local_W,1:3*num_Local_W) = &
-              MATMUL(MATMUL(transpose(N_W(1:3,1:3*num_Local_W)),D_ep),N_W(1:3,1:3*num_Local_W))*Flu_Ele_Area 
+        if(CT_State_Gauss(i_C,i_CT_Elem) /= 0)then
+            c_kt1 = ZR
+            c_kt2 = ZR
+            c_kn = Kn_Gauss(i_C,i_CT_Elem)
+            D_ep_o(1:3,1:3) =  ZR
+            D_ep_o(1,1:3) = [c_kt1,    ZR,       ZR]
+            D_ep_o(2,1:3) = [ZR,    c_kt2,       ZR]
+            D_ep_o(3,1:3) = [ZR,       ZR,     c_kn]
 
-          if (Elem_XFEM_Flag(Solid_El) ==1)then  
-              c_Ele_Location = Elem_Location(Solid_El,1) 
-              !$OMP CRITICAL
-              storK_XFEM_Updated(c_Ele_Location)%row(True_local_FreeD(1:3*num_Local_W),True_local_FreeD(1:3*num_Local_W))=        &
-                  storK_XFEM_Updated(c_Ele_Location)%row(True_local_FreeD(1:3*num_Local_W),True_local_FreeD(1:3*num_Local_W)) + & 
-                    localK_Temp(1:3*num_Local_W,1:3*num_Local_W)
-              !$OMP END CRITICAL
-          elseif (Elem_XFEM_Flag(Solid_El) ==0)then
-              print *,'Error-2023082701 :: Contact should not be related to FEM elements, in EBE_Cal_Contact_Jacobian_3D.f90.'
-              call Warning_Message('S',Keywords_Blank)  
-          endif
+            call Cal_KesiYita_by_Coor_3D(c_Center,Solid_El,Kesi,Yita,Zeta)
+            c_NN(1:8)    = G_NN(1:8,Solid_El)
 
-          if (Key_EBE_Precondition==1)then
-              DO j=1,3*num_Local_W
-                  c_loca=local_FreeD(j)        
-                  diag_precon_no_invert_thread(c_loca,c_thread)=diag_precon_no_invert_thread(c_loca,c_thread) +localK_Temp(j,j)
-              END DO 
-          endif
-          
-          deallocate(localK_Temp)
-      endif
-  enddo
+            num_Loc_ESM = size_local_0(Solid_El)
+            local(1:num_Loc_ESM)= all_local_0(1:num_Loc_ESM,Solid_El) 
+
+            call Cal_N_3D(Kesi,Yita,Zeta,N)     
+            tem_n(1) = N(1,1);    tem_n(2) = N(1,4)
+            tem_n(3) = N(1,7);    tem_n(4) = N(1,10)      
+            tem_n(5) = N(1,13);   tem_n(6) = N(1,16)
+            tem_n(7) = N(1,19);   tem_n(8) = N(1,22)  
+
+            N_HF(1:3) = ONE/THR      
+
+            D_ep = MATMUL(MATMUL(transpose(T),D_ep_o),T)
+
+            num_Local_W = 0
+            N_W(1:3,1:MDOF_3D) =ZR
+            do i_N = 1,8
+                if(Enriched_Node_Type_3D(c_NN(i_N),i_C) ==2)then
+                    num_Local_W = num_Local_W+1
+                    Local_W(3*num_Local_W-2)=3*c_POS_3D(c_NN(i_N),i_C)-2
+                    Local_W(3*num_Local_W-1)=3*c_POS_3D(c_NN(i_N),i_C)-1     
+                    Local_W(3*num_Local_W)  =3*c_POS_3D(c_NN(i_N),i_C)
+                    N_W(1,3*num_Local_W-2)   = TWO*tem_n(i_N)
+                    N_W(2,3*num_Local_W-1)   = TWO*tem_n(i_N)
+                    N_W(3,3*num_Local_W)     = TWO*tem_n(i_N)     
+                elseif(Enriched_Node_Type_3D(c_NN(i_N),i_C) ==3)then
+
+                elseif(Enriched_Node_Type_3D(c_NN(i_N),i_C)==1) then
+                    if ((Elem_Type_3D(Solid_El,i_C).eq.1 )) then
+                        ref_elem=Solid_El
+                    else
+                        ref_elem=Ele_Num_Tip_Enriched_Node_3D(c_NN(i_N))%row(i_C)
+                    endif
+
+                    call Vector_Location_Int_v2(Solid_El_Max_num_Crs, &
+                    Solid_El_Crs(ref_elem,1:Solid_El_Max_num_Crs),i_C,c_Cr_Location)
+
+                    BaseLine_A = Solid_El_Tip_BaseLine(ref_elem)%row(c_Cr_Location,1,1:3)
+                    BaseLine_B = Solid_El_Tip_BaseLine(ref_elem)%row(c_Cr_Location,2,1:3)
+                    BaseLine_Mid = (BaseLine_A+BaseLine_B)/TWO
+                    BaseLine_x_Vec = Solid_El_Tip_BaseLine_x_Vec(ref_elem)%row(c_Cr_Location,1:3)
+                    BaseLine_y_Vec = Solid_El_Tip_BaseLine_y_Vec(ref_elem)%row(c_Cr_Location,1:3)
+                    BaseLine_z_Vec = Solid_El_Tip_BaseLine_z_Vec(ref_elem)%row(c_Cr_Location,1:3)
+                    Tip_T_Matrx(1:3,1:3) = Solid_El_Tip_BaseLine_T_Matrix(ref_elem)%row(c_Cr_Location,1:3,1:3)
+
+                    Gauss_Coor_Local= MATMUL(Tip_T_Matrx,c_Center-BaseLine_Mid)
+                    r_Gauss = sqrt(Gauss_Coor_Local(1)**2 + Gauss_Coor_Local(2)**2)
+                    theta_Gauss = atan2(Gauss_Coor_Local(2),Gauss_Coor_Local(1))    
+                    num_Local_W = num_Local_W+1
+                    Local_W(3*num_Local_W-2)=3*c_POS_3D(c_NN(i_N),i_C)-2
+                    Local_W(3*num_Local_W-1)=3*c_POS_3D(c_NN(i_N),i_C)-1     
+                    Local_W(3*num_Local_W)  =3*c_POS_3D(c_NN(i_N),i_C) 
+
+                    N_W(1,3*num_Local_W-2)= TWO*sqrt(r_Gauss)*tem_n(i_N)
+                    N_W(2,3*num_Local_W-1)= TWO*sqrt(r_Gauss)*tem_n(i_N)
+                    N_W(3,3*num_Local_W)  = TWO*sqrt(r_Gauss)*tem_n(i_N)     
+
+                endif
+            enddo
+            DO k=1,3*num_Local_W
+
+                c_loca_W =  Location_FreeDOF(Local_W(k))
+
+                local_FreeD(k) = c_loca_W
+            enddo
+
+            DO k=1,3*num_Local_W
+                c_loca_W = minloc(local(1:num_Loc_ESM),1,MASK = (local(1:num_Loc_ESM).eq.local_FreeD(k)))
+                True_local_FreeD(k) = c_loca_W
+            enddo 
+
+            allocate(localK_Temp(MDOF_3D,MDOF_3D))
+            localK_Temp(1:MDOF_3D,1:MDOF_3D) = ZR
+            localK_Temp(1:3*num_Local_W,1:3*num_Local_W) = &
+            MATMUL(MATMUL(transpose(N_W(1:3,1:3*num_Local_W)),D_ep),N_W(1:3,1:3*num_Local_W))*Flu_Ele_Area
+
+            if (Elem_XFEM_Flag(Solid_El) ==1)then  
+                c_Ele_Location = Elem_Location(Solid_El,1) 
+                !$OMP CRITICAL
+                storK_XFEM_Updated(c_Ele_Location)%row(True_local_FreeD(1:3*num_Local_W),True_local_FreeD(1:3*num_Local_W))= &
+                storK_XFEM_Updated(c_Ele_Location)%row(True_local_FreeD(1:3*num_Local_W),True_local_FreeD(1:3*num_Local_W)) + &
+                localK_Temp(1:3*num_Local_W,1:3*num_Local_W)
+                !$OMP END CRITICAL
+            elseif (Elem_XFEM_Flag(Solid_El) ==0)then
+                print *,'Error-2023082701 :: Contact should not be related to FEM elements, in EBE_Cal_Contact_Jacobian_3D.f90.'
+                call Warning_Message('S',Keywords_Blank)  
+            endif
+
+            if (Key_EBE_Precondition==1)then
+                DO j=1,3*num_Local_W
+                    c_loca=local_FreeD(j)        
+                    diag_precon_no_invert_thread(c_loca,c_thread)=diag_precon_no_invert_thread(c_loca,c_thread) +localK_Temp(j,j)
+                END DO 
+            endif
+
+            deallocate(localK_Temp)
+        endif
+    enddo
 enddo
 !$omp end do
 !$omp end parallel     
@@ -269,146 +241,146 @@ enddo
 
 if(Key_Contact==7)then
     do i_C=1,num_Crack
-    do i_CT_Elem = 1,Cracks_FluidEle_num_3D(i_C)
-          c_Center = Cracks_FluidEle_Centroid_3D(i_C)%row(i_CT_Elem,1:3)
-          ori_n    = Cracks_FluidEle_Vector_3D(i_C)%row(i_CT_Elem,1:3)
-          T=Cracks_FluidEle_LCS_T_3D(i_C)%row(i_CT_Elem,1:3,1:3)
-          Solid_El = Cracks_FluidEle_EleNum_3D(i_C)%row(i_CT_Elem)     
-          Flu_Ele_Area = Cracks_FluidEle_Area_3D(i_C)%row(i_CT_Elem)  
-          
-          c_Aperture  = Cracks_FluidEle_Aper_3D(i_C)%row(i_CT_Elem)  
-          
-          
-          c_Penalty_CS = Penalty_CS_Natural_Crack
+        do i_CT_Elem = 1,Cracks_FluidEle_num_3D(i_C)
+            c_Center = Cracks_FluidEle_Centroid_3D(i_C)%row(i_CT_Elem,1:3)
+            ori_n    = Cracks_FluidEle_Vector_3D(i_C)%row(i_CT_Elem,1:3)
+            T=Cracks_FluidEle_LCS_T_3D(i_C)%row(i_CT_Elem,1:3,1:3)
+            Solid_El = Cracks_FluidEle_EleNum_3D(i_C)%row(i_CT_Elem)     
+            Flu_Ele_Area = Cracks_FluidEle_Area_3D(i_C)%row(i_CT_Elem)  
 
-          if(CT_State_Gauss(i_C,i_CT_Elem) /= 0)then
-              c_kt1 = ZR
-              c_kt2 = ZR
-              c_kn = Kn_Gauss(i_C,i_CT_Elem)
-              D_ep_o(1:3,1:3) =  ZR
-              D_ep_o(1,1:3) = [c_kt1,    ZR,       ZR]
-              D_ep_o(2,1:3) = [ZR,    c_kt2,       ZR]
-              D_ep_o(3,1:3) = [ZR,       ZR,     c_kn]
-              
-              call Cal_KesiYita_by_Coor_3D(c_Center,Solid_El,Kesi,Yita,Zeta)
-              c_NN(1:8)    = G_NN(1:8,Solid_El)
-              
-              num_Loc_ESM = size_local_0(Solid_El)
-              local(1:num_Loc_ESM)= all_local_0(1:num_Loc_ESM,Solid_El) 
+            c_Aperture  = Cracks_FluidEle_Aper_3D(i_C)%row(i_CT_Elem)  
 
-              call Cal_N_3D(Kesi,Yita,Zeta,N)     
-              tem_n(1) = N(1,1);    tem_n(2) = N(1,4)
-              tem_n(3) = N(1,7);    tem_n(4) = N(1,10)      
-              tem_n(5) = N(1,13);   tem_n(6) = N(1,16)
-              tem_n(7) = N(1,19);   tem_n(8) = N(1,22)    
-              N_HF(1:3) = ONE/THR      
-              D_ep = MATMUL(MATMUL(transpose(T),D_ep_o),T)
-              
-              num_Local_W = 0
-              N_W(1:3,1:MDOF_3D) =ZR
-              cnt = 0
-              c_LocXFEM(1:3) = 0
-              cEle_Loc = Elem_Location(Solid_El,1)      
-              do i_N = 1,8
-                  if(Enriched_Node_Type_3D(c_NN(i_N),i_C) ==2)then
-                      num_Local_W = num_Local_W+1
-                      Local_W(3*num_Local_W-2)=3*c_POS_3D(c_NN(i_N),i_C)-2
-                      Local_W(3*num_Local_W-1)=3*c_POS_3D(c_NN(i_N),i_C)-1     
-                      Local_W(3*num_Local_W)  =3*c_POS_3D(c_NN(i_N),i_C)
-                      N_W(1,3*num_Local_W-2)   = TWO*tem_n(i_N)
-                      N_W(2,3*num_Local_W-1)   = TWO*tem_n(i_N)
-                      N_W(3,3*num_Local_W)     = TWO*tem_n(i_N)    
-                      
-                      cnt = cnt + 1
-                      c_DOFs(1) = 3*c_POS_3D(c_NN(i_N),i_C) - 2
-                      c_DOFs(2) = 3*c_POS_3D(c_NN(i_N),i_C) - 1
-                      c_DOFs(3) = 3*c_POS_3D(c_NN(i_N),i_C)  
-                    
-                      c_LocXFEM(1) = 24 + 3*cnt -2
-                      c_LocXFEM(2) = 24 + 3*cnt -1
-                      c_LocXFEM(3) = 24 + 3*cnt                    
-                      
-                      c_Beta(1:3) = Enriched_Node_Crack_n_Vector_3D(c_NN(i_N))%row(i_C,1:3)
-                      if(Key_Penalty_CS_Method==1) then
-                          do j_beta=1,3
-                              do i_beta=1,3       
-                                  storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i_beta),c_LocXFEM(j_beta)) = &
-                                    storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i_beta),c_LocXFEM(j_beta)) &
-                                       + c_Penalty_CS*c_Beta(i_beta)*c_Beta(j_beta)
-                              enddo
-                          enddo
-                      elseif(Key_Penalty_CS_Method==2) then
-                          do j_beta=3,3
-                              do i_beta=3,3           
-                                  storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i_beta),c_LocXFEM(j_beta)) = &
-                                  storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i_beta),c_LocXFEM(j_beta)) &
-                                       + c_Penalty_CS*c_Beta(i_beta)*c_Beta(j_beta)
-                              enddo
-                          enddo
-                      endif
-                  elseif(Enriched_Node_Type_3D(c_NN(i_N),i_C) ==3)then
 
-                  elseif(Enriched_Node_Type_3D(c_NN(i_N),i_C)==1) then
-                      if ((Elem_Type_3D(Solid_El,i_C).eq.1)) then
-                          ref_elem=Solid_El
-                      else
-                          ref_elem=Ele_Num_Tip_Enriched_Node_3D(c_NN(i_N))%row(i_C)
-                      endif
-                      
-                      do i_f=1,Num_F_Functions
+            c_Penalty_CS = Penalty_CS_Natural_Crack
+
+            if(CT_State_Gauss(i_C,i_CT_Elem) /= 0)then
+                c_kt1 = ZR
+                c_kt2 = ZR
+                c_kn = Kn_Gauss(i_C,i_CT_Elem)
+                D_ep_o(1:3,1:3) =  ZR
+                D_ep_o(1,1:3) = [c_kt1,    ZR,       ZR]
+                D_ep_o(2,1:3) = [ZR,    c_kt2,       ZR]
+                D_ep_o(3,1:3) = [ZR,       ZR,     c_kn]
+
+                call Cal_KesiYita_by_Coor_3D(c_Center,Solid_El,Kesi,Yita,Zeta)
+                c_NN(1:8)    = G_NN(1:8,Solid_El)
+
+                num_Loc_ESM = size_local_0(Solid_El)
+                local(1:num_Loc_ESM)= all_local_0(1:num_Loc_ESM,Solid_El) 
+
+                call Cal_N_3D(Kesi,Yita,Zeta,N)     
+                tem_n(1) = N(1,1);    tem_n(2) = N(1,4)
+                tem_n(3) = N(1,7);    tem_n(4) = N(1,10)      
+                tem_n(5) = N(1,13);   tem_n(6) = N(1,16)
+                tem_n(7) = N(1,19);   tem_n(8) = N(1,22)    
+                N_HF(1:3) = ONE/THR      
+                D_ep = MATMUL(MATMUL(transpose(T),D_ep_o),T)
+
+                num_Local_W = 0
+                N_W(1:3,1:MDOF_3D) =ZR
+                cnt = 0
+                c_LocXFEM(1:3) = 0
+                cEle_Loc = Elem_Location(Solid_El,1)      
+                do i_N = 1,8
+                    if(Enriched_Node_Type_3D(c_NN(i_N),i_C) ==2)then
+                        num_Local_W = num_Local_W+1
+                        Local_W(3*num_Local_W-2)=3*c_POS_3D(c_NN(i_N),i_C)-2
+                        Local_W(3*num_Local_W-1)=3*c_POS_3D(c_NN(i_N),i_C)-1     
+                        Local_W(3*num_Local_W)  =3*c_POS_3D(c_NN(i_N),i_C)
+                        N_W(1,3*num_Local_W-2)   = TWO*tem_n(i_N)
+                        N_W(2,3*num_Local_W-1)   = TWO*tem_n(i_N)
+                        N_W(3,3*num_Local_W)     = TWO*tem_n(i_N)    
+
                         cnt = cnt + 1
-                        c_DOFs(1) = 3*(c_POS_3D(c_NN(i_N),i_C)+i_f-1) - 2
-                        c_DOFs(2) = 3*(c_POS_3D(c_NN(i_N),i_C)+i_f-1) - 1
-                        c_DOFs(3) = 3*(c_POS_3D(c_NN(i_N),i_C)+i_f-1)   
-                        
+                        c_DOFs(1) = 3*c_POS_3D(c_NN(i_N),i_C) - 2
+                        c_DOFs(2) = 3*c_POS_3D(c_NN(i_N),i_C) - 1
+                        c_DOFs(3) = 3*c_POS_3D(c_NN(i_N),i_C)  
+
                         c_LocXFEM(1) = 24 + 3*cnt -2
                         c_LocXFEM(2) = 24 + 3*cnt -1
                         c_LocXFEM(3) = 24 + 3*cnt                    
-                        
-                          c_Beta(1:3) = Enriched_Node_Crack_n_Vector_3D(c_NN(i_N))%row(i_C,1:3)
-                          if(Key_Penalty_CS_Method==1) then
-                              do j_beta=1,3
-                                  do i_beta=1,3       
-                                      storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i_beta),c_LocXFEM(j_beta)) = &
+
+                        c_Beta(1:3) = Enriched_Node_Crack_n_Vector_3D(c_NN(i_N))%row(i_C,1:3)
+                        if(Key_Penalty_CS_Method==1) then
+                            do j_beta=1,3
+                                do i_beta=1,3       
+                                    storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i_beta),c_LocXFEM(j_beta)) = &
+                                    storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i_beta),c_LocXFEM(j_beta)) &
+                                    + c_Penalty_CS*c_Beta(i_beta)*c_Beta(j_beta)
+                                enddo
+                            enddo
+                        elseif(Key_Penalty_CS_Method==2) then
+                            do j_beta=3,3
+                                do i_beta=3,3           
+                                    storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i_beta),c_LocXFEM(j_beta)) = &
+                                    storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i_beta),c_LocXFEM(j_beta)) &
+                                    + c_Penalty_CS*c_Beta(i_beta)*c_Beta(j_beta)
+                                enddo
+                            enddo
+                        endif
+                    elseif(Enriched_Node_Type_3D(c_NN(i_N),i_C) ==3)then
+
+                    elseif(Enriched_Node_Type_3D(c_NN(i_N),i_C)==1) then
+                        if ((Elem_Type_3D(Solid_El,i_C).eq.1)) then
+                            ref_elem=Solid_El
+                        else
+                            ref_elem=Ele_Num_Tip_Enriched_Node_3D(c_NN(i_N))%row(i_C)
+                        endif
+
+                        do i_f=1,Num_F_Functions
+                            cnt = cnt + 1
+                            c_DOFs(1) = 3*(c_POS_3D(c_NN(i_N),i_C)+i_f-1) - 2
+                            c_DOFs(2) = 3*(c_POS_3D(c_NN(i_N),i_C)+i_f-1) - 1
+                            c_DOFs(3) = 3*(c_POS_3D(c_NN(i_N),i_C)+i_f-1)   
+
+                            c_LocXFEM(1) = 24 + 3*cnt -2
+                            c_LocXFEM(2) = 24 + 3*cnt -1
+                            c_LocXFEM(3) = 24 + 3*cnt                    
+
+                            c_Beta(1:3) = Enriched_Node_Crack_n_Vector_3D(c_NN(i_N))%row(i_C,1:3)
+                            if(Key_Penalty_CS_Method==1) then
+                                do j_beta=1,3
+                                    do i_beta=1,3       
+                                        storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i_beta),c_LocXFEM(j_beta)) = &
                                         storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i_beta),c_LocXFEM(j_beta)) &
-                                           + c_Penalty_CS*c_Beta(i_beta)*c_Beta(j_beta)
-                                  enddo
-                              enddo
-                          elseif(Key_Penalty_CS_Method==2) then
-                              do j_beta=3,3
-                                  do i_beta=3,3           
-                                      storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i_beta),c_LocXFEM(j_beta)) = &
-                                      storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i_beta),c_LocXFEM(j_beta)) &
-                                           + c_Penalty_CS*c_Beta(i_beta)*c_Beta(j_beta)
-                                  enddo
-                              enddo
-                          endif             
-                          
-                      end do  
-                  endif
-              enddo
-             
+                                        + c_Penalty_CS*c_Beta(i_beta)*c_Beta(j_beta)
+                                    enddo
+                                enddo
+                            elseif(Key_Penalty_CS_Method==2) then
+                                do j_beta=3,3
+                                    do i_beta=3,3           
+                                        storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i_beta),c_LocXFEM(j_beta)) = &
+                                        storK_XFEM_Updated(cEle_Loc)%row(c_LocXFEM(i_beta),c_LocXFEM(j_beta)) &
+                                        + c_Penalty_CS*c_Beta(i_beta)*c_Beta(j_beta)
+                                    enddo
+                                enddo
+                            endif             
 
-              if (Elem_XFEM_Flag(Solid_El) ==1)then  
+                        end do  
+                    endif
+                enddo
 
-              elseif (Elem_XFEM_Flag(Solid_El) ==0)then
-                  print *,'Error-2023082701 :: Contact should not be related to FEM elements, in EBE_Cal_Contact_Jacobian_3D.f90.'
-                  call Warning_Message('S',Keywords_Blank)  
-              endif
-          endif
-    enddo
+
+                if (Elem_XFEM_Flag(Solid_El) ==1)then  
+
+                elseif (Elem_XFEM_Flag(Solid_El) ==0)then
+                    print *,'Error-2023082701 :: Contact should not be related to FEM elements, in EBE_Cal_Contact_Jacobian_3D.f90.'
+                    call Warning_Message('S',Keywords_Blank)  
+                endif
+            endif
+        enddo
     enddo
 endif
 
 if(Key_EBE_Precondition == 1)then
-  DO i_Thread = 1,omp_get_max_threads()
-     diag_precon_no_invert(0:num_FreeD)  = diag_precon_no_invert(0:num_FreeD)  + diag_precon_no_invert_thread(0:num_FreeD,i_Thread)
-  ENDDO      
-  deALLOCATE(diag_precon_no_invert_thread)
-  
-  forall(jj=1:num_FreeD,abs(diag_precon_no_invert(jj))<=Tol_10)
-      diag_precon_no_invert(jj)=Tol_10
-  end forall             
+    DO i_Thread = 1,omp_get_max_threads()
+        diag_precon_no_invert(0:num_FreeD) = diag_precon_no_invert(0:num_FreeD) +diag_precon_no_invert_thread(0:num_FreeD,i_Thread)
+    ENDDO      
+    deALLOCATE(diag_precon_no_invert_thread)
+
+    forall(jj=1:num_FreeD,abs(diag_precon_no_invert(jj))<=Tol_10)
+        diag_precon_no_invert(jj)=Tol_10
+    end forall             
 endif
 
 

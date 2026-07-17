@@ -1,44 +1,15 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
+!-----------------------------------------------------------
+! Brief: Locate the 3D element containing a point via bounding-box scan (no cache).
+!
+! Parameters:
+!   Input:  x        - x-coordinate of the query point
+!           y        - y-coordinate of the query point
+!           z        - z-coordinate of the query point
+!   Output: OUT_Elem - element index containing the point (0 if none)
+!
+! Notes:   Variant of Cal_Ele_Num_by_Coors_3D that performs a full scan of all
+!          elements without using the Ele_Num_Cache optimization.
+!-----------------------------------------------------------
 
 subroutine Cal_Ele_Num_by_Coors_3D_v2(x,y,z,OUT_Elem)
 ! Calculate the element number based on coordinates, in 3D.
@@ -66,62 +37,60 @@ OUT_Elem= 0
 Potent_Elem = 0
 
 if (x > Max_X_Coor .or. x < Min_X_Coor)then
-      return
+    return
 endif
 if (y > Max_Y_Coor .or. y < Min_Y_Coor)then
-      return
+    return
 endif
 if (z > Max_Z_Coor .or. z < Min_Z_Coor)then
-      return
+    return
 endif
 
 
 do i=1,Num_Elem
 
-      c_x_max = x_max_Elements(i)
-      c_x_min = x_min_Elements(i)
-      c_y_max = y_max_Elements(i)
-      c_y_min = y_min_Elements(i)
-      c_z_max = z_max_Elements(i)
-      c_z_min = z_min_Elements(i)
-      
-      
-      if(x.lt.(c_x_min-Tol_8)) then
-          cycle
-      endif
-      if(y.lt.(c_y_min-Tol_8)) then
-          cycle
-      endif
-      if(z.lt.(c_z_min-Tol_8)) then
-          cycle
-      endif
-      if(x.gt.(c_x_max+Tol_8)) then
-          cycle
-      endif
-      if(y.gt.(c_y_max+Tol_8)) then
-          cycle
-      endif
-      if(z.gt.(c_z_max+Tol_8)) then
-          cycle
-      endif
-      c_count = c_count +1
-      
-      Potent_Elem(c_count) = i
-    
+    c_x_max = x_max_Elements(i)
+    c_x_min = x_min_Elements(i)
+    c_y_max = y_max_Elements(i)
+    c_y_min = y_min_Elements(i)
+    c_z_max = z_max_Elements(i)
+    c_z_min = z_min_Elements(i)
+
+
+    if(x.lt.(c_x_min-Tol_8)) then
+        cycle
+    endif
+    if(y.lt.(c_y_min-Tol_8)) then
+        cycle
+    endif
+    if(z.lt.(c_z_min-Tol_8)) then
+        cycle
+    endif
+    if(x.gt.(c_x_max+Tol_8)) then
+        cycle
+    endif
+    if(y.gt.(c_y_max+Tol_8)) then
+        cycle
+    endif
+    if(z.gt.(c_z_max+Tol_8)) then
+        cycle
+    endif
+    c_count = c_count +1
+
+    Potent_Elem(c_count) = i
+
 end do
 
 
 
 do i =1,c_count
-      c_NN  = G_NN(1:8,Potent_Elem(i))
-      call Tool_Yes_Point_in_3D_Hexahedron([x,y,z], &
-                 Coor(c_NN(1),1:3),Coor(c_NN(2),1:3),Coor(c_NN(3),1:3),Coor(c_NN(4),1:3),&
-                 Coor(c_NN(5),1:3),Coor(c_NN(6),1:3),Coor(c_NN(7),1:3),Coor(c_NN(8),1:3),&
-                 c_Yes_in,c_Yes_on)
-     if(c_Yes_in)then
-         OUT_Elem = Potent_Elem(i)
-         return
-     endif
+    c_NN  = G_NN(1:8,Potent_Elem(i))
+    call Tool_Yes_Point_in_3D_Hexahedron([x,y,z], Coor(c_NN(1),1:3),Coor(c_NN(2),1:3),Coor(c_NN(3),1:3),Coor(c_NN(4),1:3), &
+    Coor(c_NN(5),1:3),Coor(c_NN(6),1:3),Coor(c_NN(7),1:3),Coor(c_NN(8),1:3), c_Yes_in,c_Yes_on)
+    if(c_Yes_in)then
+        OUT_Elem = Potent_Elem(i)
+        return
+    endif
 end do
 
 if(c_count>1 .and. OUT_Elem==0)then
@@ -130,14 +99,12 @@ if(c_count>1 .and. OUT_Elem==0)then
     do i =1,c_count
         c_NN  = G_NN(1:8,Potent_Elem(i))
         call Tool_Yes_Point_in_3D_Hexahedron_with_Tol([x,y,z], &
-                     Coor(c_NN(1),1:3),Coor(c_NN(2),1:3),Coor(c_NN(3),1:3),Coor(c_NN(4),1:3),&
-                     Coor(c_NN(5),1:3),Coor(c_NN(6),1:3),Coor(c_NN(7),1:3),Coor(c_NN(8),1:3),&
-                     In_Hexahedron_Tol,   &
-                     c_Yes_in,c_Yes_on)
-         if(c_Yes_in)then
-             OUT_Elem = Potent_Elem(i)
-             return
-         endif
+        Coor(c_NN(1),1:3),Coor(c_NN(2),1:3),Coor(c_NN(3),1:3),Coor(c_NN(4),1:3), &
+        Coor(c_NN(5),1:3),Coor(c_NN(6),1:3),Coor(c_NN(7),1:3),Coor(c_NN(8),1:3), In_Hexahedron_Tol, c_Yes_in,c_Yes_on)
+        if(c_Yes_in)then
+            OUT_Elem = Potent_Elem(i)
+            return
+        endif
     end do
 endif
 
@@ -147,14 +114,12 @@ if(c_count>1 .and. OUT_Elem==0)then
     do i =1,c_count
         c_NN  = G_NN(1:8,Potent_Elem(i))
         call Tool_Yes_Point_in_3D_Hexahedron_with_Tol([x,y,z], &
-                     Coor(c_NN(1),1:3),Coor(c_NN(2),1:3),Coor(c_NN(3),1:3),Coor(c_NN(4),1:3),&
-                     Coor(c_NN(5),1:3),Coor(c_NN(6),1:3),Coor(c_NN(7),1:3),Coor(c_NN(8),1:3),&
-                     In_Hexahedron_Tol,   &
-                     c_Yes_in,c_Yes_on)
-         if(c_Yes_in)then
-             OUT_Elem = Potent_Elem(i)
-             return
-         endif
+        Coor(c_NN(1),1:3),Coor(c_NN(2),1:3),Coor(c_NN(3),1:3),Coor(c_NN(4),1:3), &
+        Coor(c_NN(5),1:3),Coor(c_NN(6),1:3),Coor(c_NN(7),1:3),Coor(c_NN(8),1:3), In_Hexahedron_Tol, c_Yes_in,c_Yes_on)
+        if(c_Yes_in)then
+            OUT_Elem = Potent_Elem(i)
+            return
+        endif
     end do
 endif
 
@@ -165,14 +130,12 @@ if(c_count>1 .and. OUT_Elem==0)then
     do i =1,c_count
         c_NN  = G_NN(1:8,Potent_Elem(i))
         call Tool_Yes_Point_in_3D_Hexahedron_with_Tol([x,y,z], &
-                     Coor(c_NN(1),1:3),Coor(c_NN(2),1:3),Coor(c_NN(3),1:3),Coor(c_NN(4),1:3),&
-                     Coor(c_NN(5),1:3),Coor(c_NN(6),1:3),Coor(c_NN(7),1:3),Coor(c_NN(8),1:3),&
-                     In_Hexahedron_Tol,   &
-                     c_Yes_in,c_Yes_on)
-         if(c_Yes_in)then
-             OUT_Elem = Potent_Elem(i)
-             return
-         endif
+        Coor(c_NN(1),1:3),Coor(c_NN(2),1:3),Coor(c_NN(3),1:3),Coor(c_NN(4),1:3), &
+        Coor(c_NN(5),1:3),Coor(c_NN(6),1:3),Coor(c_NN(7),1:3),Coor(c_NN(8),1:3), In_Hexahedron_Tol, c_Yes_in,c_Yes_on)
+        if(c_Yes_in)then
+            OUT_Elem = Potent_Elem(i)
+            return
+        endif
     end do
 endif  
 
@@ -182,14 +145,12 @@ if(c_count>1 .and. OUT_Elem==0)then
     do i =1,c_count
         c_NN  = G_NN(1:8,Potent_Elem(i))
         call Tool_Yes_Point_in_3D_Hexahedron_with_Tol([x,y,z], &
-                     Coor(c_NN(1),1:3),Coor(c_NN(2),1:3),Coor(c_NN(3),1:3),Coor(c_NN(4),1:3),&
-                     Coor(c_NN(5),1:3),Coor(c_NN(6),1:3),Coor(c_NN(7),1:3),Coor(c_NN(8),1:3),&
-                     In_Hexahedron_Tol,   &
-                     c_Yes_in,c_Yes_on)
-         if(c_Yes_in)then
-             OUT_Elem = Potent_Elem(i)
-             return
-         endif
+        Coor(c_NN(1),1:3),Coor(c_NN(2),1:3),Coor(c_NN(3),1:3),Coor(c_NN(4),1:3), &
+        Coor(c_NN(5),1:3),Coor(c_NN(6),1:3),Coor(c_NN(7),1:3),Coor(c_NN(8),1:3), In_Hexahedron_Tol, c_Yes_in,c_Yes_on)
+        if(c_Yes_in)then
+            OUT_Elem = Potent_Elem(i)
+            return
+        endif
     end do
 endif  
 

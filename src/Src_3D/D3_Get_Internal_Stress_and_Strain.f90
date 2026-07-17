@@ -1,45 +1,14 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
+!-----------------------------------------------------------
+! Brief: Populate in-situ stress arrays at every 3D element Gauss point.
+!
+! Parameters:
+!
+! Notes:   Fills InSitu_Strs_Gaus_xx/yy/zz/xy/yz/xz(num_Elem, Num_Gauss_P
+!          _FEM_3D) using either user keyword settings or an input file.
+!          Includes optional thermal stress (c_T_Alpha, c_TStress) and
+!          Biot pore-pressure contributions.
+!-----------------------------------------------------------
+
 SUBROUTINE D3_Get_Internal_Stress_and_Strain
 ! Obtain internal force (stress at each conventional Gauss point and 
 ! corresponding strain): obtained according to user-defined settings or input files.
@@ -166,9 +135,7 @@ if(Key_Read_Initial_Node_Stress_File==0)then
       ! The stress in the X direction changes with the Z coordinate
       if(Key_Nonuniform_InSitu_X_with_Z==1)then
           ! Find the Z-coordinate corresponding to the centroid of the element
-          call Vector_Range_Number_of_Value_Dou(c_El_z,100,  &
-                 InSitu_Sx_3D_Seg_Loca_X_with_Z(1:100),c_Yes_In, &
-                 c_Range_Num)
+call Vector_Range_Number_of_Value_Dou(c_El_z,100, InSitu_Sx_3D_Seg_Loca_X_with_Z(1:100),c_Yes_In, c_Range_Num)
           ! If it cannot be found, an error message will pop up.
           if(c_Yes_In .eqv. .False.)then
               print *, '    Error :: in D3_Get_Internal_Stress_and_Strain!'
@@ -180,9 +147,7 @@ if(Key_Read_Initial_Node_Stress_File==0)then
       ! The stress in the X direction changes with the Y coordinate
       if(Key_Nonuniform_InSitu_X_with_Y==1)then
           ! Find the Y-coordinate corresponding to the centroid of the element
-          call Vector_Range_Number_of_Value_Dou(c_El_y,100, &
-                InSitu_Sx_3D_Seg_Loca_X_with_Y(1:100),c_Yes_In, &
-                c_Range_Num)
+call Vector_Range_Number_of_Value_Dou(c_El_y,100, InSitu_Sx_3D_Seg_Loca_X_with_Y(1:100),c_Yes_In, c_Range_Num)
           ! If it cannot be found, an error message will pop up.
           if(c_Yes_In .eqv. .False.)then
               print *, '    Error :: in D3_Get_Internal_Stress_and_Strain!'
@@ -195,9 +160,7 @@ if(Key_Read_Initial_Node_Stress_File==0)then
       ! The Y-direction stress varies with the Z coordinate.
       if(Key_Nonuniform_InSitu_Y_with_Z==1)then
           ! Find the Z-coordinate corresponding to the centroid of the element
-          call Vector_Range_Number_of_Value_Dou(c_El_z,100, &
-                 InSitu_Sy_3D_Seg_Loca_Y_with_Z(1:100),c_Yes_In, &
-                 c_Range_Num)
+call Vector_Range_Number_of_Value_Dou(c_El_z,100, InSitu_Sy_3D_Seg_Loca_Y_with_Z(1:100),c_Yes_In, c_Range_Num)
           ! If it cannot be found, an error message will pop up.
           if(c_Yes_In .eqv. .False.)then
               print *, '    Error :: in D3_Get_Internal_Stress_and_Strain!'
@@ -209,9 +172,7 @@ if(Key_Read_Initial_Node_Stress_File==0)then
       ! The Y-direction stress varies with the X coordinate.
       if(Key_Nonuniform_InSitu_Y_with_X==1)then
           ! Find the Y-coordinate corresponding to the centroid of the element
-          call Vector_Range_Number_of_Value_Dou(c_El_x,100,&
-                 InSitu_Sy_3D_Seg_Loca_Y_with_X(1:100),c_Yes_In,&
-                 c_Range_Num)
+call Vector_Range_Number_of_Value_Dou(c_El_x,100, InSitu_Sy_3D_Seg_Loca_Y_with_X(1:100),c_Yes_In, c_Range_Num)
           ! If it cannot be found, an error message will pop up.
           if(c_Yes_In .eqv. .False.)then
               print *, '    Error :: in D3_Get_Internal_Stress_and_Strain!'
@@ -224,9 +185,7 @@ if(Key_Read_Initial_Node_Stress_File==0)then
       ! The stress in the Z direction changes with the X coordinate.
       if(Key_Nonuniform_InSitu_Z_with_X==1)then
           ! Find the Z-coordinate corresponding to the centroid of the element
-          call Vector_Range_Number_of_Value_Dou(c_El_x,100, &
-                 InSitu_Sz_3D_Seg_Loca_Z_with_X(1:100),c_Yes_In,&
-                 c_Range_Num)
+call Vector_Range_Number_of_Value_Dou(c_El_x,100, InSitu_Sz_3D_Seg_Loca_Z_with_X(1:100),c_Yes_In, c_Range_Num)
           ! If it cannot be found, an error message will pop up.
           if(c_Yes_In .eqv. .False.)then
               print *, '    Error :: in D3_Get_Internal_Stress_and_Strain!'
@@ -238,9 +197,7 @@ if(Key_Read_Initial_Node_Stress_File==0)then
       ! The stress in the Z direction changes with the Y coordinate
       if(Key_Nonuniform_InSitu_Z_with_Y==1)then
           ! Find the Y-coordinate corresponding to the centroid of the element
-          call Vector_Range_Number_of_Value_Dou(c_El_y,100, &
-                 InSitu_Sz_3D_Seg_Loca_Z_with_Y(1:100),c_Yes_In, &
-                 c_Range_Num)
+call Vector_Range_Number_of_Value_Dou(c_El_y,100, InSitu_Sz_3D_Seg_Loca_Z_with_Y(1:100),c_Yes_In, c_Range_Num)
           ! If it cannot be found, an error message will pop up.
           if(c_Yes_In .eqv. .False.)then
               print *, '    Error :: in D3_Get_Internal_Stress_and_Strain!'
@@ -457,13 +414,8 @@ do i_E = 1,Num_Elem
   endif
 
   do i_G = 1,Num_Gauss_P_FEM_3D
-      c_Vector_6(1:6) = MATMUL(c_S, &
-                           [InSitu_Strs_Gaus_xx(i_E,i_G),&
-                            InSitu_Strs_Gaus_yy(i_E,i_G),&
-                            InSitu_Strs_Gaus_zz(i_E,i_G),&
-                            InSitu_Strs_Gaus_xy(i_E,i_G),&
-                            InSitu_Strs_Gaus_yz(i_E,i_G),&
-                            InSitu_Strs_Gaus_xz(i_E,i_G)])
+c_Vector_6(1:6) = MATMUL(c_S, [InSitu_Strs_Gaus_xx(i_E,i_G), InSitu_Strs_Gaus_yy(i_E,i_G), InSitu_Strs_Gaus_zz(i_E,i_G), &
+InSitu_Strs_Gaus_xy(i_E,i_G), InSitu_Strs_Gaus_yz(i_E,i_G), InSitu_Strs_Gaus_xz(i_E,i_G)])
     InSitu_Strain_Gaus_xx(i_E,i_G) = c_Vector_6(1)
     InSitu_Strain_Gaus_yy(i_E,i_G) = c_Vector_6(2)
     InSitu_Strain_Gaus_zz(i_E,i_G) = c_Vector_6(3)

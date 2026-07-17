@@ -1,44 +1,26 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
+!-----------------------------------------------------------
+! Brief: Clip 3D crack meshes against the FE model boundary.
+!
+! Parameters:
+!   Input:  isub - current substep index
+!           c_DISP - global displacement vector
+!
+! Notes:   Retains only crack-triangle portions inside the
+!          hex-mesh boundary via ray-casting inside/outside
+!          tests and segment-boundary intersection clipping.
+!-----------------------------------------------------------
+
+!-----------------------------------------------------------
+! Brief: Clip 3D crack meshes against the FE model boundary.
+!
+! Parameters:
+!   Input:  isub - current substep index
+!           c_DISP - global displacement vector
+!
+! Notes:   Retains only crack-triangle portions inside the
+!          hex-mesh boundary via ray-casting inside/outside
+!          tests and segment-boundary intersection clipping.
+!-----------------------------------------------------------
 
 SUBROUTINE Cut_and_Save_Boundary_Cracks_3D(isub,c_DISP)
 !================================================================
@@ -174,7 +156,6 @@ if (all(.not. Boundary_Cracks)) then
     goto 200
 end if
 
-print *,'    Cut and save boundary cracks...'
 allocate(Crack3D_Meshed_Node_CUT(num_Crack))
 allocate(Crack3D_Meshed_Ele_CUT(num_Crack))
 allocate(Crack3D_Meshed_Node_Value_CUT(num_Crack))
@@ -240,8 +221,7 @@ is_bnd = .false.
 i = 1
 do while (i <= num_all_faces)
     if (i < num_all_faces) then
-        if (bcrk_face_eq(face_srt(:, srt_ix(i)), &
-                         face_srt(:, srt_ix(i+1)))) then
+if (bcrk_face_eq(face_srt(:, srt_ix(i)), face_srt(:, srt_ix(i+1)))) then
             ! Internal face (shared by two elements) -> skip both
             i = i + 2
             cycle
@@ -292,8 +272,7 @@ deallocate(face_srt, face_xyz, is_bnd)
 max_nodes_all = 0
 do i_C = 1, num_Crack
     if (.not. Boundary_Cracks(i_C)) cycle
-    max_nodes_all = max(max_nodes_all, &
-                        Crack3D_Meshed_Node_num(i_C) + 2 * Crack3D_Meshed_Ele_num(i_C))
+max_nodes_all = max(max_nodes_all, Crack3D_Meshed_Node_num(i_C) + 2 * Crack3D_Meshed_Ele_num(i_C))
 end do
 allocate(Crack_Boundary_Node_Flag(max_nodes_all, num_Crack))
 Crack_Boundary_Node_Flag = .false.
@@ -347,9 +326,7 @@ do i_C = 1, num_Crack
                 ref_normal = tri_normal
                 ref_normal_set = .true.
             else
-                dot_ref = tri_normal(1)*ref_normal(1) + &
-                          tri_normal(2)*ref_normal(2) + &
-                          tri_normal(3)*ref_normal(3)
+dot_ref = tri_normal(1)*ref_normal(1) + tri_normal(2)*ref_normal(2) + tri_normal(3)*ref_normal(3)
                 
                 if (dot_ref < 0.0d0) then
                     temp_idx = n2_idx
@@ -393,9 +370,7 @@ do i_C = 1, num_Crack
             end if
             
             cnt_e = cnt_e + 1
-            ne_conn(cnt_e, :) = (/old_to_new(n1_idx), &
-                                  old_to_new(n2_idx), &
-                                  old_to_new(n3_idx)/)
+ne_conn(cnt_e, :) = (/old_to_new(n1_idx), old_to_new(n2_idx), old_to_new(n3_idx)/)
             cycle
         end if
 
@@ -442,9 +417,7 @@ do i_C = 1, num_Crack
             
             if (norm_len > 1.0d-12) then
                 tri_normal = tri_normal / norm_len
-                dot_ref = tri_normal(1)*ref_normal(1) + &
-                          tri_normal(2)*ref_normal(2) + &
-                          tri_normal(3)*ref_normal(3)
+dot_ref = tri_normal(1)*ref_normal(1) + tri_normal(2)*ref_normal(2) + tri_normal(3)*ref_normal(3)
                 
                 cnt_e = cnt_e + 1
                 if (dot_ref > 0.0d0) then
@@ -511,9 +484,7 @@ do i_C = 1, num_Crack
             cnt_e = cnt_e + 1
             if (norm_len > 1.0d-12) then
                 tri_normal = tri_normal / norm_len
-                dot_ref = tri_normal(1)*ref_normal(1) + &
-                          tri_normal(2)*ref_normal(2) + &
-                          tri_normal(3)*ref_normal(3)
+dot_ref = tri_normal(1)*ref_normal(1) + tri_normal(2)*ref_normal(2) + tri_normal(3)*ref_normal(3)
                 
                 if (dot_ref > 0.0d0) then
                     ne_conn(cnt_e, :) = (/old_to_new(idxB), ni1, ni2/)
@@ -535,9 +506,7 @@ do i_C = 1, num_Crack
             cnt_e = cnt_e + 1
             if (norm_len > 1.0d-12) then
                 tri_normal = tri_normal / norm_len
-                dot_ref = tri_normal(1)*ref_normal(1) + &
-                          tri_normal(2)*ref_normal(2) + &
-                          tri_normal(3)*ref_normal(3)
+dot_ref = tri_normal(1)*ref_normal(1) + tri_normal(2)*ref_normal(2) + tri_normal(3)*ref_normal(3)
                 
                 if (dot_ref > 0.0d0) then
                     ne_conn(cnt_e, :) = (/old_to_new(idxB), ni2, old_to_new(idxC)/)
@@ -557,8 +526,7 @@ do i_C = 1, num_Crack
     ! +++++ Additional step: Remove duplicate intersection nodes.   +++++
     ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     if (cnt_n > 0 .and. cnt_e > 0) then
-        call merge_duplicate_nodes(nn_xyz, ne_conn, is_boundary_node, &
-                                   cnt_n, cnt_e, 1.0d-8)
+call merge_duplicate_nodes(nn_xyz, ne_conn, is_boundary_node, cnt_n, cnt_e, 1.0d-8)
     end if
     
     ! +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -611,9 +579,7 @@ do i_C = 1, num_Crack
             do i = 1, cnt_e
                 if (.not. ele_valid(i)) cycle
                 if (i == ref_idx) cycle
-                dot_ref = ele_normals(i, 1)*ref_normal(1) + &
-                          ele_normals(i, 2)*ref_normal(2) + &
-                          ele_normals(i, 3)*ref_normal(3)
+dot_ref = ele_normals(i, 1)*ref_normal(1) + ele_normals(i, 2)*ref_normal(2) + ele_normals(i, 3)*ref_normal(3)
                 if (dot_ref < 0.0d0) then
                     ! Normal is opposite; swap node 2 and node 3.
                     temp_idx = ne_conn(i, 2)
@@ -630,12 +596,9 @@ do i_C = 1, num_Crack
     Crack3D_Meshed_Node_num_CUT(i_C) = cnt_n
     Crack3D_Meshed_Ele_num_CUT(i_C)  = cnt_e
 
-    if (allocated(Crack3D_Meshed_Node_CUT(i_C)%row)) &
-        deallocate(Crack3D_Meshed_Node_CUT(i_C)%row)
-    if (allocated(Crack3D_Meshed_Ele_CUT(i_C)%row)) &
-        deallocate(Crack3D_Meshed_Ele_CUT(i_C)%row)
-    if (allocated(Crack3D_Meshed_Node_Value_CUT(i_C)%row)) &
-        deallocate(Crack3D_Meshed_Node_Value_CUT(i_C)%row)
+if (allocated(Crack3D_Meshed_Node_CUT(i_C)%row)) deallocate(Crack3D_Meshed_Node_CUT(i_C)%row)
+if (allocated(Crack3D_Meshed_Ele_CUT(i_C)%row)) deallocate(Crack3D_Meshed_Ele_CUT(i_C)%row)
+if (allocated(Crack3D_Meshed_Node_Value_CUT(i_C)%row)) deallocate(Crack3D_Meshed_Node_Value_CUT(i_C)%row)
 
     allocate(Crack3D_Meshed_Node_CUT(i_C)%row(cnt_n, 3))
     allocate(Crack3D_Meshed_Node_Value_CUT(i_C)%row(cnt_n, 3))
@@ -759,8 +722,7 @@ do i_C = 1, num_Crack
                     MAX_MOVE_RATIO = 0.1D0
                     if (move_dist > MAX_MOVE_RATIO * Ave_Elem_L_Enrich) then
                         ! Limit the movement distance
-                        moved_point = Crack_Node_Coor + &
-                            (moved_point - Crack_Node_Coor)*(MAX_MOVE_RATIO*Ave_Elem_L_Enrich/move_dist)
+moved_point = Crack_Node_Coor + (moved_point - Crack_Node_Coor)*(MAX_MOVE_RATIO*Ave_Elem_L_Enrich/move_dist)
                     end if
                     ! Calculate aperture at the moved point
                     call Cal_Crack_Point_Aperture_3D(c_DISP, i_C, moved_point,Relative_Disp(1:3), 0, 0, 0, 0)
@@ -775,8 +737,7 @@ do i_C = 1, num_Crack
                 end if
         ! Not on boundary.
         elseif (.not. on_boundary) then
-            call Cal_Crack_Point_Aperture_3D(c_DISP, i_C, Crack_Node_Coor, &
-                                             Relative_Disp(1:3), 0, 0, 0, 0)
+call Cal_Crack_Point_Aperture_3D(c_DISP, i_C, Crack_Node_Coor, Relative_Disp(1:3), 0, 0, 0, 0)
             !Get aperture.
             c_Aperture = Relative_Disp(1)*ori_n(1)+ Relative_Disp(2)*ori_n(2)+ Relative_Disp(3)*ori_n(3)                             
             ! Save aperture to Crack3D_Meshed_Node_Value_CUT.
@@ -848,22 +809,19 @@ do i_C=1,num_Crack
     if (.not. Boundary_Cracks(i_C)) then
         if (Key_Del_Neg_Aperture == 1) then
             ! Adjust negative values to 0 before writing
-            write(101,'(50000E20.12)')(max(0.0d0, Crack3D_Meshed_Node_Value(i_C)%row(j,1)), &
-                                       j=1,Crack3D_Meshed_Node_num(i_C))
+write(101,'(50000E20.12)')(max(0.0d0, Crack3D_Meshed_Node_Value(i_C)%row(j,1)), j=1,Crack3D_Meshed_Node_num(i_C))
         else
             ! Write original values directly
-            write(101,'(50000E20.12)')(Crack3D_Meshed_Node_Value(i_C)%row(j,1), &
-                                       j=1,Crack3D_Meshed_Node_num(i_C))
+write(101,'(50000E20.12)')(Crack3D_Meshed_Node_Value(i_C)%row(j,1), j=1,Crack3D_Meshed_Node_num(i_C))
         endif
     else
         if (Key_Del_Neg_Aperture == 1) then
             ! Adjust negative values to 0 before writing
-            write(101,'(50000E20.12)')(max(0.0d0, Crack3D_Meshed_Node_Value_CUT(i_C)%row(j,1)), &
-                                       j=1,Crack3D_Meshed_Node_num_CUT(i_C))
+write(101,'(50000E20.12)')(max(0.0d0, Crack3D_Meshed_Node_Value_CUT(i_C)%row(j,1)), &
+j=1,Crack3D_Meshed_Node_num_CUT(i_C))
         else
             ! Write original values directly
-            write(101,'(50000E20.12)')(Crack3D_Meshed_Node_Value_CUT(i_C)%row(j,1), &
-                                       j=1,Crack3D_Meshed_Node_num_CUT(i_C))
+write(101,'(50000E20.12)')(Crack3D_Meshed_Node_Value_CUT(i_C)%row(j,1), j=1,Crack3D_Meshed_Node_num_CUT(i_C))
         endif
     endif
 end do
@@ -910,8 +868,7 @@ end subroutine bcrk_sort4
 logical function bcrk_face_eq(f1, f2)
     implicit none
     integer, intent(in) :: f1(4), f2(4)
-    bcrk_face_eq = (f1(1)==f2(1) .and. f1(2)==f2(2) .and. &
-                    f1(3)==f2(3) .and. f1(4)==f2(4))
+bcrk_face_eq = (f1(1)==f2(1) .and. f1(2)==f2(2) .and. f1(3)==f2(3) .and. f1(4)==f2(4))
 end function bcrk_face_eq
 
 !-----------------------------------------------------
@@ -950,6 +907,21 @@ recursive subroutine bcrk_qsort_idx(fns, ix, lo, hi)
     do while (i_qs <= j_qs)
         do while (bcrk_face_cmp(fns(:, ix(i_qs)), pivot_f) < 0)
             i_qs = i_qs + 1
+
+!-----------------------------------------------------------
+! Brief: Test if a 3D point lies inside the model boundary.
+!
+! Parameters:
+!   Input:  pt - query point coordinates
+!           btri - boundary triangle vertex array
+!           ntri - number of boundary triangles
+!   Output: inside - true if pt is inside the model
+!
+! Notes:   Ray-casting along an irrational-direction ray;
+!          odd ray-triangle intersection count indicates
+!          the point is inside.
+!-----------------------------------------------------------
+
         end do
         do while (bcrk_face_cmp(fns(:, ix(j_qs)), pivot_f) > 0)
             j_qs = j_qs - 1
@@ -962,6 +934,27 @@ recursive subroutine bcrk_qsort_idx(fns, ix, lo, hi)
             j_qs = j_qs - 1
         end if
     end do
+
+!-----------------------------------------------------------
+! Brief: Moller-Trumbore ray-triangle intersection test.
+!
+! Parameters:
+!   Input:  ray_o - ray origin, ray_d - ray direction
+!           t0,t1,t2 - triangle vertices
+!   Output: t,u,v - ray parameter and barycentric coords
+!           hit - true if the ray hits the triangle
+!
+! Notes:   Standard analytic test; degenerate cases handled
+!          via an EPS tolerance on the determinant.
+!-----------------------------------------------------------
+
+!   Output: inside - true if pt is inside the model
+!
+! Notes:   Ray-casting along an irrational-direction ray;
+!          odd ray-triangle intersection count indicates
+!          the point is inside.
+!-----------------------------------------------------------
+
 
     if (lo  < j_qs) call bcrk_qsort_idx(fns, ix, lo, j_qs)
     if (i_qs < hi)  call bcrk_qsort_idx(fns, ix, i_qs, hi)
@@ -982,9 +975,38 @@ subroutine bcrk_pt_in_model(pt, btri, ntri, inside)
     logical, intent(out)      :: inside
 
     real(kind=FT) :: rd(3), tv, uv, vv
+
+!-----------------------------------------------------------
+! Brief: Moller-Trumbore ray-triangle intersection test.
+!
+! Parameters:
+!   Input:  ray_o - ray origin, ray_d - ray direction
+!           t0,t1,t2 - triangle vertices
+!   Output: t,u,v - ray parameter and barycentric coords
+!           hit - true if the ray hits the triangle
+!
+! Notes:   Standard analytic test; degenerate cases handled
+!          via an EPS tolerance on the determinant.
+!-----------------------------------------------------------
+
     integer :: m_rc, cnt_rc
     logical :: hit_rc
     real(kind=FT), parameter :: TOL = 1.0d-10
+
+!-----------------------------------------------------------
+! Brief: Find first boundary intersection of a segment.
+!
+! Parameters:
+!   Input:  P1,P2 - segment endpoints
+!           btri - boundary triangle array
+!           ntri - number of boundary triangles
+!   Output: Pint - intersection point
+!           found - true if an intersection was found
+!
+! Notes:   Calls bcrk_ray_tri over all boundary triangles
+!          and keeps the minimum-t intersection on (0,1).
+!-----------------------------------------------------------
+
 
     ! Direction chosen to avoid alignment with mesh edges
     rd(1) = 1.0d0
@@ -993,22 +1015,28 @@ subroutine bcrk_pt_in_model(pt, btri, ntri, inside)
 
     cnt_rc = 0
     do m_rc = 1, ntri
-        call bcrk_ray_tri(pt, rd, &
-             btri(:,1,m_rc), btri(:,2,m_rc), btri(:,3,m_rc), &
-             tv, uv, vv, hit_rc)
+call bcrk_ray_tri(pt, rd, btri(:,1,m_rc), btri(:,2,m_rc), btri(:,3,m_rc), tv, uv, vv, hit_rc)
         if (hit_rc .and. tv > TOL) cnt_rc = cnt_rc + 1
     end do
 
     inside = (mod(cnt_rc, 2) == 1)
 end subroutine bcrk_pt_in_model
 
-!------------------------------------------------------------------
-! Ray-triangle intersection  (Moller-Trumbore algorithm)
+!-----------------------------------------------------------
+! Brief: Merge coincident boundary nodes in a 3D mesh.
 !
-! Tests:  ray_o + t * ray_d  against triangle (t0, t1, t2)
-! Returns t (ray parameter), u & v (barycentric coords), hit flag.
-! Detects both front-face and back-face intersections.
-!------------------------------------------------------------------
+! Parameters:
+!   In/Out: nodes - node coordinate array
+!           elements - element connectivity array
+!           bdry_flags - per-node boundary flags
+!           num_nodes - current node count
+!           num_elems - current element count
+!   Input:  tolerance - distance tolerance for duplicates
+!
+! Notes:   Uses an old-to-new node map; renumbers elements
+!          and drops degenerate triangles after merging.
+!-----------------------------------------------------------
+
 subroutine bcrk_ray_tri(ray_o, ray_d, t0, t1, t2, t, u, v, hit)
     implicit none
     real(kind=FT), intent(in)  :: ray_o(3), ray_d(3)
@@ -1018,6 +1046,21 @@ subroutine bcrk_ray_tri(ray_o, ray_d, t0, t1, t2, t, u, v, hit)
 
     real(kind=FT) :: e1(3), e2(3), pv(3), sv(3), qv(3)
     real(kind=FT) :: det, inv_det
+
+!-----------------------------------------------------------
+! Brief: Find first boundary intersection of a segment.
+!
+! Parameters:
+!   Input:  P1,P2 - segment endpoints
+!           btri - boundary triangle array
+!           ntri - number of boundary triangles
+!   Output: Pint - intersection point
+!           found - true if an intersection was found
+!
+! Notes:   Calls bcrk_ray_tri over all boundary triangles
+!          and keeps the minimum-t intersection on (0,1).
+!-----------------------------------------------------------
+
     real(kind=FT), parameter :: EPS = 1.0d-12
 
     hit = .false.
@@ -1077,9 +1120,7 @@ subroutine bcrk_seg_isect(P1, P2, btri, ntri, Pint, found)
     tmin  = 2.0d0
 
     do m_si = 1, ntri
-        call bcrk_ray_tri(P1, dir, &
-             btri(:,1,m_si), btri(:,2,m_si), btri(:,3,m_si), &
-             tv, uv, vv, hit_si)
+call bcrk_ray_tri(P1, dir, btri(:,1,m_si), btri(:,2,m_si), btri(:,3,m_si), tv, uv, vv, hit_si)
         if (hit_si .and. tv > TOL .and. tv < 1.0d0 - TOL) then
             if (tv < tmin) then
                 tmin  = tv
@@ -1098,8 +1139,7 @@ end subroutine bcrk_seg_isect
 ! tolerance: distance tolerance, nodes closer than this are 
 !            considered duplicates.
 !-----------------------------------------------------------------
-subroutine merge_duplicate_nodes(nodes, elements, bdry_flags, &
-                                 num_nodes, num_elems, tolerance)
+subroutine merge_duplicate_nodes(nodes, elements, bdry_flags, num_nodes, num_elems, tolerance)
     implicit none
     real(kind=FT), intent(inout) :: nodes(:,:)
     integer, intent(inout) :: elements(:,:)
@@ -1130,9 +1170,7 @@ subroutine merge_duplicate_nodes(nodes, elements, bdry_flags, &
                 if (.not. bdry_flags(j)) cycle
                 
                 ! Calculate distance
-                dist = sqrt((nodes(i,1) - nodes(j,1))**2 + &
-                           (nodes(i,2) - nodes(j,2))**2 + &
-                           (nodes(i,3) - nodes(j,3))**2)
+dist = sqrt((nodes(i,1) - nodes(j,1))**2 + (nodes(i,2) - nodes(j,2))**2 + (nodes(i,3) - nodes(j,3))**2)
                 
                 if (dist < tolerance) then
                     ! j is duplicate node, map to i
@@ -1169,9 +1207,7 @@ subroutine merge_duplicate_nodes(nodes, elements, bdry_flags, &
     ! Step 4: Remove degenerate elements (with duplicate nodes)
     k = 0
     do i = 1, num_elems
-        if (elements(i,1) /= elements(i,2) .and. &
-            elements(i,2) /= elements(i,3) .and. &
-            elements(i,3) /= elements(i,1)) then
+if (elements(i,1) /= elements(i,2) .and. elements(i,2) /= elements(i,3) .and. elements(i,3) /= elements(i,1)) then
             k = k + 1
             if (k /= i) then
                 elements(k, :) = elements(i, :)

@@ -1,52 +1,25 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
-SUBROUTINE Determine_Contact_State_by_Iteration_3D( &
-           iter,ifra,Counter_Iter, &
-           Contact_DISP,c_Total_FD,   &
-           usual_FD,enrich_FD,&
-           c_freeDOF,c_num_freeDOF,c_F,&
-           ori_globalK,CT_Jacobian)
-                                             ! CT_Jacobian is the stiffness matrix corresponding to the contact state
+!-----------------------------------------------------------
+! Brief: Iteratively determine 3D crack-surface contact.
+!
+! Parameters:
+!   Input:  iter, ifra, Counter_Iter - solver counters
+!           c_Total_FD, c_num_freeDOF - DOF dimensions
+!           usual_FD, enrich_FD - DOF counts per type
+!           c_freeDOF - free-DOF map
+!           c_F - global load vector
+!           ori_globalK - stiffness for input fracture state
+!   In/Out: Contact_DISP - contact displacement vector
+!   Output: CT_Jacobian - stiffness for the resulting state
+!
+! Notes:   3D counterpart of the 2D routine; uses per-Gauss
+!          normal and two tangential penalty stiffnesses.
+!-----------------------------------------------------------
+
+SUBROUTINE Determine_Contact_State_by_Iteration_3D( iter,ifra,Counter_Iter, &
+Contact_DISP,c_Total_FD, usual_FD,enrich_FD, &
+c_freeDOF,c_num_freeDOF,c_F, &
+ori_globalK,CT_Jacobian)
+! CT_Jacobian is the stiffness matrix corresponding to the contact state
 
 ! This subroutine determines the contact status of the fracture surface through iterative
 ! calculation.
@@ -57,7 +30,7 @@ SUBROUTINE Determine_Contact_State_by_Iteration_3D( &
 !                   4: Based on linear complementarity theory (temporarily unavailable).
 !
 !   
-   
+
 !/////////////////////////////
 ! Read public variable module
 !/////////////////////////////
@@ -105,7 +78,7 @@ real(kind=FT) PC_Gauss_x(num_Crack,Max_Max_N_FluEl_3D)
 real(kind=FT) PC_Gauss_y(num_Crack,Max_Max_N_FluEl_3D)
 real(kind=FT) PC_Gauss_z(num_Crack,Max_Max_N_FluEl_3D)
 integer CT_State_Gauss(num_Crack,Max_Max_N_FluEl_3D)
-                                                            ! = 0, Separation; = 1, Bonding; = 2, Sliding
+! = 0, Separation; = 1, Sticking; = 2, Sliding
 real(kind=FT) Kn,Kt
 real(kind=FT) Kn_Gauss(num_Crack,Max_Max_N_FluEl_3D)
 real(kind=FT) Kt1_Gauss(num_Crack,Max_Max_N_FluEl_3D)
@@ -167,6 +140,13 @@ fric_mu = fric_mu_Cont
 ! Convergence tolerance
 Conve_Tolerance = Conve_Tol_Penalty
 
+!if allocated(PC_Gauss_x) deallocate(PC_Gauss_x)
+!if allocated(PC_Gauss_y) deallocate(PC_Gauss_y)
+!if allocated(PC_Gauss_z) deallocate(PC_Gauss_z)
+!allocate(PC_Gauss_x(num_Crack,Max_Max_N_FluEl_3D))  
+!allocate(PC_Gauss_y(num_Crack,Max_Max_N_FluEl_3D))  
+!allocate(PC_Gauss_z(num_Crack,Max_Max_N_FluEl_3D))  
+
 !//////////////////////////////////////////////////////////////////////////////////
 !  
 ! Select different contact algorithms based on the keyword Key_Contact
@@ -174,156 +154,153 @@ Conve_Tolerance = Conve_Tol_Penalty
 !
 !//////////////////////////////////////////////////////////////////////////////////
 select case (Key_Contact)
-!
-!
-!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-!case(1): Penalty function method and Newton-Raphson iteration
-!
-! Note: (1) The crack tip enrichment element corresponds to the part of the crack segment that
-! participates in the iterative calculation (in previous older versions, it did not participate in
-! the calculation);
-!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-!
+    !
+    !
+    !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    !case(1): Penalty function method and Newton-Raphson iteration
+    !
+    ! Note: (1) The crack tip enrichment element corresponds to the part of the crack segment that
+    ! participates in the iterative calculation (in previous older versions, it did not participate in
+    ! the calculation);
+    !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    !
 case(1)
-  ! Newton-Raphson Contact Iteration
-  do i_NR_P = 1,Max_Contact_Iter
-      write(*,4001) i_NR_P,Max_Contact_Iter
-      !###########################################################################################
-      ! Special handling for the first iteration step: If it is the first NR iteration, the crack
-      ! needs to be determined first
-      ! If there is no contact on the crack surface in the joint, the iteration ends immediately.
-      !###########################################################################################
-      if(i_NR_P==1)then 
-          ! The initial value for the Newton-Raphson iteration is assumed to be a crack width of 0.
-          NR_DISP(1:c_Total_FD)    = ZR
-          delta_u_a(1:c_Total_FD)  = ZR
-          ! NR_DISP(1:c_Total_FD) = Contact_DISP !Note: NR_DISP is the displacement involved in the
-          ! Newton-Raphson contact iteration calculation
-          !delta_u_a(1:c_Total_FD)  = ZR                  
-          Last_R_PSI(1:c_Total_FD) = ZR
-          
-          !Elem_Conta_Sta(1:Num_Elem,1:Max_Num_Cr_3D) = 0  
-          Elem_Conta_Sta(1:Num_Elem,1:num_Crack) = 0
-          
-          Kn_Gauss(1:num_Crack,1:Max_Max_N_FluEl_3D) = kn
-          Kt1_Gauss(1:num_Crack,1:Max_Max_N_FluEl_3D) = kt
-          Kt2_Gauss(1:num_Crack,1:Max_Max_N_FluEl_3D) = kt
-          call Cal_Contact_Contact_State_Gauss_3D(  &
-                 iter,ifra,Counter_Iter,i_NR_P, &
-                  Contact_DISP,Yes_Contact,Elem_Conta_Sta, &
-                  CT_State_Gauss)    
-          ! If no embedding occurs on any of the crack surfaces, exit the iteration.
-          if(Yes_Contact .eqv. .False.)then
-              write(*,4012)
-              CT_Jacobian = ori_globalK
-              goto 9999
-          endif
-      endif
+    ! Newton-Raphson Contact Iteration
+    do i_NR_P = 1,Max_Contact_Iter
+        write(*,4001) i_NR_P,Max_Contact_Iter
+        !###########################################################################################
+        ! Special handling for the first iteration step: If it is the first NR iteration, the crack
+        ! needs to be determined first
+        ! If there is no contact on the crack surface in the joint, the iteration ends immediately.
+        !###########################################################################################
+        if(i_NR_P==1)then 
+            ! The initial value for the Newton-Raphson iteration is assumed to be a crack width of 0.
+            NR_DISP(1:c_Total_FD)    = ZR
+            delta_u_a(1:c_Total_FD)  = ZR
+            ! NR_DISP(1:c_Total_FD) = Contact_DISP !Note: NR_DISP is the displacement involved in the
+            ! Newton-Raphson contact iteration calculation
+            !delta_u_a(1:c_Total_FD)  = ZR                  
+            Last_R_PSI(1:c_Total_FD) = ZR
 
-      !#############################################################################################
-      ! Calculate the components of the contact force at the Gauss points of the contact element in
-      ! the x, y, and z directions, and update and save the contact status at the Gauss points.
-      !#############################################################################################
-      print *,'           Get contact force and update Kt.'
-      call Cal_Contact_PN_and_PT_3D(iter,ifra,Counter_Iter, &
-                i_NR_P,c_Total_FD,c_num_freeDOF,  &
-                Kn,Kn_Gauss,Kt1_Gauss,Kt2_Gauss, &
-                fric_mu,NR_DISP,delta_u_a, &
-                CT_State_Gauss,Elem_Conta_Sta, &
-                PC_Gauss_x,PC_Gauss_y,PC_Gauss_z,8)
-      write(*,5001) count(Elem_Conta_Sta==1),count(Elem_Conta_Sta==2)
-      write(*,5002) count(CT_State_Gauss==1),count(CT_State_Gauss==2)
-      
-      !#############################################################################################
-      ! Assemble the contact iteration Jacobian matrix, calculated based on ori_globalK (can reduce
-      ! computation)
-      !#############################################################################################
-      print *,'           Assemble Jacobian matrix.'
-      call Cal_Contact_Jacobian_3D(iter,ifra,Counter_Iter,i_NR_P, &
-         c_Total_FD,c_num_freeDOF,ori_globalK, &
-         c_freeDOF,Kn,Kn_Gauss,Kt1_Gauss,Kt2_Gauss, &
-         CT_State_Gauss,CT_Jacobian)
-      
-      
-      !##########################
-      ! Calculate residuals, PSI
-      !##########################
-      print *,'           Get residual.'
-      !------------------------------------------------------------
-      ! option 1: Calculate internal forces through Bσ integration
-      !------------------------------------------------------------
-      call Cal_Contact_Resid_3D(iter,ifra,Counter_Iter,i_NR_P, &
-         c_Total_FD,c_num_freeDOF,c_F,NR_DISP,c_freeDOF, &
-         PC_Gauss_x,PC_Gauss_y,PC_Gauss_z,R_PSI) 
-      write(*,6001) sum(abs(R_PSI))
-      
-      !############################################
-      ! Solve for displacement increments (△u, △a)
-      !############################################
-      print *,'           Get displacemnt increament.'
-      delta_u_a(1:c_Total_FD)  =ZR
-      call Matrix_Solve_LSOE(7,1,Key_SLOE,     &
-                  CT_Jacobian(c_freeDOF(1:c_num_freeDOF),c_freeDOF(1:c_num_freeDOF)), &
-                 -R_PSI(c_freeDOF(1:c_num_freeDOF)), &
-                  tem_DISP,c_num_freeDOF)
-      delta_u_a(c_freeDOF(1:c_num_freeDOF)) = tem_DISP
-      
-      
-      !######################
-      ! Update displacement.
-      !######################
-      print *,'           Update displacemnt.'
-      NR_DISP = NR_DISP + delta_u_a
-      
-      
-      !########################
-      ! Check for convergence.
-      !########################
-      print *,'           Check convergence.'
-      call Cal_Contact_Conve_Factor(iter,ifra,Counter_Iter,i_NR_P,Conve_Tolerance, &
-              c_Total_FD,c_freeDOF,c_num_freeDOF,c_F,R_PSI,Last_R_PSI, &
-              delta_u_a,NR_DISP,Contact_DISP_0,Yes_Conve,Conve_Factor)
-      write(*,4022) Conve_Factor,Conve_Tolerance
-      Saved_Conv_Factor(i_NR_P) =Conve_Factor
-      ! Exit the iteration loop if convergence is achieved.
-      if(Yes_Conve)then
-          write(*,1997)
-          write(*,4032) i_NR_P
-          write(*,4033) count(Elem_Conta_Sta/=0)
-          write(*,1997)
-          exit
-      endif
-      ! Check whether the convergence factor has oscillated (when the number of iterations is greater than
-      ! or equal to 6)
-      if (i_NR_P>=6)then
-          ! Determine whether oscillation has occurred based on the last six convergence values
-          print *,'           Check oscillation.'
-          call Tool_Check_Oscillation_by_6_Variables(Saved_Conv_Factor(i_NR_P-5:i_NR_P),Yes_Oscill)
-          if (Yes_Oscill) then
-              write(*,1998)
-              write(*,2003)
-              write(*,1998)
-              exit
-          endif
-      endif
-      ! Update the residual from the previous step
-      Last_R_PSI = R_PSI
-  enddo
-  
-  ! If all iterations are completed and it still hasn't converged, the program will terminate.
-  if(.not.Yes_Conve)then
-      write(*,2002)
-      !all Warning_Message('S',Keywords_Blank)
-  endif
-  
-  ! Save output variable
-  Contact_DISP = NR_DISP
-  
-!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-! case(2): Reduced Penalty function method (not implemented).
-!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+            !Elem_Conta_Sta(1:Num_Elem,1:Max_Num_Cr_3D) = 0  
+            Elem_Conta_Sta(1:Num_Elem,1:num_Crack) = 0
+
+            Kn_Gauss(1:num_Crack,1:Max_Max_N_FluEl_3D) = kn
+            Kt1_Gauss(1:num_Crack,1:Max_Max_N_FluEl_3D) = kt
+            Kt2_Gauss(1:num_Crack,1:Max_Max_N_FluEl_3D) = kt
+            call Cal_Contact_Contact_State_Gauss_3D( iter,ifra,Counter_Iter,i_NR_P, Contact_DISP,Yes_Contact,Elem_Conta_Sta, &
+            CT_State_Gauss)
+            ! If no embedding occurs on any of the crack surfaces, exit the iteration.
+            if(Yes_Contact .eqv. .False.)then
+                write(*,4012)
+                CT_Jacobian = ori_globalK
+                goto 9999
+            endif
+        endif
+
+        !#############################################################################################
+        ! Calculate the components of the contact stress at the Gauss points of the contact element in
+        ! the x, y, and z directions, and update and save the contact status at the Gauss points.
+        ! Unit of PC_Gauss_x,PC_Gauss_y,PC_Gauss_z: Pa or N/m2.
+        !#############################################################################################
+        print *,'           Get contact stress and update Kt.'
+        call Cal_Contact_PN_and_PT_3D(iter,ifra,Counter_Iter, i_NR_P,c_Total_FD,c_num_freeDOF, Kn,Kn_Gauss,Kt1_Gauss,Kt2_Gauss, &
+        fric_mu,NR_DISP,delta_u_a, CT_State_Gauss,Elem_Conta_Sta, PC_Gauss_x,PC_Gauss_y,PC_Gauss_z,8)
+        write(*,5001) count(Elem_Conta_Sta==1),count(Elem_Conta_Sta==2)
+        write(*,5002) count(CT_State_Gauss==1),count(CT_State_Gauss==2)
+
+        !#############################################################################################
+        ! Assemble the contact iteration Jacobian matrix, calculated based on ori_globalK (can reduce
+        ! computation)
+        !#############################################################################################
+        print *,'           Assemble Jacobian matrix.'
+        call Cal_Contact_Jacobian_3D(iter,ifra,Counter_Iter,i_NR_P, c_Total_FD,c_num_freeDOF,ori_globalK, &
+        c_freeDOF,Kn,Kn_Gauss,Kt1_Gauss,Kt2_Gauss, CT_State_Gauss,CT_Jacobian)
+
+
+        !##########################
+        ! Calculate residuals, PSI
+        !##########################
+        print *,'           Get residual.'
+        !------------------------------------------------------------
+        ! option 1: Calculate internal forces through integration.
+        !------------------------------------------------------------
+        call Cal_Contact_Resid_3D(iter,ifra,Counter_Iter,i_NR_P, c_Total_FD,c_num_freeDOF,c_F,NR_DISP,c_freeDOF, &
+        PC_Gauss_x,PC_Gauss_y,PC_Gauss_z,R_PSI)
+        write(*,6001) sum(abs(R_PSI))
+
+        !############################################
+        ! Solve for displacement increments.
+        !############################################
+        print *,'           Get displacemnt increament.'
+        delta_u_a(1:c_Total_FD)  =ZR
+        call Matrix_Solve_LSOE(7,1,Key_SLOE, CT_Jacobian(c_freeDOF(1:c_num_freeDOF),c_freeDOF(1:c_num_freeDOF)), &
+        -R_PSI(c_freeDOF(1:c_num_freeDOF)), tem_DISP,c_num_freeDOF)
+        delta_u_a(c_freeDOF(1:c_num_freeDOF)) = tem_DISP
+
+
+        !######################
+        ! Update displacement.
+        !######################
+        print *,'           Update displacemnt.'
+        NR_DISP = NR_DISP + delta_u_a
+
+
+        !########################
+        ! Check for convergence.
+        !########################
+        print *,'           Check convergence.'
+        call Cal_Contact_Conve_Factor(iter,ifra,Counter_Iter,i_NR_P,Conve_Tolerance, &
+        c_Total_FD,c_freeDOF,c_num_freeDOF,c_F,R_PSI,Last_R_PSI, delta_u_a,NR_DISP,Contact_DISP_0,Yes_Conve,Conve_Factor)
+        write(*,4022) Conve_Factor,Conve_Tolerance
+        Saved_Conv_Factor(i_NR_P) =Conve_Factor
+        ! Exit the iteration loop if convergence is achieved.
+        if(Yes_Conve)then
+            write(*,1997)
+            write(*,4032) i_NR_P
+            write(*,4033) count(Elem_Conta_Sta/=0)
+            write(*,1997)
+            exit
+        endif
+        ! Check whether the convergence factor has oscillated (when the number of iterations is greater than
+        ! or equal to 6)
+        if (i_NR_P>=6)then
+            ! Determine whether oscillation has occurred based on the last six convergence values
+            print *,'           Check oscillation.'
+            call Tool_Check_Oscillation_by_6_Variables(Saved_Conv_Factor(i_NR_P-5:i_NR_P),Yes_Oscill)
+            if (Yes_Oscill) then
+                write(*,1998)
+                write(*,2003)
+                write(*,1998)
+                exit
+            endif
+        endif
+        ! Update the residual from the previous step
+        Last_R_PSI = R_PSI
+    enddo
+
+    ! If all iterations are completed and it still hasn't converged, the program will terminate.
+    if(.not.Yes_Conve)then
+        write(*,2002)
+        !all Warning_Message('S',Keywords_Blank)
+    endif
+
+    ! Save output variable
+    Contact_DISP = NR_DISP
+
+    ! 2026-04-30. NEWFTU-2026043003.
+    if (allocated(Contact_Stress)) deallocate(Contact_Stress)
+    allocate(Contact_Stress(num_Crack,Max_Max_N_FluEl_3D,3))
+    Contact_Stress(1:num_Crack,1:Max_Max_N_FluEl_3D,1) = PC_Gauss_x(1:num_Crack,1:Max_Max_N_FluEl_3D) 
+    Contact_Stress(1:num_Crack,1:Max_Max_N_FluEl_3D,2) = PC_Gauss_y(1:num_Crack,1:Max_Max_N_FluEl_3D) 
+    Contact_Stress(1:num_Crack,1:Max_Max_N_FluEl_3D,3) = PC_Gauss_z(1:num_Crack,1:Max_Max_N_FluEl_3D) 
+
+
+    !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    ! case(2): Reduced Penalty function method (not implemented).
+    !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 case(2)
-  
+
 end select
 
 
@@ -335,7 +312,7 @@ end select
 !////////////////////////////////
 if(Key_Save_Nothing ==0 .and. Key_Simple_Post==0 .and. Key_Contact==1) then
     !
-    ! Save the fluid element (contact element) Gauss point contact force file for post-processing.
+    ! Save the fluid element (contact element) Gauss point contact stress file for post-processing.
     !
     write(temp,'(I5)') iter
     c_File_name_1=trim(Full_Pathname)//'.cfrx_'//ADJUSTL(temp)     

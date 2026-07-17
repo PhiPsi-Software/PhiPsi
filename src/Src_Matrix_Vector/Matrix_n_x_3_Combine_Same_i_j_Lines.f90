@@ -1,45 +1,19 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
+!-----------------------------------------------------------
+! Brief: Sort an n x 3 real matrix and sum rows with equal (i,j).
+!
+! Parameters:
+!   Input:  n     - number of input rows
+!           M     - real input matrix (n x 3); cols 1,2 = indices,
+!                   col 3 = value
+!   Output: newM  - real output matrix (n x 3) without duplicate
+!                  (i,j) pairs; col 3 holds the summed value
+!           new_n - number of valid rows in newM
+!
+! Notes:   Sorts by (col1, col2) using Matrix_n_x_2_Quick_Sort_Int
+!          and validates with Matrix_n_x_3_Check_Sort. Rows with
+!          identical (i,j) pairs are merged by accumulating col 3.
+!-----------------------------------------------------------
+
 subroutine Matrix_n_x_3_Combine_Same_i_j_Lines(n, M, newM, new_n)
 !
 ! Sort an n-row, 3-column matrix.
@@ -71,26 +45,26 @@ do i_Try = 1,100
     Matrix_M1_M2(1:n,1) =  INT(Sorted_M(1:n,1))
     Matrix_M1_M2(1:n,2) =  INT(Sorted_M(1:n,2))
     idx = [(i, i=1,n)]
-    
+
     call Matrix_n_x_2_Quick_Sort_Int(Matrix_M1_M2(1:n,1:2),n,idx(1:n))  
 
-    
+
     do i = 1, n
         Sorted_M_2(i,1:3) = Sorted_M(idx(i),1:3) 
     enddo
-        
+
     Sorted_M  = Sorted_M_2
-        
+
     call Matrix_n_x_3_Check_Sort(Sorted_M, n, check_matrix,count_error)
-        
+
     if(check_matrix)then
         exit
     endif    
 enddo  
 
 if (check_matrix .eqv. .false.) then
-   write ( *, '(a)' ) 'ERROR :: Failed to sort the matrix! In Matrix_n_x_3_Combine_Same_i_j_Lines.f90!'
-   call Warning_Message('S',' ')
+    write ( *, '(a)' ) 'ERROR :: Failed to sort the matrix! In Matrix_n_x_3_Combine_Same_i_j_Lines.f90!'
+    call Warning_Message('S',' ')
 endif
 
 
@@ -106,5 +80,5 @@ do i = 2, n
         newM(new_n, :) = Sorted_M(i, :)
     end if
 end do
-    
+
 end subroutine Matrix_n_x_3_Combine_Same_i_j_Lines

@@ -1,45 +1,15 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
+!-----------------------------------------------------------
+! Brief: Allocate ragged arrays for a given 3D solid element.
+!
+! Parameters:
+!   Input:  i_E        - element index (1-based)
+!           Value_Type - storage class (1 crack-tip enriched data,
+!                        2 fluid data, 3 junction data, 4 other)
+!
+! Notes:   Allocates Solid_El_* ragged arrays (vertex coords, normal,
+!          tangent vectors, base/tip baseline) sized by Solid_El_Max_num_Crs.
+!-----------------------------------------------------------
+
 SUBROUTINE D3_Allocate_Ele_Memory(i_E,Value_Type)
 ! Allocate memory for element-related variables. 2022-09-04.
 
@@ -164,6 +134,7 @@ case(1)
         allocate(Solid_El_Tip_BaseLine_T_Matrix(i_E)%row(Solid_El_Max_num_Crs,3,3))
         Solid_El_Tip_BaseLine_T_Matrix(i_E)%row(1:Solid_El_Max_num_Crs,1:3,1:3) = ZR
     endif
+    
 !////////////////////////////////////////////////////
 ! Value_Type=2, related to fluid elements and nodes.
 !////////////////////////////////////////////////////

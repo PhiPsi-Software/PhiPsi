@@ -1,45 +1,15 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
+!-----------------------------------------------------------
+! Brief: Tests whether a 3D point lies on the plane of a triangle, with a user-supplied tolerance.
+!
+! Parameters:
+!   Input:  P(3),A(3),B(3),C(3) - test point and three triangle vertices
+!   Input:  Tol - relative area tolerance
+!   Output: Yes_on - .true. if P is coplanar with the triangle
+!
+! Notes:   Same area-decomposition strategy as the non-tolerance variant but
+!          applies a relative area-ratio tolerance to be scale-independent.
+!-----------------------------------------------------------
+
 subroutine Tool_Yes_Point_on_3D_Triangle_with_Tol(P,A,B,C,Yes_on,Tol)
 ! Determine whether a point in space lies on the plane of a spatial triangle.
 ! Algorithm: If point p is inside the triangle, then the original triangle ABC is divided into three
@@ -77,7 +47,7 @@ call Tool_Area_Tri_3D(B,C,P,Area_3)
 
 
 if(abs(Area_1+Area_2+Area_3-Area_Tri)/Area_Tri<=Tol)then
-  Yes_on = .True.
+    Yes_on = .True.
 endif
 
 return 

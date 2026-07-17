@@ -1,54 +1,23 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
+!-----------------------------------------------------------
+! Brief: Compute asymptotic auxiliary field derivatives for the IIM.
+!
+! Parameters:
+!   Input:  Mode,r_in,theta,G,nu,kappa - same as Part 1
+!   Output: Aux_dSig*_*   - asymptotic stress gradients
+!           Aux_dEps*_*   - asymptotic strain gradients
+!           Aux_ddu*_*dX*dX* - second displacement derivatives
+!
+! Notes:   Part 2 supplies the first/second-order coordinate
+!          derivatives of the auxiliary fields needed by the
+!          Interaction Integral Method integrand. r is clamped
+!          away from zero to avoid singularities.
+!-----------------------------------------------------------
 
 subroutine Cal_3D_SIFs_IIM_Auxiliary_Fields_Part2(Mode, r_in, theta, G, nu, kappa, &
-                     Aux_dSig11_dX1, Aux_dSig12_dX2, Aux_dSig13_dX3,    &
-                     Aux_dSig12_dX1, Aux_dSig22_dX2, Aux_dSig23_dX3,    &
-                     Aux_dSig13_dX1, Aux_dSig23_dX2, Aux_dSig33_dX3,    &
-                     Aux_dEps11_dX1, Aux_dEps12_dX1, Aux_dEps13_dX1,    &
-                     Aux_dEps22_dX1, Aux_dEps23_dX1, Aux_dEps33_dX1,    &
-                     Aux_ddu1_dX1dX1, Aux_ddu2_dX1dX1, Aux_ddu3_dX1dX1, &
-                     Aux_ddu1_dX2dX1, Aux_ddu2_dX2dX1, Aux_ddu3_dX2dX1, & 
-                     Aux_ddu1_dX3dX1, Aux_ddu2_dX3dX1, Aux_ddu3_dX3dX1) 
+Aux_dSig11_dX1, Aux_dSig12_dX2, Aux_dSig13_dX3, Aux_dSig12_dX1, Aux_dSig22_dX2, Aux_dSig23_dX3, &
+Aux_dSig13_dX1, Aux_dSig23_dX2, Aux_dSig33_dX3, Aux_dEps11_dX1, Aux_dEps12_dX1, Aux_dEps13_dX1, &
+Aux_dEps22_dX1, Aux_dEps23_dX1, Aux_dEps33_dX1, Aux_ddu1_dX1dX1, Aux_ddu2_dX1dX1, Aux_ddu3_dX1dX1, &
+Aux_ddu1_dX2dX1, Aux_ddu2_dX2dX1, Aux_ddu3_dX2dX1, Aux_ddu1_dX3dX1, Aux_ddu2_dX3dX1, Aux_ddu3_dX3dX1)
 !2026-01-28.
 use Global_Float_Type
 implicit none
@@ -267,23 +236,23 @@ else
 endif
 
 Aux_ddu1_dX1dX1 = ddu1drdr*(drdx1)**2 + TWO*ddu1drdt*drdx1*dtdx1 + ddu1dtdt*(dtdx1)**2 + &
-                  du1dr*ddrdx1dx1 + du1dt*ddtdx1dx1 
+du1dr*ddrdx1dx1 + du1dt*ddtdx1dx1
 Aux_ddu2_dX1dX1 = ddu2drdr*(drdx1)**2 + TWO*ddu2drdt*drdx1*dtdx1 + ddu2dtdt*(dtdx1)**2 + &
-                  du2dr*ddrdx1dx1 + du2dt*ddtdx1dx1
+du2dr*ddrdx1dx1 + du2dt*ddtdx1dx1
 Aux_ddu3_dX1dX1 = ddu3drdr*(drdx1)**2 + TWO*ddu3drdt*drdx1*dtdx1 + ddu3dtdt*(dtdx1)**2 + &
-                  du3dr*ddrdx1dx1 + du3dt*ddtdx1dx1
+du3dr*ddrdx1dx1 + du3dt*ddtdx1dx1
 Aux_ddu1_dX2dX1= ddu1drdr*drdx2*drdx1 + ddu1drdt*(drdx2*dtdx1+dtdx2*drdx1) + &
-                 ddu1dtdt*dtdx2*dtdx1 + du1dr*ddrdx2dx1 + du1dt*ddtdx2dx1 
+ddu1dtdt*dtdx2*dtdx1 + du1dr*ddrdx2dx1 + du1dt*ddtdx2dx1
 Aux_ddu2_dX2dX1= ddu2drdr*drdx2*drdx1 + ddu2drdt*(drdx2*dtdx1+dtdx2*drdx1) + &
-                 ddu2dtdt*dtdx2*dtdx1 + du2dr*ddrdx2dx1 + du2dt*ddtdx2dx1 
+ddu2dtdt*dtdx2*dtdx1 + du2dr*ddrdx2dx1 + du2dt*ddtdx2dx1
 Aux_ddu3_dX2dX1= ddu3drdr*drdx2*drdx1 + ddu3drdt*(drdx2*dtdx1+dtdx2*drdx1) + &
-                 ddu3dtdt*dtdx2*dtdx1 + du3dr*ddrdx2dx1 + du3dt*ddtdx2dx1 
+ddu3dtdt*dtdx2*dtdx1 + du3dr*ddrdx2dx1 + du3dt*ddtdx2dx1
 Aux_ddu1_dX3dX1= ddu1drdr*drdx3*drdx1 + ddu1drdt*(drdx3*dtdx1+dtdx3*drdx1) + &
-                 ddu1dtdt*dtdx3*dtdx1 + du1dr*ddrdx3dx1 + du1dt*ddtdx3dx1 
+ddu1dtdt*dtdx3*dtdx1 + du1dr*ddrdx3dx1 + du1dt*ddtdx3dx1
 Aux_ddu2_dX3dX1= ddu2drdr*drdx3*drdx1 + ddu2drdt*(drdx3*dtdx1+dtdx3*drdx1) + &
-                 ddu2dtdt*dtdx3*dtdx1 + du2dr*ddrdx3dx1 + du2dt*ddtdx3dx1 
+ddu2dtdt*dtdx3*dtdx1 + du2dr*ddrdx3dx1 + du2dt*ddtdx3dx1
 Aux_ddu3_dX3dX1= ddu3drdr*drdx3*drdx1 + ddu3drdt*(drdx3*dtdx1+dtdx3*drdx1) + &
-                 ddu3dtdt*dtdx3*dtdx1 + du3dr*ddrdx3dx1 + du3dt*ddtdx3dx1 
+ddu3dtdt*dtdx3*dtdx1 + du3dr*ddrdx3dx1 + du3dt*ddtdx3dx1
 
 Aux_dEps11_dX1 = Aux_ddu1_dX1dX1
 Aux_dEps12_dX1 = HLF*(Aux_ddu1_dX2dX1 + Aux_ddu2_dX1dX1)

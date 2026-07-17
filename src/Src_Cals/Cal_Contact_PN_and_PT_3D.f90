@@ -1,51 +1,32 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
-subroutine Cal_Contact_PN_and_PT_3D(iter,ifra,Counter_Iter,i_NR_P, &
-                      c_Total_Freedom,c_num_freeDOF,&
-                       Kn,Kn_Gauss,Kt1_Gauss,Kt2_Gauss,&
-                       fric_mu,c_DISP,delta_u_a,&
-                       CT_State_Gauss,c_Elem_Conta_Sta,&
-                       PC_Gauss_x,PC_Gauss_y,PC_Gauss_z,Num_Indent)
+!-----------------------------------------------------------
+! Brief: Compute normal and tangential contact tractions at 3D Gauss points.
+!
+! Parameters:
+!   Input:  iter              - outer Newton iteration index
+!           ifra              - current loading fraction index
+!           Counter_Iter      - global nonlinear iteration counter
+!           i_NR_P            - Newton-Raphson contact iteration count
+!           c_Total_Freedom   - total free DOFs
+!           c_num_freeDOF     - number of free DOFs
+!           Kn                - normal penalty stiffness parameter
+!           fric_mu           - Coulomb friction coefficient
+!           c_DISP            - current displacement vector
+!           delta_u_a         - displacement increment
+!   In/Out: Kn_Gauss          - normal penalty stiffness at Gauss points
+!           Kt1_Gauss         - tangential stiffness dir-1
+!           Kt2_Gauss         - tangential stiffness dir-2
+!           CT_State_Gauss    - contact state at each Gauss point
+!           c_Elem_Conta_Sta  - element contact status flags
+!           PC_Gauss_x/y/z    - accumulated contact forces at Gauss pts
+!           Num_Indent        - accumulated indentation measure
+!
+! Notes:   3D analog of the 2D contact traction routine. Updates contact
+!          state (separated/bonded/slip) and element slip markers.
+!-----------------------------------------------------------
+
+subroutine Cal_Contact_PN_and_PT_3D(iter,ifra,Counter_Iter,i_NR_P, c_Total_Freedom,c_num_freeDOF, &
+Kn,Kn_Gauss,Kt1_Gauss,Kt2_Gauss, fric_mu,c_DISP,delta_u_a, CT_State_Gauss,c_Elem_Conta_Sta, &
+PC_Gauss_x,PC_Gauss_y,PC_Gauss_z,Num_Indent)
 ! (1): Transform the contact forces at each Gauss point of the crack surface elements during the
 ! contact iteration process into the global rectangular coordinate system
 ! The nodes of the contact elements and the fluid elements completely coincide, which facilitates
@@ -83,9 +64,8 @@ real(kind=FT),intent(inout)::Kt2_Gauss(num_Crack,Max_Max_N_FluEl_3D)
 integer,intent(inout)::CT_State_Gauss(num_Crack,Max_Max_N_FluEl_3D)             
 integer,intent(inout)::c_Elem_Conta_Sta(Num_Elem,num_Crack)
 real(kind=FT),intent(inout):: &
-            PC_Gauss_x(num_Crack,Max_Max_N_FluEl_3D),&
-            PC_Gauss_y(num_Crack,Max_Max_N_FluEl_3D),&
-            PC_Gauss_z(num_Crack,Max_Max_N_FluEl_3D)
+PC_Gauss_x(num_Crack,Max_Max_N_FluEl_3D), &
+PC_Gauss_y(num_Crack,Max_Max_N_FluEl_3D), PC_Gauss_z(num_Crack,Max_Max_N_FluEl_3D)
 integer Num_Indent
 integer i_C
 integer i_CT_Elem
@@ -120,9 +100,9 @@ real(kind=FT) Relative_Disp(3)
 
 
 if(i_NR_P>=2)then
-  Old_Elem_Conta_Sta = c_Elem_Conta_Sta
-  CT_State_Gauss(1:num_Crack,1:Max_Max_N_FluEl_3D)  =0
-  c_Elem_Conta_Sta(1:Num_Elem,1:num_Crack) = 0
+    Old_Elem_Conta_Sta = c_Elem_Conta_Sta
+    CT_State_Gauss(1:num_Crack,1:Max_Max_N_FluEl_3D)  =0
+    c_Elem_Conta_Sta(1:Num_Elem,1:num_Crack) = 0
 endif
 
 PC_Gauss_x(1:num_Crack,1:Max_Max_N_FluEl_3D) = ZR 
@@ -137,71 +117,70 @@ all_Apertures(1:num_Crack,1:Max_Max_N_FluEl_3D) = ZR
 !$OMP            c_PN,c_PT1,c_PT2,PC_Gauss,Relative_Disp)  &
 !$OMP            SCHEDULE(STATIC)   
 do i_C=1,num_Crack
-  do i_CT_Elem = 1,Cracks_FluidEle_num_3D(i_C)
-      c_Center = Cracks_FluidEle_Centroid_3D(i_C)%row(i_CT_Elem,1:3)
-      ori_n  = Cracks_FluidEle_Vector_3D(i_C)%row(i_CT_Elem,1:3)
-      T=Cracks_FluidEle_LCS_T_3D(i_C)%row(i_CT_Elem,1:3,1:3)
-      tran_T = transpose(T)
-      Solid_El = Cracks_FluidEle_EleNum_3D(i_C)%row(i_CT_Elem)   
-      
-      if(Key_Crack_Aperture_Method==1) then
-          call Cal_Crack_Point_Aperture_3D(c_DISP,i_C,c_Center,Relative_Disp,i_CT_Elem,0,0,0)
-          c_Aperture   = (Relative_Disp(1)*ori_n(1)+ Relative_Disp(2)*ori_n(2)+ Relative_Disp(3)*ori_n(3))/1.0D0
-      elseif(Key_Crack_Aperture_Method==2) then
-          call Cal_Point_Aperture_3D(i_C,c_Center,c_DISP,ori_n,T,c_Aperture,10)
-      endif
-      
-      all_Apertures(i_C,i_CT_Elem) = c_Aperture
-      
-      Cracks_FluidEle_Aper_3D(i_C)%row(i_CT_Elem) = c_Aperture
-      
-      
-      
-      c_Kt1 = Kt1_Gauss(i_C,i_CT_Elem) 
-      c_Kt2 = Kt2_Gauss(i_C,i_CT_Elem)       
-      c_Kn  = Kn_Gauss(i_C,i_CT_Elem) 
+    do i_CT_Elem = 1,Cracks_FluidEle_num_3D(i_C)
+        c_Center = Cracks_FluidEle_Centroid_3D(i_C)%row(i_CT_Elem,1:3)
+        ori_n  = Cracks_FluidEle_Vector_3D(i_C)%row(i_CT_Elem,1:3)
+        T=Cracks_FluidEle_LCS_T_3D(i_C)%row(i_CT_Elem,1:3,1:3)
+        tran_T = transpose(T)
+        Solid_El = Cracks_FluidEle_EleNum_3D(i_C)%row(i_CT_Elem)   
 
-      
-      if(c_Aperture <= ZR)then
-          
-          
-          c_PN = Kn*c_Aperture
-          
-          
-          c_PT1 = ZR
-          c_PT2 = ZR
-          
-          
-          if(i_NR_P>=2)then
-              CT_State_Gauss(i_C,i_CT_Elem) = 1
-              !$OMP CRITICAL
-              if(old_Elem_Conta_Sta(Solid_El,i_C)/=2) then
-                  c_Elem_Conta_Sta(Solid_El,i_C) = 1
-              else
-                  c_Elem_Conta_Sta(Solid_El,i_C) = 2
-              endif
-              !$OMP END CRITICAL
-          endif
-      
-          PC_Gauss(1:3) =MATMUL(tran_T,[c_PT1,c_PT2,c_PN])
-          PC_Gauss_x(i_C,i_CT_Elem) =PC_Gauss(1)
-          PC_Gauss_y(i_C,i_CT_Elem) =PC_Gauss(2)
-          PC_Gauss_z(i_C,i_CT_Elem) =PC_Gauss(3)
-          
-          
-          Kn_Gauss(i_C,i_CT_Elem)  = c_Kn
-          Kt1_Gauss(i_C,i_CT_Elem) = c_Kt1
-          Kt2_Gauss(i_C,i_CT_Elem) = c_Kt2
-      else
-          CT_State_Gauss(i_C,i_CT_Elem) = 0
-          PC_Gauss_x(i_C,i_CT_Elem) =ZR
-          PC_Gauss_y(i_C,i_CT_Elem) =ZR
-          PC_Gauss_z(i_C,i_CT_Elem) =ZR                      
-          Kn_Gauss(i_C,i_CT_Elem)  = c_Kn
-          Kt1_Gauss(i_C,i_CT_Elem) = c_Kt1
-          Kt2_Gauss(i_C,i_CT_Elem) = c_Kt2
-      endif
-  enddo
+        if(Key_Crack_Aperture_Method==1) then
+            call Cal_Crack_Point_Aperture_3D(c_DISP,i_C,c_Center,Relative_Disp,i_CT_Elem,0,0,0)
+            c_Aperture   = (Relative_Disp(1)*ori_n(1)+ Relative_Disp(2)*ori_n(2)+ Relative_Disp(3)*ori_n(3))/1.0D0
+        elseif(Key_Crack_Aperture_Method==2) then
+            call Cal_Point_Aperture_3D(i_C,c_Center,c_DISP,ori_n,T,c_Aperture,10)
+        endif
+
+        all_Apertures(i_C,i_CT_Elem) = c_Aperture
+
+        Cracks_FluidEle_Aper_3D(i_C)%row(i_CT_Elem) = c_Aperture
+
+
+
+        c_Kt1 = Kt1_Gauss(i_C,i_CT_Elem) 
+        c_Kt2 = Kt2_Gauss(i_C,i_CT_Elem)       
+        c_Kn  = Kn_Gauss(i_C,i_CT_Elem) 
+
+
+        if(c_Aperture <= ZR)then
+
+
+            c_PN = Kn*c_Aperture
+
+
+            c_PT1 = ZR
+            c_PT2 = ZR
+
+
+            if(i_NR_P>=2)then
+                CT_State_Gauss(i_C,i_CT_Elem) = 1
+                !$OMP CRITICAL
+                if(old_Elem_Conta_Sta(Solid_El,i_C)/=2) then
+                    c_Elem_Conta_Sta(Solid_El,i_C) = 1
+                else
+                    c_Elem_Conta_Sta(Solid_El,i_C) = 2
+                endif
+                !$OMP END CRITICAL
+            endif
+
+            PC_Gauss(1:3) =MATMUL(tran_T,[c_PT1,c_PT2,c_PN])
+            PC_Gauss_x(i_C,i_CT_Elem) =PC_Gauss(1)
+            PC_Gauss_y(i_C,i_CT_Elem) =PC_Gauss(2)
+            PC_Gauss_z(i_C,i_CT_Elem) =PC_Gauss(3)
+
+            Kn_Gauss(i_C,i_CT_Elem)  = c_Kn
+            Kt1_Gauss(i_C,i_CT_Elem) = c_Kt1
+            Kt2_Gauss(i_C,i_CT_Elem) = c_Kt2
+        else
+            CT_State_Gauss(i_C,i_CT_Elem) = 0
+            PC_Gauss_x(i_C,i_CT_Elem) =ZR
+            PC_Gauss_y(i_C,i_CT_Elem) =ZR
+            PC_Gauss_z(i_C,i_CT_Elem) =ZR                      
+            Kn_Gauss(i_C,i_CT_Elem)  = c_Kn
+            Kt1_Gauss(i_C,i_CT_Elem) = c_Kt1
+            Kt2_Gauss(i_C,i_CT_Elem) = c_Kt2
+        endif
+    enddo
 enddo
 !$omp end parallel do        
 

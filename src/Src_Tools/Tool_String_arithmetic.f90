@@ -1,45 +1,3 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
 recursive subroutine Tool_String_arithmetic(Instruction)
 ! Recursive subroutine.
 ! String arithmetic operations processing.
@@ -92,17 +50,17 @@ if(num_char_left/=num_char_right) then
 endif
 do I_Try_Parentheses =1,50
     call Tool_String_extract_content_in_parentheses(Input_Instruction,Output_String_for_parentheses,&
-                                                    left_index, right_index,parentheses_found) 
+    left_index, right_index,parentheses_found) 
     if(parentheses_found) then
         call Tool_String_arithmetic(Output_String_for_parentheses)
         parentheses_result = Output_String_for_parentheses
-        
+
         Tem_String = Input_Instruction
         Input_Instruction(left_index:left_index) = ''
         Input_Instruction(left_index+1:left_index+len_trim(parentheses_result)) = parentheses_result(1:len_trim(parentheses_result))
         Input_Instruction(left_index+len_trim(parentheses_result)+1:left_index+len_trim(parentheses_result)+1) = ''
         Input_Instruction(left_index+len_trim(parentheses_result)+2:) = Tem_String(right_index+1:)
-        
+
         call Tool_chrpak_s_blank_delete(Input_Instruction) 
     endif
 enddo
@@ -261,9 +219,9 @@ enddo
 do i_Calculate= 1,100
     Yes_Found_Value_After = .false.
     Sign_Location_plus = Tool_chrpak_ch_index_first_for_plus_sign(Input_Instruction)
-    
+
     Sign_Location_minus=  Tool_chrpak_ch_index_first_for_minus_sign(Input_Instruction)
-    
+
 
     logical_plus  = .False.
     logical_minus = .False.
@@ -291,15 +249,15 @@ do i_Calculate= 1,100
             Sign_Location = Sign_Location_minus
         endif
     endif
-    
+
     if(Sign_Location_plus > 0 .and. Sign_Location_minus>0) then
         if(Sign_Location_minus==1)then
             logical_plus  = .True.
             Sign_Location = Sign_Location_plus
         endif
     endif
-    
-    
+
+
     if(Sign_Location_minus==1) then
         logical_minus  = .True.
     endif
@@ -311,7 +269,7 @@ do i_Calculate= 1,100
         exit
     endif
 
-    
+
     if(Sign_Location>=2) then
 
         call Tool_chrpak_s_to_r4(Input_Instruction(Sign_Location+1:),Read_Value_After, ierror, Read_Value_length)

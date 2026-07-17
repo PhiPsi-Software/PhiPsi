@@ -1,25 +1,24 @@
- 
 function Tool_chrpak_s_eqi( s1, s2 )
 
-  implicit none
+implicit none
 
-  character c1
-  character c2
-  integer i
-  integer lenc
-  logical Tool_chrpak_s_eqi
-  character ( len = *  ) s1
-  integer s1_length
-  character ( len = *  ) s2
-  integer s2_length
+character c1
+character c2
+integer i
+integer lenc
+logical Tool_chrpak_s_eqi
+character ( len = *  ) s1
+integer s1_length
+character ( len = *  ) s2
+integer s2_length
 
-  s1_length = len ( s1 )
-  s2_length = len ( s2 )
-  lenc = min ( s1_length, s2_length )
+s1_length = len ( s1 )
+s2_length = len ( s2 )
+lenc = min ( s1_length, s2_length )
 
-  Tool_chrpak_s_eqi = .false.
+Tool_chrpak_s_eqi = .false.
 
-  do i = 1, lenc
+do i = 1, lenc
 
     c1 = s1(i:i)
     c2 = s2(i:i)
@@ -27,24 +26,24 @@ function Tool_chrpak_s_eqi( s1, s2 )
     call Tool_chrpak_ch_cap ( c2 )
 
     if ( c1 /= c2 ) then
-      return
+        return
     end if
 
-  end do
+end do
 
-  do i = lenc + 1, s1_length
+do i = lenc + 1, s1_length
     if ( s1(i:i) /= ' ' ) then
-      return
+        return
     end if
-  end do
+end do
 
-  do i = lenc + 1, s2_length
+do i = lenc + 1, s2_length
     if ( s2(i:i) /= ' ' ) then
-      return
+        return
     end if
-  end do
+end do
 
-  Tool_chrpak_s_eqi = .true.
+Tool_chrpak_s_eqi = .true.
 
-  return
+return
 end function Tool_chrpak_s_eqi

@@ -1,48 +1,18 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
-subroutine Tool_Intersection_of_AB_and_3D_Plane_Polygon(A,B, &
-                  num_Edges, Plane_Polygon, &
-                  Yes_Inter,InterSection_P) 
+!-----------------------------------------------------------
+! Brief: Test for intersection between a 3D segment and a 3D plane polygon
+!
+! Parameters:
+!   Input:  A, B         - Endpoints of the 3D segment
+!   Input:  num_Edges    - Number of polygon vertices
+!   Input:  Plane_Polygon - Polygon vertex coordinates (num_Edges,3)
+!   Output: Yes_Inter    - True if a triangle reports intersection
+!   Output: InterSection_P - Coordinates of the first intersection
+!
+! Notes:   Splits the polygon into triangles and tests each with the
+!          segment-triangle intersection; uses axis-aligned bounds as a reject test.
+!-----------------------------------------------------------
+
+subroutine Tool_Intersection_of_AB_and_3D_Plane_Polygon(A,B, num_Edges, Plane_Polygon, Yes_Inter,InterSection_P)
 ! Used to calculate whether a spatial line and a spatial polygon have an intersection point.
 ! Main idea: Split it into triangles for evaluation.
 ! 2023-01-09.
@@ -73,7 +43,7 @@ InterSection_P(1:3)=ZR
 
 DIS_AB = Tool_Function_2Point_Dis_3D(A,B)
 if (DIS_AB <=Tol_11)then
-  return
+    return
 endif
 
 Polygon_min_x = minval(Plane_Polygon(:,1))
@@ -101,15 +71,15 @@ AB_min_z =  min(A(3),B(3))
 if(AB_min_z > Polygon_max_z) return
 
 do i_Tri=1, num_Edges-2
-  c_Tri(1,1:3) = Plane_Polygon(1,1:3)
-  c_Tri(2,1:3) = Plane_Polygon(i_Tri+1,1:3)
-  c_Tri(3,1:3) = Plane_Polygon(i_Tri+2,1:3)
-  call Tool_Intersection_of_AB_and_Triangle_3D(A,B,c_Tri(1,1:3),c_Tri(2,1:3),c_Tri(3,1:3),c_Yes_Inter,c_InterSection_P) 
-  if(c_Yes_Inter)then
-      Yes_Inter = .True.
-      InterSection_P(1:3)=c_InterSection_P
-      return
-  endif
+    c_Tri(1,1:3) = Plane_Polygon(1,1:3)
+    c_Tri(2,1:3) = Plane_Polygon(i_Tri+1,1:3)
+    c_Tri(3,1:3) = Plane_Polygon(i_Tri+2,1:3)
+    call Tool_Intersection_of_AB_and_Triangle_3D(A,B,c_Tri(1,1:3),c_Tri(2,1:3),c_Tri(3,1:3),c_Yes_Inter,c_InterSection_P) 
+    if(c_Yes_Inter)then
+        Yes_Inter = .True.
+        InterSection_P(1:3)=c_InterSection_P
+        return
+    endif
 enddo
 
 return 

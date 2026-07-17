@@ -1,0 +1,140 @@
+!-----------------------------------------------------------
+! Brief: Computes the distance from a 3D point to a triangle along with the perpendicular foot.
+!
+! Parameters:
+!   Input:  Point, Tri_P1, Tri_P2, Tri_P3 - query point and triangle vertices
+!   Output: Distance - signed distance to the triangle plane
+!   Output: PER, Yes_PER_in, Yes_PER_on - foot point and inside/on-edge flags
+!
+! Notes:   Implements Jones 1995's closest-point-on-triangle algorithm and
+!          short-circuits for degenerate (zero-area) triangles.
+!-----------------------------------------------------------
+
+subroutine Tool_Dis_Point_to_3D_Tri(Point, Tri_P1,Tri_P2,Tri_P3, Distance,PER,Yes_PER_in,Yes_PER_on)
+! Calculating the distance from a point to a triangle in space, Reference: Jones_1995_3D Distance from a Point to a Triangle
+! PER indicates the coordinates of the foot of the perpendicular.
+! Regarding the determination of the distance sign: it is positive if it is consistent with the orientation
+! from the origin O to the plane (c_Vector_o_Orient(1:3)) (this method of judgment was later abandoned).
+
+!......................
+! Variable Declaration
+!......................
+use Global_Float_Type
+use Global_Common
+implicit none
+real(kind=FT),intent(in)  :: Point(3), Tri_P1(3),Tri_P2(3),Tri_P3(3)
+real(kind=FT),intent(out) :: Distance,PER(3)
+logical,intent(out)       :: Yes_PER_in,Yes_PER_on
+real(kind=FT) :: P1P2(3),P1P3(3),P1P0(3),Np(3),cosa,P0P01(3)
+real(kind=FT) :: abs_P1P0,abs_Np,abs_P0P01,P01(3)
+real(kind=FT) :: B_i(3),C_i(3),X_i(3)
+real(kind=FT) :: v0(3),v1(3),v2(3)
+real(kind=FT) :: dot00,dot01,dot02,dot11,dot12,inverDeno
+real(kind=FT) :: u,v
+logical :: c_Yes_on
+real(kind=FT) :: s
+
+Yes_PER_in = .False.
+Yes_PER_on = .False.
+Distance   =  ZR
+
+P1P2 = Tri_P2 - Tri_P1
+P1P3 = Tri_P3 - Tri_P1
+Np(1) = P1P2(2) * P1P3(3) - P1P2(3) * P1P3(2)
+Np(2) = P1P2(3) * P1P3(1) - P1P2(1) * P1P3(3)
+Np(3) = P1P2(1) * P1P3(2) - P1P2(2) * P1P3(1)
+
+P1P0     = Point - Tri_P1
+
+abs_P1P0 = sqrt(P1P0(1)**2 + P1P0(2)**2 + P1P0(3)**2)
+
+if(abs_P1P0<=Tol_15) abs_P1P0=Tol_15
+
+
+abs_Np   = sqrt(Np(1)**2   + Np(2)**2   + Np(3)**2)
+
+if (abs_Np <= Tol_15) then
+    Distance = ZR
+    PER = Point
+    Yes_PER_in = .False.
+    Yes_PER_on = .False.
+    return
+endif
+
+cosa     = dot_product(P1P0,Np)/abs_P1P0/abs_Np
+
+abs_P0P01 = abs_P1P0 * cosa
+
+P0P01 = -abs_P0P01*Np/abs_Np
+
+P01 = Point + P0P01
+PER = P01
+
+
+B_i = Tri_P2-Tri_P1
+C_i = Tri_P3-Tri_P1
+X_i = Point-Tri_P1
+
+
+
+
+
+
+
+
+
+
+
+s = dot_product(P1P0, Np)
+if (s >= 0) then
+    Distance = +abs(abs_P0P01)
+else
+    Distance = -abs(abs_P0P01)
+endif
+
+
+
+
+if (isnan(Distance)) then
+    print *, '    Error-2023061502 :: Distance is NAN in Tool_Dis_Point_to_3D_Tri.f90!'
+    call Warning_Message('S',Keywords_Blank)
+endif
+
+
+v0 = Tri_P3 - Tri_P1
+v1 = Tri_P2 - Tri_P1
+v2 = PER    - Tri_P1
+
+dot00 = dot_product(v0,v0)
+dot01 = dot_product(v0,v1)
+dot02 = dot_product(v0,v2)
+dot11 = dot_product(v1,v1)
+dot12 = dot_product(v1,v2)
+
+inverDeno = ONE / (dot00 * dot11 - dot01 * dot01)
+u = (dot11 * dot02 - dot01 * dot12) * inverDeno
+v = (dot00 * dot12 - dot01 * dot02) * inverDeno
+
+if((u>=-Tol_15).and.(v>=-Tol_15).and.((u+v) <=ONE+Tol_15))then
+    Yes_PER_in = .True.
+    return
+endif
+
+call Tool_Yes_Point_on_Line_Segment_3D(Tri_P1,Tri_P2,PER,c_Yes_on)
+if (c_Yes_on) then
+    Yes_PER_on = .True.
+    return
+endif
+call Tool_Yes_Point_on_Line_Segment_3D(Tri_P2,Tri_P3,PER,c_Yes_on)
+if (c_Yes_on) then
+    Yes_PER_on = .True.
+    return
+endif
+call Tool_Yes_Point_on_Line_Segment_3D(Tri_P1,Tri_P3,PER,c_Yes_on)
+if (c_Yes_on) then
+    Yes_PER_on = .True.
+    return
+endif
+
+return
+end SUBROUTINE Tool_Dis_Point_to_3D_Tri

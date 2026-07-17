@@ -1,0 +1,10 @@
+# PhiPsi Step Data File v1.0
+# type: rectangle
+# version: 1.0
+
+[params]
+x0 = 0.0
+y0 = 0.0
+width = 0.021
+height = 0.031
+rotation_angle = 0.0

@@ -55,7 +55,7 @@ c_num = 0
 *do,i,1,all_num
 	*get,c_num,NODE,c_num,NXTH,
 	*get,c_x,NODE,c_num,LOC,X,
-	*if,c_x,EQ,0,or,c_x,EQ,W,then                       !两端减半
+	*if,c_x,EQ,0,or,c_x,EQ,W,then                       !Halve at both ends
 	    F,c_num,FY,ForceY*size_mesh*0.5
 	*else                                                   
 	    F,c_num,FY,ForceY*size_mesh

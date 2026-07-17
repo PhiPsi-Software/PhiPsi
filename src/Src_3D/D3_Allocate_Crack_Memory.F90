@@ -1,45 +1,16 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
+!-----------------------------------------------------------
+! Brief: Allocate or expand ragged arrays for a given 3D crack.
+!
+! Parameters:
+!   Input:  i_C          - crack index (1-based)
+!           Value_Type   - storage class (1 mesh, 2 fluid elements,
+!                          3 fluid nodes)
+!           Key_Extend   - 0 new allocation, 1 expand existing arrays
+!
+! Notes:   Uses move_alloc with a 1.5x expansion factor when Key_Extend=1.
+!          Touches Cracks_FluidEle*, Crack3D_Meshed_*, and related arrays.
+!-----------------------------------------------------------
+
 SUBROUTINE D3_Allocate_Crack_Memory(i_C,Value_Type,Key_Extend)
 ! Allocate memory or expand memory for crack-related variables. 2022-09-03.
 !
@@ -169,7 +140,6 @@ case(1)
     !                                              |
     !||||||||||||||||||||||||||||||||||||||||||||||||
     if(Key_Extend==1) then
-#ifndef Silverfrost
         c_Max_N_Node_3D = size(Crack3D_Meshed_Node(i_C)%row,1)
         c_Max_N_Node_3D_New = int(dble(c_Max_N_Node_3D)*Scale_Factor)
         
@@ -253,14 +223,6 @@ case(1)
         tem_vector_2(1:c_Max_N_Node_3D,1:3) = Crack3D_Vector_S1(i_C)%row
         deallocate(Crack3D_Vector_S1(i_C)%row)
         call move_alloc(tem_vector_2,Crack3D_Vector_S1(i_C)%row)  
-#endif
-
-#ifdef Silverfrost  
-        print *, '    Error :: Key_Extend=1 not valid for Silverfrost compiler!'
-        print *, '             move_alloc function in Silverfrost is faulty, code is commented out!'
-        print *, '             In D3_Allocate_Crack_Memory.F90.'
-        call Warning_Message('S',Keywords_Blank)
-#endif
     endif    
     
 !///////////////////////////////////////////////
@@ -334,7 +296,6 @@ case(2)
     !                                              |
     !||||||||||||||||||||||||||||||||||||||||||||||||
     if(Key_Extend==1) then
-#ifndef Silverfrost
         c_Max_N_FluEl_3D = size(Cracks_FluidEle_CalP_3D(i_C)%row,1)
         c_Max_N_FluEl_3D_New = int(dble(c_Max_N_FluEl_3D)*Scale_Factor)
         
@@ -404,14 +365,6 @@ case(2)
         tem_vector_3(1:c_Max_N_FluEl_3D,1:3,1:3) = Cracks_FluidEle_LCS_T_3D(i_C)%row
         deallocate(Cracks_FluidEle_LCS_T_3D(i_C)%row)
         call move_alloc(tem_vector_3,Cracks_FluidEle_LCS_T_3D(i_C)%row)  
-#endif
-
-#ifdef Silverfrost  
-        print *, '    Error :: Key_Extend=1 not valid for Silverfrost compiler!'
-        print *, '             move_alloc function in Silverfrost is faulty, code is commented out!'
-        print *, '             In D3_Allocate_Crack_Memory.F90.'
-        call Warning_Message('S',Keywords_Blank)
-#endif
     endif
     
 !///////////////////////////////////////////////
@@ -489,7 +442,6 @@ case(3)
     !                                              |
     !||||||||||||||||||||||||||||||||||||||||||||||||
     if(Key_Extend==1) then
-#ifndef Silverfrost
         c_Max_N_CalP_3D = size(Cracks_CalP_Coors_3D(i_C)%row,1)
         c_Max_N_CalP_3D_New = int(dble(c_Max_N_CalP_3D)*Scale_Factor)
         
@@ -567,13 +519,6 @@ case(3)
         tem_vector_1(1:c_Max_N_CalP_3D) = Cracks_CalP_Remo_Strs_3D(i_C)%row
         deallocate(Cracks_CalP_Remo_Strs_3D(i_C)%row)
         call move_alloc(tem_vector_1,Cracks_CalP_Remo_Strs_3D(i_C)%row) 
-#endif
-#ifdef Silverfrost  
-        print *, '    Error :: Key_Extend=1 not valid for Silverfrost compiler!'
-        print *, '             move_alloc function in Silverfrost is faulty, code is commented out!'
-        print *, '             In D3_Allocate_Crack_Memory.F90.'
-        call Warning_Message('S',Keywords_Blank)
-#endif
     endif
 !//////////////////////////
 !Value_Type=4, 2023-08-13.

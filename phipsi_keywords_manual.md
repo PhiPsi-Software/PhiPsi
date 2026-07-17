@@ -3,7 +3,7 @@
 + Author: Fang Shi
 + Website: http://phipsi.top
 + Email: shifang@hyit.edu.cn / shifang@ustc.edu.cn
-+ Updated on 2026-02-28.
++ Updated on 2026-07-08.
 
 ---
 
@@ -72,7 +72,7 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     num_of_crack
     ~~~
   
-+ Support basic four arithmetic operations ($+$, $-$, $*$, $()$, and $/$). For example:
++ Support the basic four arithmetic operations ($+$, $-$, $*$, $/$, and parentheses). For example:
   
     ~~~bash
     *num_Crack
@@ -90,7 +90,7 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
 
 # Basic control keywords
 
-+  ***<font color=green>Work_Dirctory</font>** - File location of the input files of PhiPsi, i.e., the work directory. 
++  ***<font color=green>Work_Directory</font>** - File location of the input files of PhiPsi, i.e., the work directory. 
     
     Keyword example:
     ~~~bash
@@ -288,9 +288,9 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     ~~~ 
 + ***<font color=green>Key_Ave_Stress</font>** - Calculation method of weighted average stress.
 
-    = 1, Shi's Formation, See p25 of Study on the Cracking Process of Rock Using the Extended Finite Element Method; 
+    = 1, Shi's Formula, See p25 of Study on the Cracking Process of Rock Using the Extended Finite Element Method; 
 
-    = 2, Ordinary Formation, See p498 of Extended Finite Element Method: Theory and Applications.
+    = 2, Ordinary Formula, See p498 of Extended Finite Element Method: Theory and Applications.
 
     Keyword example:
     ~~~bash
@@ -340,8 +340,28 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     ~~~bash
     *Key_Fd_TipEnrich
     1
-    ~~~      
-+ ***<font color=green>Key_InPlane_Growth</font>** - 3D Plannar or nonplanar crack propagation.
+    ~~~
++ ***<font color=green>Key_Multi_TipEnrNode</font>** - Crack-tip/front enrichment type. This keyword is used to select the crack-tip/front enrichment scheme in XFEM. Remark: In the geometrical enrichment scheme, not all nodes within the prescribed radius are assigned crack-tip/front enrichment; Nodes already associated with Heaviside enrichment remain H-enriched, while only the remaining eligible nodes are assigned tip/front enrichment.
+
+    = 0, topological enrichment (default). Only nodes associated with elements cut by the crack tip (2D) or crack front (3D) are considered for tip/front enrichment;
+
+    = 1, geometrical enrichment. Candidate nodes for tip/front enrichment are additionally selected according to a prescribed enrichment radius.
+
+    Keyword example:
+    ~~~bash
+    *Key_Multi_TipEnrNode
+    1
+    ~~~
++ ***<font color=green>Key_TipEnrich_Radius_Factor</font>** - Radius factor for geometrical crack-tip/front enrichment. This keyword defines the scaling factor used to determine the geometrical enrichment radius for crack-tip/front enrichment. The radius is computed as $L_{check} = \alpha h_{avg}$, where $\alpha$ is specified by `Key_TipEnrich_Radius_Factor`, and $h_{avg}$ is the average characteristic element size in the enriched region. This keyword is only effective when geometrical enrichment is activated. A larger value of this factor leads to a larger candidate region for crack-tip/front enrichment. The default value is 2.0.
+   
+    Keyword example:
+    ~~~bash
+    *Key_Multi_TipEnrNode
+    1
+    *Key_TipEnrich_Radius_Factor
+    3.0
+    ~~~
++ ***<font color=green>Key_InPlane_Growth</font>** - 3D Planar or nonplanar crack propagation.
 
     = 0, nonplanar crack propagation (default); 
 
@@ -352,16 +372,16 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     *Key_InPlane_Growth
     1 
     ~~~    
-+ ***<font color=green>Key_Scheme_Signed_Dis_InPlane</font>** - Scheme to calculate the signed distance for 3D plannar crack.
++ ***<font color=green>Key_Scheme_Signed_Dis_InPlane</font>** - Scheme to calculate the signed distance for 3D planar crack.
 
-    = 1, slow and robuts (default); 
+    = 1, slow and robust (default); 
 
-    = 2, fast but not robuts.
+    = 2, fast but not robust.
     
-    = 3, more fast but not robuts.
+    = 3, much faster but not robust.
     Keyword example:
     ~~~bash
-    % Fast scheme to calculte the signed distance to plannar crack.
+    % Fast scheme to calculate the signed distance to planar crack.
     *Key_Scheme_Signed_Dis_InPlane
     2 
     ~~~     
@@ -470,7 +490,7 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     *Key_Initiation
     1      
     ~~~ 
-+ ***<font color=green>Key_Ini_Rule</font>** - Ruls for the formation of new cracks.
++ ***<font color=green>Key_Ini_Rule</font>** - Rules for the formation of new cracks.
 
     = 1, maximum tensile stress criterion (default);
 
@@ -495,7 +515,7 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     *Key_Ini_Cr_3D_Type
     1      
     ~~~   
-+ ***<font color=green>Size_Ini_Crack</font>** - Size of newly formed cracks. For a 3D circular crack, Size_Ini_Crack represnts the diameter.
++ ***<font color=green>Size_Ini_Crack</font>** - Size of newly formed cracks. For a 3D circular crack, Size_Ini_Crack represents the diameter.
 
     Keyword example:
     ~~~bash
@@ -542,7 +562,7 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     Keyword example:
     ~~~bash
     *Cracks_Allow_Propa
-    1,1,1,1,1,0,0,0,0,0     % Allow cracks 1 to 5 to propagate, and does not allow the propagation of cracks 6 to 10.
+    1,1,1,1,1,0,0,0,0,0     % Allow cracks 1 to 5 to propagate, and do not allow the propagation of cracks 6 to 10.
     ~~~      
 + ***<font color=green>Key_CS_Natural_Crack</font>** - Using penalty function method to simulate contact of natural cracks.
 
@@ -691,7 +711,7 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     ~~~  
 + ***<font color=green>Key_Read_Initial_Node_Stress_File</font>** - Read In-situ stress from the initial stress file (.istn file) when Key_InSitu_Strategy = 4. *.istn file is the initial stress file of all nodes. The number of rows of this file is the same as the total number of nodes. There are 6 data per row: $S_{xx}$, $S_{yy}$, $S_{zz}$, $S_{xy}$, $S_{yz}$, $S_{xz}$ and the value of stress is positive in tension.
 
-    = 0, define In-situ stress manualy (default);
+    = 0, define In-situ stress manually (default);
 
     = 1, read In-situ stress from the initial stress file (*.istn file).
 
@@ -793,7 +813,7 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     ~~~bash
     *Key_InSitu_Strategy
     4 
-    *Key_Nonuniform_InSitu_X_with_Z
+    *Key_Nonuniform_InSitu_X_with_Y
     1
     ~~~          
 + ***<font color=green>InSitu_Sx_3D_Seg_Strs_X_with_Y</font>** - Sx stresses when Key_Nonuniform_InSitu_X_with_Y=1 and Key_InSitu_Strategy = 4.
@@ -906,7 +926,7 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
 + ***<font color=green>InSitu_Sz_3D_Seg_Loca_Z_with_X</font>** - Locations of Sz stresses when Key_Nonuniform_InSitu_Z_with_X=1 and Key_InSitu_Strategy = 4.
     Keyword example:
     ~~~bash
-    % In this example, along the x-direction, the stress-z in the zone (0.0, 110.0) is 15.0 MPa, the stress-y in the zone (110.0, 140.0) is 10.0 MPa, and the stress-y in the zone (140.0, 250.0) is 15.0 MPa.
+    % In this example, along the x-direction, the stress-z in the zone (0.0, 110.0) is 15.0 MPa, the stress-z in the zone (110.0, 140.0) is 10.0 MPa, and the stress-z in the zone (140.0, 250.0) is 15.0 MPa.
     *Key_InSitu_Strategy
     4 
     *Key_Nonuniform_InSitu_Z_with_X
@@ -938,7 +958,7 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
 + ***<font color=green>InSitu_Sz_3D_Seg_Loca_Z_with_Y</font>** - Locations of Sz stresses when Key_Nonuniform_InSitu_Z_with_Y=1 and Key_InSitu_Strategy = 4.
     Keyword example:
     ~~~bash
-    % In this example, along the y-direction, the stress-z in the zone (0.0, 110.0) is 15.0 MPa, the stress-y in the zone (110.0, 140.0) is 10.0 MPa, and the stress-y in the zone (140.0, 250.0) is 15.0 MPa.
+    % In this example, along the y-direction, the stress-z in the zone (0.0, 110.0) is 15.0 MPa, the stress-z in the zone (110.0, 140.0) is 10.0 MPa, and the stress-z in the zone (140.0, 250.0) is 15.0 MPa.
     *Key_InSitu_Strategy
     4 
     *Key_Nonuniform_InSitu_Z_with_Y
@@ -961,11 +981,11 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     ~~~   
 + ***<font color=green>g_X_Y_Z</font>** - Values of gravitational acceleration in $x$, $y$ and $z$ directions.
 
-    1, gravitational acceleration in $x$ direction;
+    = 1, gravitational acceleration in $x$ direction;
 
-    2, gravitational acceleration in $y$ direction;
+    = 2, gravitational acceleration in $y$ direction;
 
-    3, gravitational acceleration in $z$ directions.
+    = 3, gravitational acceleration in $z$ direction.
 
     Keyword example:
     ~~~bash
@@ -1007,6 +1027,34 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     *Key_Crack_Aperture_Method
     1     
     ~~~ 
++ ***<font color=green>Key_Cal_Energy</font>** - Compute elastic strain energy, fracture energy, external work residual energy, and normalized residual energy. Data will be saved in the *.ener file.
+
+    = 0, no (default);
+
+    = 1, yes.
+
+    Keyword example:
+    ~~~bash
+    % Compute energy.
+    *Key_Cal_Energy
+    1      
+    ~~~     
++ ***<font color=green>Num_Gauss_Points</font>** - Number of Gauss points for 2D enriched elements. Supported number of Gauss points: 16 (4×4), 36 (6×6), 64 (8×8), 100 (10×10), 144 (12×12), 196 (14×14), 400 (20×20), 676 (26×26), 900 (30×30). The default value is 64 (8×8).
+
+    Keyword example:
+    ~~~bash
+    % Set the number of Gauss points for 2D enriched elements.
+    *Num_Gauss_Points
+    64      
+    ~~~    
++ ***<font color=green>Num_Gauss_Points_3D</font>** - Number of Gauss points for 3D enriched elements. Supported number of Gauss points: 8 (2×2×2), 27 (3×3×3), 64 (4×4×4), 125 (5×5×5), 216 (6×6×6), 343 (7×7×7), 512 (8×8×8), 729 (9×9×9), 1000 (10×10×10), 3375 (15×15×15), 5832(18×18×18),  8000 (20×20×20). The default value is 512 (8×8×8).
+
+    Keyword example:
+    ~~~bash
+    % Set the number of Gauss points for 3D enriched elements.
+    *Num_Gauss_Points_3D
+    512      
+    ~~~   
 
 <a id="section-Linear-solvers"></a>
 
@@ -1060,9 +1108,9 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
 
 + ***<font color=green>Key_EBE_Precondition</font>** - Preconditioner for EBE-PCG solver (solver 11).
     
-    = 0, no preconditoner.
+    = 0, no preconditioner.
 
-    = 1, diagonalized preprocessor (default); 
+    = 1, diagonalized preconditioner (default); 
 
     = 2, HW preprocessor.
 
@@ -1104,7 +1152,7 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     *num_Poly_Incl
     3     
     ~~~ 
-+ ***<font color=green>CRACK_1 - CRACK_50</font>** - Define the coordinates of each initial cracks (line segments) for 2D problem (input format: $P_{1x}$, $P_{1y}$, $P_{2x}$, $P_{2y}$, $P_{3x}$, $P_{3y}$, ... , $P_{nx}$, $P_{ny}$).
++ ***<font color=green>CRACK_1 - CRACK_50</font>** - Define the coordinates of each initial crack (line segments) for 2D problem (input format: $P_{1x}$, $P_{1y}$, $P_{2x}$, $P_{2y}$, $P_{3x}$, $P_{3y}$, ... , $P_{nx}$, $P_{ny}$).
 
     Keyword example:
     ~~~bash
@@ -1114,7 +1162,7 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     *CRACK_2
     0.0083,0.0193,0.0123,0.0283,0.0223,0.0383
     ~~~ 
-+ ***<font color=green>Crack3D_Coor_1 - Crack3D_Coor_50</font>** - Define the coordinates of each initial cracks (plane in 3D composed of four points) for 3D problem (input format: $x_1$, $y_1$, $z_1$, $x_2$, $y_2$, $z_2$, $x_3$, $y_3$, $z_3$, $x_4$, $y_4$, $z_4$).
++ ***<font color=green>Crack3D_Coor_1 - Crack3D_Coor_50</font>** - Define the coordinates of each initial crack (plane in 3D composed of four points) for 3D problem (input format: $x_1$, $y_1$, $z_1$, $x_2$, $y_2$, $z_2$, $x_3$, $y_3$, $z_3$, $x_4$, $y_4$, $z_4$).
 
     Keyword example:
     ~~~bash
@@ -1125,7 +1173,7 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     *Crack3D_Coor_3
     6.0,6.0,10.0,14.0,6.0,10.0,14.0,14.0,10.0,6.0,14.0,10.0
     ~~~ 
-+ ***<font color=green>Crack3D_Cir_Coor_1 - Crack3D_Cir_Coor_30</font>** - Define the coordinates of each initial circular cracks for 3D problem (input format: $x$ coordinate of crack center, $y$ coordinate of crack center, $z$ coordinate of crack center, $x$ component of the normal vector of the crack surface, $y$ component of the normal vector of the crack surface, $z$ component of the normal vector of the crack surface, radius $r$ of the crack).
++ ***<font color=green>Crack3D_Cir_Coor_1 - Crack3D_Cir_Coor_30</font>** - Define the coordinates of each initial circular crack for 3D problem (input format: $x$ coordinate of crack center, $y$ coordinate of crack center, $z$ coordinate of crack center, $x$ component of the normal vector of the crack surface, $y$ component of the normal vector of the crack surface, $z$ component of the normal vector of the crack surface, radius $r$ of the crack).
 
     Keyword example:
     ~~~bash
@@ -1227,21 +1275,21 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     *Key_NaCr_Cross
     1
     ~~~                 
-+ ***<font color=green>num_Rand_Na_Crack</font>** - Number of cracks need to be randomly generated.
++ ***<font color=green>num_Rand_Na_Crack</font>** - Number of cracks to be randomly generated.
 
     Keyword example:
     ~~~bash
     *num_Rand_Na_Crack
     10
     ~~~  
-+ ***<font color=green>NaCr_Orientation</font>** - Average direction (in degrees) of the cracks need to be randomly generated for 2D problems.
++ ***<font color=green>NaCr_Orientation</font>** - Average direction (in degrees) of the cracks to be randomly generated for 2D problems.
 
     Keyword example:
     ~~~bash
     *NaCr_Orientation
     -60.0
     ~~~ 
-+ ***<font color=green>NaCr_3D_n_Vector</font>** - Average direction (normal vector) of cracks need to be randomly generated for 3D problems.
++ ***<font color=green>NaCr_3D_n_Vector</font>** - Average direction (normal vector) of cracks to be randomly generated for 3D problems.
 
     Keyword example:
     ~~~bash
@@ -1262,14 +1310,14 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     *NaCr_3D_n_Vector_Delta
     15.0
     ~~~     
-+ ***<font color=green>NaCr_Length</font>** - Average length of the cracks need to be randomly generated for 2D problems.
++ ***<font color=green>NaCr_Length</font>** - Average length of the cracks to be randomly generated for 2D problems.
 
     Keyword example:
     ~~~bash
     *NaCr_Length
     10.0
     ~~~ 
-+ ***<font color=green>NaCr_3D_Size</font>** - Average size of the cracks need to be randomly generated for 3D problems.
++ ***<font color=green>NaCr_3D_Size</font>** - Average size of the cracks to be randomly generated for 3D problems.
 
     Keyword example:
     ~~~bash
@@ -1290,7 +1338,7 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     *NaCr_3D_Sz_Delta
     5.0
     ~~~  
-+ ***<font color=green>num_Rand_Hole</font>** - Number of holes need to be randomly generated.
++ ***<font color=green>num_Rand_Hole</font>** - Number of holes to be randomly generated.
 
     Keyword example:
     ~~~bash
@@ -1346,21 +1394,21 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
 
     = 0, do not generate (default);
 
-    = 1, generates. 
+    = 1, generate. 
 
     Keyword example:
     ~~~bash
     *Key_Rand_Circ_Incl
     1
     ~~~ 
-+ ***<font color=green>num_Rand_Circ_Incl</font>** - Number of circular inclusions need to be randomly generated.
++ ***<font color=green>num_Rand_Circ_Incl</font>** - Number of circular inclusions to be randomly generated.
 
     Keyword example:
     ~~~bash
     *num_Rand_Circ_Incl
     10
     ~~~ 
-+ ***<font color=green>Rand_Circ_Incl_R</font>** - The average radius of the circular inclusions need to be randomly generated.
++ ***<font color=green>Rand_Circ_Incl_R</font>** - The average radius of the circular inclusions to be randomly generated.
 
     Keyword example:
     ~~~bash
@@ -1378,14 +1426,14 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
 
     = 0, do not generate (default);
 
-    = 1, generates. 
+    = 1, generate. 
 
     Keyword example:
     ~~~bash
     *Key_Rand_Poly_Incl
     1
     ~~~ 
-+ ***<font color=green>num_Rand_Poly_Incl</font>** - Number of regular polygonal inclusions need to be randomly generated.
++ ***<font color=green>num_Rand_Poly_Incl</font>** - Number of regular polygonal inclusions to be randomly generated.
 
     Keyword example:
     ~~~bash
@@ -1423,7 +1471,7 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     *Key_User_Defined_2D_Crack_Path
     1
     ~~~ 
-+ ***<font color=green>User_Defined_2D_Crack_Path_1 - User_Defined_2D_Crack_Path_99 </font>** - Define the coordinates of each user defined crack path (Support up to 99 user defined crack paths). Input format of this keyword: $P_{1x}$, $P_{1y}$, $P_{2x}$, $P_{2y}$, $P_{3x}$, $P_{3y}$, ... , $P_{nx}$, $P_{ny}$. This keyword is necessary when keyword *Key_User_Defined_2D_Crack_Path = 1. If multiple crack paths are defined, the program starts simulation from the first path, one by one, until the last crack path.
++ ***<font color=green>User_Defined_2D_Crack_Path_1 - User_Defined_2D_Crack_Path_99 </font>** - Define the coordinates of each user defined crack path (supports up to 99 user defined crack paths). Input format of this keyword: $P_{1x}$, $P_{1y}$, $P_{2x}$, $P_{2y}$, $P_{3x}$, $P_{3y}$, ... , $P_{nx}$, $P_{ny}$. This keyword is necessary when keyword *Key_User_Defined_2D_Crack_Path = 1. If multiple crack paths are defined, the program starts simulation from the first path, one by one, until the last crack path.
   
     Keyword example:
     ~~~bash
@@ -1772,7 +1820,7 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
 
     = 1, the maximum equivalent stress intensity factor;
 
-    = 2, the avarage equivalent stress intensity factor;
+    = 2, the average equivalent stress intensity factor;
 
     = 3, the minimum equivalent stress intensity factor.
 
@@ -1896,7 +1944,7 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     % Generate circle initial fractures along the wellbore.
     *Key_Gen_Ini_Crack_Wellbores
     2
-    % User defined direction of the generated initial fractures. The nomal vector of initial fractures in this example is (1,1,1).
+    % User defined direction of the generated initial fractures. The normal vector of initial fractures in this example is (1,1,1).
     *Normal_Vector_Gen_Ini_Crack_Wellbores
     1,1,1
     ~~~
@@ -2103,7 +2151,7 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     *edy_num_iteras
     200
     ~~~    
-+ ***<font color=green>EDy_num_force_itr</font>** - Number of steps with force applied (In other words, the applied force will be removed if the current step number is larger than *edy_num_iteras) for the explicit dynamic analysis.
++ ***<font color=green>EDy_num_force_itr</font>** - Number of steps with force applied (In other words, the applied force will be removed if the current step number is larger than *EDy_num_force_itr) for the explicit dynamic analysis.
 
     Keyword example:
     ~~~bash
@@ -2161,28 +2209,28 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
 
 # Coupling of degrees of freedom
 
-+ ***<font color=green>num_CP_x_nodes</font>** - The total amount of nodes need to be coupled in $x$ direction.
++ ***<font color=green>num_CP_x_nodes</font>** - The total amount of nodes to be coupled in $x$ direction.
 
     Keyword example:
     ~~~bash
     *num_CP_x_nodes
     21
     ~~~    
-+ ***<font color=green>CP_x_nodes</font>** - The nodes number of all the nodes need to be coupled in $x$ direction.
++ ***<font color=green>CP_x_nodes</font>** - The nodes number of all the nodes to be coupled in $x$ direction.
 
     Keyword example:
     ~~~bash
     *CP_x_nodes
     2,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101
     ~~~    
-+ ***<font color=green>num_CP_y_nodes</font>** - The total amount of nodes need to be coupled in $y$ direction.
++ ***<font color=green>num_CP_y_nodes</font>** - The total amount of nodes to be coupled in $y$ direction.
 
     Keyword example:
     ~~~bash
     *num_CP_y_nodes
     21
     ~~~    
-+ ***<font color=green>CP_y_nodes</font>** - The nodes number of all the nodes need to be coupled in $y$ direction.
++ ***<font color=green>CP_y_nodes</font>** - The nodes number of all the nodes to be coupled in $y$ direction.
 
     Keyword example:
     ~~~bash
@@ -2196,7 +2244,7 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
 
 + ***<font color=green>Key_EKILL</font>** - Deactivate elements during simulation.
 
-    = 1, no (default);
+    = 0, no (default);
 
     = 1, yes.
 
@@ -2327,7 +2375,7 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     % 1415.    7789.    7828.    7790.    7829.   0.12500000E-06
     % 1416.    7828.    7867.    7829.    7868.   0.12500000E-06
     ~~~ 
-+ ***<font color=green>Surface_Pressure_1 - Surface_Pressure_20</font>** - Pressure value if surface load $n$.
++ ***<font color=green>Surface_Pressure_1 - Surface_Pressure_20</font>** - Pressure value of surface load $n$.
 
     Keyword example:
     ~~~bash
@@ -2372,7 +2420,7 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     *Key_Data_Format
     1
     ~~~    
-+ ***<font color=green>Key_Num_Process</font>** - Set the number of threads of CPU for OpenMP (if taken as 99, then all threads are available, default to 1).
++ ***<font color=green>Key_Num_Process</font>** - Set the number of threads of CPU for OpenMP (if taken as 99, then all threads are available, default to 8).
 
     Keyword example:
     ~~~bash
@@ -2401,7 +2449,7 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     *Key_Simple_Post
     1
     ~~~       
-+ ***<font color=green>Key_Post_CS_N_Strs</font>** - Calcutale and save stress results of nodes.
++ ***<font color=green>Key_Post_CS_N_Strs</font>** - Calculate and save stress results of nodes.
 
     = 0, no; 
 
@@ -2412,7 +2460,7 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     *Key_Post_CS_N_Strs
     0
     ~~~          
-+ ***<font color=green>Key_Play_Sounds</font>** - Play sound using Python script when finised the simulation.
++ ***<font color=green>Key_Play_Sounds</font>** - Play sound using Python script when finished the simulation.
 
     = 0, no (default); 
 
@@ -2528,7 +2576,7 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     *Work_Directory
     X:\PhiPsi_Work\exa_3D_block_tension_cir
 
-    % Finename of input files.
+    % Filename of input files.
     *Filename
     exa_3D_block_tension_cir
 
@@ -2552,7 +2600,7 @@ Click [here](https://sourceforge.net/projects/phipsi/files/) to download the lat
     *Key_SLOE
     11     % PCG-EBE.
 
-    % Number of propagation step.
+    % Number of propagation steps.
     *Num_Substeps
     5
 

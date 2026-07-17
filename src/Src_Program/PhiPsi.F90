@@ -1,45 +1,13 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
+!-----------------------------------------------------------
+! Brief: Top-level PhiPsi program that parses keywords and dispatches to the
+!        appropriate 2D/3D analysis driver (static, dynamic, HF, etc.).
+!
+! Notes:   Initializes global modules, sets up logging, reads the .kpp
+!          keywords file, then transfers control to a PhiPsi*_*.F90 driver
+!          based on the analysis type and dimension. Documents the output
+!          file-name conventions (strn, strg, plep, hftm, etc.).
+!-----------------------------------------------------------
+
 PROGRAM PhiPsi
 !This is the main program of PhiPsi.
 !
@@ -95,30 +63,32 @@ use iso_fortran_env
 use ISO_C_BINDING
 use Function_MATMUL_LP
 use omp_lib
-#ifndef Silverfrost
 use fpm_environment
-#endif 
+use iso_fortran_env, only: int64, real64
+use module_INTERFACE_OpenBLAS 
 
 implicit none
 !include 'mpif.h'
 integer  date_time(8)
 integer(LIT) F_time
-character*10  current_data
+character(len=10)  current_data
 integer nthreads
 CHARACTER(32) :: login_user
 character(200) temp_log
 logical Flag_Read_Geo
-#ifdef Silverfrost
-character(len=256) :: command
-character(len=256) :: cwd_output_file
-#endif  
+integer(int64) :: c0, c1, rate
+real(real64)   :: elapsed_ms, elapsed_s
+
 1000 FORMAT('  ')
 1001 FORMAT('     Strat time: ',A4,'-',A2,'-',A2,', ',I2,':',I2,':',I2)
 1002 FORMAT('     End time: ',A4,'-',A2,'-',A2,', ',I2,':',I2,':',I2)
-1003 FORMAT('     Total elapsed CPU time: ',I8,' s, about ',F10.4,' mins')
+1003 FORMAT('     Total elapsed CPU time: ',f15.3,' ms, ',I8,' s, about ',F10.4,' mins')
 2001 FORMAT('Start time: ',A8,', ',I2,':',I2,':',I2)
 2002 FORMAT('End time: ',A8,', ',I2,':',I2,':',I2)
 2003 FORMAT('Total elapsed CPU time: ',I8,' s, about ',F10.4,' mins')
+
+call system_clock(count_rate=rate)
+call system_clock(c0)
 
 !******************************************
 !                                        *
@@ -149,9 +119,6 @@ call log_startup ( 'PhiPsi_Intel_Compiler.log' )
 call log_startup ( 'PhiPsi_Intel_Compiler_ifx.log' )
 #endif
 
-#ifdef Silverfrost
-call log_startup ( 'PhiPsi_Silverfrost_Compiler.log' )
-#endif
 
 
 call log_configure ( "writeonstdout" , .false. )
@@ -176,8 +143,8 @@ CALL Welcome
 !                                  *
 !************************************
 open(101,file='PhiPsi_Win64.INFO',status='unknown')     
-    write(101,*)  trim(PhiPsi_Version)
-    write(101,*)  trim(PhiPsi_Release_Date)
+write(101,*)  trim(PhiPsi_Version)
+write(101,*)  trim(PhiPsi_Release_Date)
 close(101)    
 
 !************************************
@@ -186,27 +153,19 @@ close(101)
 !    NEWFTU2023081001.             *
 !                                  *
 !************************************
-#ifndef Silverfrost
-    Operation_System_Type = get_os_type()
-    if(Operation_System_Type==1)then
-        write(*,'(*(g0))')  '     Operation system: Linux ',bit_size(0_C_INTPTR_T),'-bit.'
-        String_Connector ='/'
-    elseif(Operation_System_Type==2)then
-        write(*,'(*(g0))')  '     Operation system: Mac OS ',bit_size(0_C_INTPTR_T),'-bit.' 
-        String_Connector ='/'
-    elseif(Operation_System_Type==3)then
-        write(*,'(*(g0))')  '     Operation system: Windows ',bit_size(0_C_INTPTR_T),'-bit.'
-        String_Connector ='\'
-    elseif(Operation_System_Type==0)then
-        write(*,'(*(g0))')  '     Operation system: Unknown.'   
-    endif
-#endif
-
-#ifdef Silverfrost
-    print *,'    Operation system: Windows.'
-    Operation_System_Type=3
+Operation_System_Type = get_os_type()
+if(Operation_System_Type==1)then
+    write(*,'(*(g0))')  '     Operation system: Linux ',bit_size(0_C_INTPTR_T),'-bit.'
+    String_Connector ='/'
+elseif(Operation_System_Type==2)then
+    write(*,'(*(g0))')  '     Operation system: Mac OS ',bit_size(0_C_INTPTR_T),'-bit.' 
+    String_Connector ='/'
+elseif(Operation_System_Type==3)then
+    write(*,'(*(g0))')  '     Operation system: Windows ',bit_size(0_C_INTPTR_T),'-bit.'
     String_Connector ='\'
-#endif
+elseif(Operation_System_Type==0)then
+    write(*,'(*(g0))')  '     Operation system: Unknown.'   
+endif
 
 
 !************************************
@@ -214,34 +173,16 @@ close(101)
 !           Login user.            *
 !                                  *
 !************************************
-#ifndef Silverfrost
 CALL GETLOG(login_user)
 print *,'    Username: ',trim(login_user),'.'
-#endif
 
 !*****************************************
 !                                       *
 !Get current work directory of PhiPsi.  *
 !                                       *
 !*****************************************
-#ifndef Silverfrost
 CALL getcwd(PhiPsi_Current_Directory) 
-#endif
-#ifdef Silverfrost
-!For the Silverfrost compiler, since getcwd is not supported,
-!the current working directory is obtained using system.
-cwd_output_file = 'cwd_output.txt'
-command = 'cd > ' // trim(cwd_output_file)
-!Call the Windows cd command using the system command and save the 
-!result to a file
-call system(trim(command))
-!Open file to read the working directory
-open(unit=10, file=trim(cwd_output_file), status='old', action='read') 
-read(10, '(A)') PhiPsi_Current_Directory
-close(10)
-command = 'del ' // trim(cwd_output_file)
-call system(trim(command))
-#endif
+
 print *,'    PhiPsi directory: ',trim(PhiPsi_Current_Directory),'.'
 
 !************************************
@@ -299,14 +240,14 @@ call Save_current_folder_dat_file
 !                                       *
 !*****************************************
 if (Key_Clear_All==1)  then
-  ! OPTION 1: Use the filesys open-source library in the Simply Fortran compiler
-  !           Only applicable to lower versions of the gfortran compiler.
-  !call Clear_All_Results_Files
+    ! OPTION 1: Use the filesys open-source library in the Simply Fortran compiler
+    !           Only applicable to lower versions of the gfortran compiler.
+    !call Clear_All_Results_Files
 
-  ! OPTION 2: Using Python 3, suitable for all kinds of compilers. 2022-07-25.
-  !          NEWFTU2022072501.
+    ! OPTION 2: Using Python 3, suitable for all kinds of compilers. 2022-07-25.
+    !          NEWFTU2022072501.
 #ifndef macos
-  call Clear_All_Results_Files_v2
+    call Clear_All_Results_Files_v2
 #endif
 endif
 
@@ -329,26 +270,28 @@ print *,' '
 !$omp parallel shared(max_nthreads)
 nthreads = omp_get_thread_num( )
 if (nthreads .eq. 0 ) then
-  write ( *, '(a,i4)' ) '     OpenMP, the number of processors available is',  omp_get_num_procs( )
-  write ( *, '(a,i4)' ) '     OpenMP, the number of threads available is',  omp_get_num_threads( )
-  max_nthreads = omp_get_num_threads( )
+    write ( *, '(a,i4)' ) '     OpenMP, the number of processors available is',  omp_get_num_procs( )
+    write ( *, '(a,i4)' ) '     OpenMP, the number of threads available is',  omp_get_num_threads( )
+    max_nthreads = omp_get_num_threads( )
 end if
 !$omp end parallel
 
-#ifndef Silverfrost
 if (Key_Num_Process==99) then
-  call omp_set_num_threads(max_nthreads)
-  write ( *, '(a,i4)' ) '     OpenMP, number of threads has been set as',  max_nthreads
+    call omp_set_num_threads(max_nthreads)
+    write ( *, '(a,i4)' ) '     OpenMP, number of threads has been set as',  max_nthreads
 else
-  if(Key_Num_Process<=max_nthreads) then
-      call omp_set_num_threads(Key_Num_Process)
-      write ( *, '(a,i4)' ) '     OpenMP, number of threads has been set as',  Key_Num_Process
-  else
-      call omp_set_num_threads(max_nthreads)
-      write ( *, '(a,i4)' ) '     OpenMP, number of threads has been set as',  max_nthreads
-  endif
+    if(Key_Num_Process<=max_nthreads) then
+        call omp_set_num_threads(Key_Num_Process)
+        write ( *, '(a,i4)' ) '     OpenMP, number of threads has been set as',  Key_Num_Process
+    else
+        call omp_set_num_threads(max_nthreads)
+        write ( *, '(a,i4)' ) '     OpenMP, number of threads has been set as',  max_nthreads
+    endif
 endif
-#endif
+!2026-07-11. BUGFIX-2026071111.
+#ifdef openblas
+    CALL openblas_set_num_threads(INT(Key_Num_Process, C_INT))
+#endif  
 
 print *,' '
 
@@ -363,27 +306,27 @@ Flag_Read_Geo = .True.
 ! If it is rigid body dynamics analysis of small balls or molecular
 ! dynamics analysis, there is no need to input any information.
 if(Key_Analysis_Type==11 .or.Key_Analysis_Type==21)then
-  Flag_Read_Geo = .False.
+    Flag_Read_Geo = .False.
 endif
 
 #ifdef gfortran
 #ifndef github
 !If PD analysis.
 if(Key_Analysis_Type==31)then
-  CALL PD_Read_Geo
-  Flag_Read_Geo = .False.
+    CALL PD_Read_Geo
+    Flag_Read_Geo = .False.
 endif
 #endif
 #endif
 
 !If Impact analysis, 2021-07-23.
 if(Key_Analysis_Type==12)then
-  Flag_Read_Geo = .False.
+    Flag_Read_Geo = .False.
 endif
 
 !If PFEM solver, 2021-12-19.
 if(Key_Analysis_Type==51 .or. Key_Analysis_Type==52 )then
-  Flag_Read_Geo = .False.
+    Flag_Read_Geo = .False.
 endif
 
 !************************************************
@@ -434,463 +377,444 @@ call Save_Info_for_Matlab_Post
 print *, " "
 print *, " >> SOLUTION STAGE..."
 if (Key_Dimension == 2) then
-  !~~~~~~~~~~~~~~~~~~~~~~~~~
-  !(1)Quasi-static Analysis
-  !~~~~~~~~~~~~~~~~~~~~~~~~~
-  if (Key_Analysis_Type==1) then
-      ! If it is a cohesive crack
-      if(Key_TipEnrich ==4)then
+    !~~~~~~~~~~~~~~~~~~~~~~~~~
+    !(1)Quasi-static Analysis
+    !~~~~~~~~~~~~~~~~~~~~~~~~~
+    if (Key_Analysis_Type==1) then
+        ! If it is a cohesive crack
+        if(Key_TipEnrich ==4)then
 #ifndef github
-          !If it is a static load analysis (all loads are applied
-          !at once and then remain unchanged)
-          if(Key_Force_Control/=4)then
-            print *,'    Main program: PhiPsi2D_Static_Cohesive'
-            call log_msg('Main program: PhiPsi2D_Static_Cohesive')
-            call log_msg('Performing simulation...')
-            CALL PhiPsi2D_Static_Cohesive
-            
-          !If it is the cohesive crack load control algorithm 1
-          elseif(Key_Force_Control==4)then
-            print *,'    Main program: PhiPsi2D_Static_Cohesive_FORCE_Control'
-            call log_msg('Main program: PhiPsi2D_Static_Cohesive_FORCE_Control')
-            call log_msg('Performing simulation...')
-            CALL PhiPsi2D_Static_Cohesive_FORCE_Control
-          endif
+            !If it is a static load analysis (all loads are applied
+            !at once and then remain unchanged)
+            if(Key_Force_Control/=4)then
+                print *,'    Main program: PhiPsi2D_Static_Cohesive'
+                call log_msg('Main program: PhiPsi2D_Static_Cohesive')
+                call log_msg('Performing simulation...')
+                CALL PhiPsi2D_Static_Cohesive
+
+                !If it is the cohesive crack load control algorithm 1
+            elseif(Key_Force_Control==4)then
+                print *,'    Main program: PhiPsi2D_Static_Cohesive_FORCE_Control'
+                call log_msg('Main program: PhiPsi2D_Static_Cohesive_FORCE_Control')
+                call log_msg('Performing simulation...')
+                CALL PhiPsi2D_Static_Cohesive_FORCE_Control
+            endif
 #endif            
-      !Normal Quasi-static Analysis
-      else
-          !if *Key_Force_Control==5(make sure that only one crack 
-          !propagates druing one step)
-          if(Key_Force_Control==5) then
-#ifndef github
-              if (CFCP==1)then
-                  print *,'    Main program: PhiPsi2D_Static_FORCE_Control_CFCP1'
-                  call log_msg('Main program: PhiPsi2D_Static_FORCE_Control_CFCP1')
-                  call log_msg('Performing simulation...')
-                  CALL PhiPsi2D_Static_FORCE_Control_CFCP1
-              elseif(CFCP==2)then
-                  print *,'    Main program: PhiPsi2D_Static_FORCE_Control_CFCP2'
-                  call log_msg('Main program: PhiPsi2D_Static_FORCE_Control_CFCP2')
-                  call log_msg('Performing simulation...')
-                  CALL PhiPsi2D_Static_FORCE_Control_CFCP2
-              endif
-#endif              
-          else
-              print *,'    Main program: PhiPsi2D_Static'
-              call log_msg('Main program: PhiPsi2D_Static')
-              call log_msg('Performing simulation...')
-              CALL PhiPsi2D_Static
-          endif
-      endif
+            !Normal Quasi-static Analysis
+        else
+            !if *Key_Force_Control==5(make sure that only one crack 
+            !propagates druing one step)
+            if(Key_Force_Control==5) then
 
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (2) Implicit Dynamic Analysis
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==2) then
+                if (CFCP==1)then
+                    print *,'    Main program: PhiPsi2D_Static_FORCE_Control_CFCP1'
+                    call log_msg('Main program: PhiPsi2D_Static_FORCE_Control_CFCP1')
+                    call log_msg('Performing simulation...')
+                    CALL PhiPsi2D_Static_FORCE_Control_CFCP1
+                elseif(CFCP==2)then
 #ifndef github
-      print *,'    Main program: PhiPsi2D_I_Dynamic'
-      call log_msg('Main program: PhiPsi2D_I_Dynamic')
-      call log_msg('Performing simulation...')
-      CALL PhiPsi2D_I_Dynamic
+                    print *,'    Main program: PhiPsi2D_Static_FORCE_Control_CFCP2'
+                    call log_msg('Main program: PhiPsi2D_Static_FORCE_Control_CFCP2')
+                    call log_msg('Performing simulation...')
+                    CALL PhiPsi2D_Static_FORCE_Control_CFCP2
 #endif  
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (3) Hydraulic Fracturing Static Analysis
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==3) then
-      !///////////////////////////////////////////////////////////////////////////////
-      ! Given the extended step size, mass conservation is implemented in the Newton 
-      ! iteration step, with delta_time constantly changing. Overall, this scheme
-      ! The computational load is small, but the stability is relatively low, and the
-      ! solution is very sensitive to the initial guess.
-      ! Besides, line searching scheme is introduced to improve staility.
-      !///////////////////////////////////////////////////////////////////////////////
-      if (Key_HF_Secant_TS==0)then
-          print *,'    Main program: PhiPsi2D_Static_HF'
-          call log_msg('Main program: PhiPsi2D_Static_HF')
-          call log_msg('Performing simulation...')
-          call PhiPsi2D_Static_HF
+                endif            
+            else
+                print *,'    Main program: PhiPsi2D_Static'
+                call log_msg('Main program: PhiPsi2D_Static')
+                call log_msg('Performing simulation...')
+                CALL PhiPsi2D_Static
+            endif
+        endif
 
-      !///////////////////////////////////////////////////////////////////////////////
-      ! Given an extended step size, add a layer of secant method iteration to find 
-      ! the time step that best satisfies mass conservation, namely the N-R iteration
-      ! process. The time step remains unchanged, and the overall calculation in this
-      ! scheme may be slightly larger, but the stability is relatively high.
-      ! and the solution is not sensitive to the initial guess.
-      !///////////////////////////////////////////////////////////////////////////////
-      elseif (Key_HF_Secant_TS==1)then
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (2) Implicit Dynamic Analysis
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==2) then
 #ifndef github
-         print *,'    Main program: PhiPsi2D_Static_HF_with_SIM'
-         call log_msg('Main program: PhiPsi2D_Static_HF_with_SIM')
-         call log_msg('Performing simulation...')
-         call PhiPsi2D_Static_HF_with_SIM
+        print *,'    Main program: PhiPsi2D_I_Dynamic'
+        call log_msg('Main program: PhiPsi2D_I_Dynamic')
+        call log_msg('Performing simulation...')
+        CALL PhiPsi2D_I_Dynamic
 #endif  
-      endif
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (4) Test procedure applying only uniformly 
-  !     distributed water pressure inside the crack
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==4) then
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (3) Hydraulic Fracturing Static Analysis
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==3) then
+        !///////////////////////////////////////////////////////////////////////////////
+        ! Given the extended step size, mass conservation is implemented in the Newton 
+        ! iteration step, with delta_time constantly changing. Overall, this scheme
+        ! The computational load is small, but the stability is relatively low, and the
+        ! solution is very sensitive to the initial guess.
+        ! Besides, line searching scheme is introduced to improve staility.
+        !///////////////////////////////////////////////////////////////////////////////
+        if (Key_HF_Secant_TS==0)then
+            print *,'    Main program: PhiPsi2D_Static_HF'
+            call log_msg('Main program: PhiPsi2D_Static_HF')
+            call log_msg('Performing simulation...')
+            call PhiPsi2D_Static_HF
+
+            !///////////////////////////////////////////////////////////////////////////////
+            ! Given an extended step size, add a layer of secant method iteration to find 
+            ! the time step that best satisfies mass conservation, namely the N-R iteration
+            ! process. The time step remains unchanged, and the overall calculation in this
+            ! scheme may be slightly larger, but the stability is relatively high.
+            ! and the solution is not sensitive to the initial guess.
+            !///////////////////////////////////////////////////////////////////////////////
+        elseif (Key_HF_Secant_TS==1)then
 #ifndef github
-      print *,'    Main program: PhiPsi2D_Static_HF_SlipWater'
-      call log_msg('Main program: PhiPsi2D_Static_HF_SlipWater')
-      call log_msg('Performing simulation...')
-      call PhiPsi2D_Static_HF_SlipWater
+            print *,'    Main program: PhiPsi2D_Static_HF_with_SIM'
+            call log_msg('Main program: PhiPsi2D_Static_HF_with_SIM')
+            call log_msg('Performing simulation...')
+            call PhiPsi2D_Static_HF_with_SIM
 #endif  
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (5) Theoretical water pressure of 
-  !     viscosity-dominated problems applied within cracks
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==5) then
+        endif
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (4) Test procedure applying only uniformly 
+    !     distributed water pressure inside the crack
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==4) then
 #ifndef github
-     print *,'    Main program: PhiPsi2D_Static_WP_TheoVisDomi'
-     call log_msg('Main program: PhiPsi2D_Static_WP_TheoVisDomi')
-     call log_msg('Performing simulation...')
-     call PhiPsi2D_Static_WP_TheoVisDomi
+        print *,'    Main program: PhiPsi2D_Static_HF_SlipWater'
+        call log_msg('Main program: PhiPsi2D_Static_HF_SlipWater')
+        call log_msg('Performing simulation...')
+        call PhiPsi2D_Static_HF_SlipWater
 #endif  
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (6) Explicit Dynamic Analysis
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==6) then
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (5) Theoretical water pressure of 
+    !     viscosity-dominated problems applied within cracks
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==5) then
 #ifndef github
-      print *,'    Main program: PhiPsi2D_E_Dynamic'
-      call log_msg('Main program: PhiPsi2D_E_Dynamic')
-      CALL PhiPsi2D_E_Dynamic
+        print *,'    Main program: PhiPsi2D_Static_WP_TheoVisDomi'
+        call log_msg('Main program: PhiPsi2D_Static_WP_TheoVisDomi')
+        call log_msg('Performing simulation...')
+        call PhiPsi2D_Static_WP_TheoVisDomi
+#endif  
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (6) Explicit Dynamic Analysis
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==6) then
+#ifndef github
+        print *,'    Main program: PhiPsi2D_E_Dynamic'
+        call log_msg('Main program: PhiPsi2D_E_Dynamic')
+        CALL PhiPsi2D_E_Dynamic
 #endif 
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (7) Nonlinear analysis (plastic materials, etc.)
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==7) then
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (7) Nonlinear analysis (plastic materials, etc.)
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==7) then
 #ifndef github
-      print *,'    Main program: PhiPsi2D_Static_NonLinear'
-      call log_msg('Main program: PhiPsi2D_Static_NonLinear')
-      call log_msg('Performing simulation...')
-      call PhiPsi2D_Static_NonLinear
+        print *,'    Main program: PhiPsi2D_Static_NonLinear'
+        call log_msg('Main program: PhiPsi2D_Static_NonLinear')
+        call log_msg('Performing simulation...')
+        call PhiPsi2D_Static_NonLinear
 #endif
-  !~~~~~~~~~~
-  !(8) blank
-  !~~~~~~~~~~
-  elseif (Key_Analysis_Type==8) then
+    !~~~~~~~~~~
+    !(8) blank
+    !~~~~~~~~~~
+    elseif (Key_Analysis_Type==8) then
 
 
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (11) Multi-body dynamics simulation of randomly generated balls
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==11) then
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (11) Multi-body dynamics simulation of randomly generated balls
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==11) then
 #ifndef github
-      print *,'    Main program: PhiPsi2D_Rigid_Balls_Contact'
-      call log_msg('Main program: PhiPsi2D_Rigid_Balls_Contact')
-      call log_msg('Performing simulation...')
-      call PhiPsi2D_Rigid_Balls_Contact
+        print *,'    Main program: PhiPsi2D_Rigid_Balls_Contact'
+        call log_msg('Main program: PhiPsi2D_Rigid_Balls_Contact')
+        call log_msg('Performing simulation...')
+        call PhiPsi2D_Rigid_Balls_Contact
 #endif
-  !~~~~~~~~~~~~~~~~~~~~~~~~
-  !(12) Impact, 2021-07-23
-  !~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==12) then
+    !~~~~~~~~~~~~~~~~~~~~~~~~
+    !(12) Impact, 2021-07-23
+    !~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==12) then
 #ifdef gfortran  
 #ifndef github
-      print *,'    Main program: PhiPsi_Impact'
-      call log_msg('Main program: PhiPsi_Impact')
-      call log_msg('Performing simulation...')
-      call PhiPsi_Impact
+        print *,'    Main program: PhiPsi_Impact'
+        call log_msg('Main program: PhiPsi_Impact')
+        call log_msg('Performing simulation...')
+        call PhiPsi_Impact
 #endif
 #endif
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (15) Quasi-static field problems.
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==15) then
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (15) Quasi-static field problems.
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==15) then
 #ifndef github
-      print *,'    Main program: PhiPsi2D_Static_Field_Problem'
-      call log_msg('Main program: PhiPsi2D_Static_Field_Problem')
-      call log_msg('Performing simulation...')
-      call PhiPsi2D_Static_Field_Problem
+        print *,'    Main program: PhiPsi2D_Static_Field_Problem'
+        call log_msg('Main program: PhiPsi2D_Static_Field_Problem')
+        call log_msg('Performing simulation...')
+        call PhiPsi2D_Static_Field_Problem
 #endif
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (16) Basic Transient Field Problems, A First Course in the Finite 
-  !      Element Method, 4th Edition, p. 686
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==16) then
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (16) Basic Transient Field Problems, A First Course in the Finite 
+    !      Element Method, 4th Edition, p. 686
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==16) then
 #ifndef github
-      print *,'    Main program: PhiPsi2D_I_Dynamic_Field_Problem'
-      call log_msg('Main program: PhiPsi2D_I_Dynamic_Field_Problem')
-      call log_msg('Performing simulation...')
-      call PhiPsi2D_I_Dynamic_Field_Problem
+        print *,'    Main program: PhiPsi2D_I_Dynamic_Field_Problem'
+        call log_msg('Main program: PhiPsi2D_I_Dynamic_Field_Problem')
+        call log_msg('Performing simulation...')
+        call PhiPsi2D_I_Dynamic_Field_Problem
 #endif
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (17) Transient field problems, shale gas and other output 
-  !      assessments, coupled with deformation field analysis.
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==17) then
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (17) Transient field problems, shale gas and other output 
+    !      assessments, coupled with deformation field analysis.
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==17) then
 #ifndef github
-      print *,'    Main program: PhiPsi2D_I_Dynamic_Field_Problem_Coupled_Deform'
-      call log_msg ('Main program: PhiPsi2D_I_Dynamic_Field_Problem_Coupled_Deform')
-      call log_msg('Performing simulation...')
-      call PhiPsi2D_I_Dynamic_Field_Problem_Coupled_Deform
+        print *,'    Main program: PhiPsi2D_I_Dynamic_Field_Problem_Coupled_Deform'
+        call log_msg ('Main program: PhiPsi2D_I_Dynamic_Field_Problem_Coupled_Deform')
+        call log_msg('Performing simulation...')
+        call PhiPsi2D_I_Dynamic_Field_Problem_Coupled_Deform
 #endif
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (21) 2D Molecular Dynamics Simulation
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==21) then
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (21) 2D Molecular Dynamics Simulation
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==21) then
 #ifdef gfortran
 #ifndef github
-      print *,'    Main program: PhiPsi_Molecular_Dynamics'
-      call log_msg('Main program: PhiPsi_Molecular_Dynamics')
-      call log_msg('Performing simulation...')
-      call PhiPsi_Molecular_Dynamics
+        print *,'    Main program: PhiPsi_Molecular_Dynamics'
+        call log_msg('Main program: PhiPsi_Molecular_Dynamics')
+        call log_msg('Performing simulation...')
+        call PhiPsi_Molecular_Dynamics
 #endif
 #endif
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  !(31) Peridynamic simulation
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==31) then
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    !(31) Peridynamic simulation
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==31) then
 #ifdef gfortran
 #ifndef github  
-      print *,'    Main program: PhiPsi_Peridynamic'
-      call log_msg('Main program: PhiPsi_Peridynamic')
-      call log_msg('Performing simulation...')
-      call PhiPsi_Peridynamic
+        print *,'    Main program: PhiPsi_Peridynamic'
+        call log_msg('Main program: PhiPsi_Peridynamic')
+        call log_msg('Performing simulation...')
+        call PhiPsi_Peridynamic
 #endif      
 #endif 
-  !~~~~~~~~~~~~~
-  ! (41) blank.
-  !~~~~~~~~~~~~~
+    !~~~~~~~~~~~~~
+    ! (41) blank.
+    !~~~~~~~~~~~~~
 
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (51) PFEM Solver -- Solid Element Structural Analysis, 2021-12-19.
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==51) then
-#ifndef Silverfrost
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (51) PFEM Solver -- Solid Element Structural Analysis, 2021-12-19.
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==51) then
 #ifndef github
-      print *,'    Main program: PhiPsi_PFEM_p56'
-      call log_msg('Main program: PhiPsi_PFEM_p56')
-      call log_msg('Performing simulation...')
-      call PhiPsi_PFEM_p56
+        print *,'    Main program: PhiPsi_PFEM_p56'
+        call log_msg('Main program: PhiPsi_PFEM_p56')
+        call log_msg('Performing simulation...')
+        call PhiPsi_PFEM_p56
 #endif 
-#endif 
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (52) PFEM Solver -- Solid Element Structural Analysis with Abaqus
-  !      Umat, 2021-12-19.
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==52) then
-#ifndef Silverfrost
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (52) PFEM Solver -- Solid Element Structural Analysis with Abaqus
+    !      Umat, 2021-12-19.
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==52) then
 #ifndef github
-      print *,'    Main program: PhiPsi_PFEM_p57'
-      call log_msg('Main program: PhiPsi_PFEM_p57')
-      call log_msg('Performing simulation...')
-      call PhiPsi_PFEM_p57
+        print *,'    Main program: PhiPsi_PFEM_p57'
+        call log_msg('Main program: PhiPsi_PFEM_p57')
+        call log_msg('Performing simulation...')
+        call PhiPsi_PFEM_p57
 #endif 
-#endif 
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (53) PFEM Solver -- Structure-Flow Direct Coupling, 2021-12-19.
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==53) then
-#ifndef Silverfrost
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (53) PFEM Solver -- Structure-Flow Direct Coupling, 2021-12-19.
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==53) then
 #ifndef github
-      print *,'    Main program: PhiPsi_PFEM_p94'
-      call log_msg('Main program: PhiPsi_PFEM_p94')
-      call log_msg('Performing simulation...')
-      call PhiPsi_PFEM_p94
+        print *,'    Main program: PhiPsi_PFEM_p94'
+        call log_msg('Main program: PhiPsi_PFEM_p94')
+        call log_msg('Performing simulation...')
+        call PhiPsi_PFEM_p94
 #endif 
-#endif 
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (54) PFEM Solver -- Structure-Flow Direct Coupling, EBE PCG, 2021-12-19.
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==54) then
-#ifndef Silverfrost
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (54) PFEM Solver -- Structure-Flow Direct Coupling, EBE PCG, 2021-12-19.
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==54) then
 #ifndef github
-      print *,'    Main program: PhiPsi_PFEM_p95'
-      call log_msg('Main program: PhiPsi_PFEM_p95')
-      call log_msg('Performing simulation...')
-      call PhiPsi_PFEM_p95
+        print *,'    Main program: PhiPsi_PFEM_p95'
+        call log_msg('Main program: PhiPsi_PFEM_p95')
+        call log_msg('Performing simulation...')
+        call PhiPsi_PFEM_p95
 #endif 
-#endif 
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (55) PFEM Solver -- Structure-Flow Direct Coupling - Mohr-Coulomb Plasticity, 
-  !                     Global Stiffness Matrix, 2021-12-20
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==55) then
-#ifndef Silverfrost
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (55) PFEM Solver -- Structure-Flow Direct Coupling - Mohr-Coulomb Plasticity, 
+    !                     Global Stiffness Matrix, 2021-12-20
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==55) then
 #ifndef github
-      print *,'    Main program: PhiPsi_PFEM_p96'
-      call log_msg('Main program: PhiPsi_PFEM_p96')
-      call log_msg('Performing simulation...')
-      call PhiPsi_PFEM_p96
+        print *,'    Main program: PhiPsi_PFEM_p96'
+        call log_msg('Main program: PhiPsi_PFEM_p96')
+        call log_msg('Performing simulation...')
+        call PhiPsi_PFEM_p96
 #endif 
-#endif 
-  end if
+    end if
 
-!************************************************
-!                                              *
-!                                              *
-!                                              *
-!                 3D problems                  *
-!                                              *
-!                                              *
-!                                              *
-!************************************************
+    !************************************************
+    !                                              *
+    !                                              *
+    !                                              *
+    !                 3D problems                  *
+    !                                              *
+    !                                              *
+    !                                              *
+    !************************************************
 elseif (Key_Dimension == 3) then
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! Conventional 3D Static Analysis.
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  if (Key_Analysis_Type==1) then
-      ! For New Australia Use. 2022-09-10.
-      if(Key_XA ==1)then
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! Conventional 3D Static Analysis.
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if (Key_Analysis_Type==1) then
+        ! For New Australia Use. 2022-09-10.
+        if(Key_XA ==1)then
 #ifndef github
-          print *,'    Main program: PhiPsi3D_Static_XA'
-          call log_msg('Main program: PhiPsi3D_Static_XA')
-          call log_msg('Performing simulation...')
-          call PhiPsi3D_Static_XA
+            print *,'    Main program: PhiPsi3D_Static_XA'
+            call log_msg('Main program: PhiPsi3D_Static_XA')
+            call log_msg('Performing simulation...')
+            call PhiPsi3D_Static_XA
 #endif 
-      ! Exclusive for Xinao. 2023-03-13. Used for preparing Fortran library.
-      elseif(Key_XA ==2)then
+            ! Exclusive for Xinao. 2023-03-13. Used for preparing Fortran library.
+        elseif(Key_XA ==2)then
 #ifndef github
-          print *,'    Main program: PhiPsi3D_Static_XA_v2'
-          call log_msg('Main program: PhiPsi3D_Static_XA_v2')
-          call log_msg('Performing simulation...')
-          call PhiPsi3D_Static_XA_v2
+            print *,'    Main program: PhiPsi3D_Static_XA_v2'
+            call log_msg('Main program: PhiPsi3D_Static_XA_v2')
+            call log_msg('Performing simulation...')
+            call PhiPsi3D_Static_XA_v2
 #endif 
-      else
-          print *,'    Main program: PhiPsi3D_Static'
-          call log_msg('Main program: PhiPsi3D_Static')
-          call log_msg('Performing simulation...')
-          CALL PhiPsi3D_Static
-      endif
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (3) Hydraulic Fracturing Static Analysis, 2021-12-03.
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==3) then
+        else
+            print *,'    Main program: PhiPsi3D_Static'
+            call log_msg('Main program: PhiPsi3D_Static')
+            call log_msg('Performing simulation...')
+            CALL PhiPsi3D_Static
+        endif
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (3) Hydraulic Fracturing Static Analysis, 2021-12-03.
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==3) then
 #ifndef github
-      ! Picard Iterative 3D Hydraulic Fracturing Analysis
-      print *,'    Main program: PhiPsi3D_Static_HF_Picard'
-      call log_msg('Main program: PhiPsi3D_Static_HF_Picard')
-      call log_msg('Performing simulation...')
-      call PhiPsi3D_Static_HF_Picard
-#endif 
-
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (4) 3D water slide pressure. Normal water pressure. 
-  !     Dual loop and bisection method. 2022-06-28.
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==4) then
-      print *,'    Main program: PhiPsi3D_Static_HF_SlipWater'
-      call log_msg('Main program: PhiPsi3D_Static_HF_SlipWater')
-      call log_msg('Performing simulation...')
-      call PhiPsi3D_Static_HF_SlipWater
-
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (6) Explicit dynamic analysis, 2021-08-23
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==6) then
-#ifndef github
-      print *,'    Main program: PhiPsi3D_E_Dynamic'
-      call log_msg('Main program: PhiPsi3D_E_Dynamic')
-      call log_msg('Performing simulation...')
-      CALL PhiPsi3D_E_Dynamic
+        ! Picard Iterative 3D Hydraulic Fracturing Analysis
+        print *,'    Main program: PhiPsi3D_Static_HF_Picard'
+        call log_msg('Main program: PhiPsi3D_Static_HF_Picard')
+        call log_msg('Performing simulation...')
+        call PhiPsi3D_Static_HF_Picard
 #endif 
 
-  !~~~~~~~~~~~
-  !(8) Blank.
-  !~~~~~~~~~~~
-  elseif (Key_Analysis_Type==8) then
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (4) 3D water slide pressure. Normal water pressure. 
+    !     Dual loop and bisection method. 2022-06-28.
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==4) then
+        print *,'    Main program: PhiPsi3D_Static_HF_SlipWater'
+        call log_msg('Main program: PhiPsi3D_Static_HF_SlipWater')
+        call log_msg('Performing simulation...')
+        call PhiPsi3D_Static_HF_SlipWater
 
-  !~~~~~~~~~~~~~~~~~~~~~~~~
-  !(12) Impact, 2021-07-23
-  !~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==12) then
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (6) Explicit dynamic analysis, 2021-08-23
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==6) then
+#ifndef github
+        print *,'    Main program: PhiPsi3D_E_Dynamic'
+        call log_msg('Main program: PhiPsi3D_E_Dynamic')
+        call log_msg('Performing simulation...')
+        CALL PhiPsi3D_E_Dynamic
+#endif 
+
+    !~~~~~~~~~~~
+    !(8) Blank.
+    !~~~~~~~~~~~
+    elseif (Key_Analysis_Type==8) then
+
+    !~~~~~~~~~~~~~~~~~~~~~~~~
+    !(12) Impact, 2021-07-23
+    !~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==12) then
 #ifdef gfortran  
 #ifndef github
-      print *,'    Main program: PhiPsi_Impact'
-      call log_msg('Main program: PhiPsi_Impact')
-      call log_msg('Performing simulation...')
-      call PhiPsi_Impact
+        print *,'    Main program: PhiPsi_Impact'
+        call log_msg('Main program: PhiPsi_Impact')
+        call log_msg('Performing simulation...')
+        call PhiPsi_Impact
 #endif
 #endif
 
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (21) 3D Molecular Dynamics Simulation
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==21) then
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (21) 3D Molecular Dynamics Simulation
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==21) then
 #ifdef gfortran 
 #ifndef github 
-      print *,'    Main program: PhiPsi_Molecular_Dynamics'
-      call log_msg('Main program: PhiPsi_Molecular_Dynamics')
-      call log_msg('Performing simulation...')
-      call PhiPsi_Molecular_Dynamics
+        print *,'    Main program: PhiPsi_Molecular_Dynamics'
+        call log_msg('Main program: PhiPsi_Molecular_Dynamics')
+        call log_msg('Performing simulation...')
+        call PhiPsi_Molecular_Dynamics
 #endif
 #endif
 
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (51) PFEM Solver -- Solid Element Structural Analysis, 2021-12-19
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==51) then
-#ifndef Silverfrost
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (51) PFEM Solver -- Solid Element Structural Analysis, 2021-12-19
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==51) then
 #ifndef github 
-      print *,'    Main program: PhiPsi_PFEM_p56'
-      call log_msg('Main program: PhiPsi_PFEM_p56')
-      call log_msg('Performing simulation...')
-      call PhiPsi_PFEM_p56
+        print *,'    Main program: PhiPsi_PFEM_p56'
+        call log_msg('Main program: PhiPsi_PFEM_p56')
+        call log_msg('Performing simulation...')
+        call PhiPsi_PFEM_p56
 #endif
-#endif
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (52) PFEM Solver -- Solid Element Structural Analysis with Abaqus 
-  !      Umat, 2021-12-19
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==52) then
-#ifndef Silverfrost
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (52) PFEM Solver -- Solid Element Structural Analysis with Abaqus 
+    !      Umat, 2021-12-19
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==52) then
 #ifndef github 
-      print *,'    Main program: PhiPsi_PFEM_p57'
-      call log_msg('Main program: PhiPsi_PFEM_p57')
-      call log_msg('Performing simulation...')
-      call PhiPsi_PFEM_p57
+        print *,'    Main program: PhiPsi_PFEM_p57'
+        call log_msg('Main program: PhiPsi_PFEM_p57')
+        call log_msg('Performing simulation...')
+        call PhiPsi_PFEM_p57
 #endif
-#endif
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (53) PFEM Solver -- Structure-Flow Direct Coupling, 2021-12-19
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==53) then
-#ifndef Silverfrost
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (53) PFEM Solver -- Structure-Flow Direct Coupling, 2021-12-19
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==53) then
 #ifndef github 
-      print *,'    Main program: PhiPsi_PFEM_p94'
-      call log_msg('Main program: PhiPsi_PFEM_p94')
-      call log_msg('Performing simulation...')
-      call PhiPsi_PFEM_p94
+        print *,'    Main program: PhiPsi_PFEM_p94'
+        call log_msg('Main program: PhiPsi_PFEM_p94')
+        call log_msg('Performing simulation...')
+        call PhiPsi_PFEM_p94
 #endif
-#endif
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (54) PFEM Solver -- Structure-Flow Direct Coupling, 2021-12-19.
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==54) then
-#ifndef Silverfrost
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (54) PFEM Solver -- Structure-Flow Direct Coupling, 2021-12-19.
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==54) then
 #ifndef github 
-      print *,'    Main program: PhiPsi_PFEM_p95'
-      call log_msg('Main program: PhiPsi_PFEM_p95')
-      call log_msg('Performing simulation...')
-      call PhiPsi_PFEM_p95
+        print *,'    Main program: PhiPsi_PFEM_p95'
+        call log_msg('Main program: PhiPsi_PFEM_p95')
+        call log_msg('Performing simulation...')
+        call PhiPsi_PFEM_p95
 #endif
-#endif
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ! (55) PFEM Solver -- Structure-Flow Direct Coupling - Mohr-Coulomb Plasticity, 
-  !      Global Stiffness Matrix, 2021-12-20
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==55) then
-#ifndef Silverfrost
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! (55) PFEM Solver -- Structure-Flow Direct Coupling - Mohr-Coulomb Plasticity, 
+    !      Global Stiffness Matrix, 2021-12-20
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==55) then
 #ifndef github 
-      print *,'    Main program: PhiPsi_PFEM_p96'
-      call log_msg('Main program: PhiPsi_PFEM_p96')
-      call log_msg('Performing simulation...')
-      call PhiPsi_PFEM_p96
+        print *,'    Main program: PhiPsi_PFEM_p96'
+        call log_msg('Main program: PhiPsi_PFEM_p96')
+        call log_msg('Performing simulation...')
+        call PhiPsi_PFEM_p96
 #endif
-#endif
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  !(61) 3D Fracturing experiment. 2023-01-23.
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  elseif (Key_Analysis_Type==61) then
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    !(61) 3D Fracturing experiment. 2023-01-23.
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif (Key_Analysis_Type==61) then
 #ifndef github 
-      print *,'    Main program: PhiPsi3D_Static_Fracturing_Experiment'
-      call log_msg('Main program: PhiPsi3D_Static_Fracturing_Experiment')
-      call log_msg('Performing simulation...')
-      call PhiPsi3D_Static_Fracturing_Experiment
+        print *,'    Main program: PhiPsi3D_Static_Fracturing_Experiment'
+        call log_msg('Main program: PhiPsi3D_Static_Fracturing_Experiment')
+        call log_msg('Performing simulation...')
+        call PhiPsi3D_Static_Fracturing_Experiment
 #endif 
-  end if
+    end if
 end if
 
 !************************************
@@ -899,9 +823,14 @@ end if
 !                                  *
 !************************************
 call Tool_Get_Current_Time(current_data,date_time,F_time)
+call system_clock(c1)
+elapsed_s  = real(c1 - c0, real64) / real(rate, real64)
+elapsed_ms = 1000.0_real64 * elapsed_s
+
 print *,' '
 WRITE(*,1002) current_data(1:4),current_data(5:6),current_data(7:8),date_time(5),date_time(6),date_time(7)
-WRITE(*,1003) F_time-S_time,(dble(F_time)-dble(S_time))/Con_60
+WRITE(*,1003) elapsed_ms,F_time-S_time,(dble(F_time)-dble(S_time))/Con_60
+
 !log file
 WRITE(temp_log,2002)current_data,date_time(5),date_time(6),date_time(7)
 call Tool_chrpak_s_blank_delete(temp_log(13:))
@@ -924,19 +853,19 @@ call Clear_Memory
 !                                  *
 !************************************
 if(Key_Play_Sounds==1)then
-  !----------
-  ! option 1
-  !----------
+    !----------
+    ! option 1
+    !----------
 #ifndef macos  
 #ifndef github 
-  call system('cd .\Python_Tools\ && PhiPsi_Play_Done.py')
+    call system('cd .\Python_Tools\ && PhiPsi_Play_Done.py')
 #endif
 #endif
-  !----------
-  ! option 2
-  !----------
-  !beep = char(7)
-  !write (*, 10100) beep
+    !----------
+    ! option 2
+    !----------
+    !beep = char(7)
+    !write (*, 10100) beep
 endif
 
 !***************************************
@@ -954,16 +883,16 @@ call log_shutdown()
 !******************************************
 ! Do not close the window after the program ends; wait for the user's response.
 if (Key_Close_Window==0) then
-  print *,' '
-  write( *, * ) '    Press any key to exit PhiPsi Kernal.'
-  read( *, * )
-! Close the window immediately after the program ends
+    print *,' '
+    write( *, * ) '    Press any key to exit PhiPsi Kernal.'
+    read( *, * )
+    ! Close the window immediately after the program ends
 elseif(Key_Close_Window==1)then
-  !stop
-  !IMPROV2022101401. Comment out stop, otherwise it will produce abnormal output:
-  !                  Note: The following floating-point exceptions are 
-  !                  signalling: IEEE_INVALID_FLAG IEEE_DENORMAL
-  !Ref: https://stackoverflow.com/questions/44308577/ieee-underflow-flag-ieee-denormal-in-fortran-77
+    !stop
+    !IMPROV2022101401. Comment out stop, otherwise it will produce abnormal output:
+    !                  Note: The following floating-point exceptions are 
+    !                  signalling: IEEE_INVALID_FLAG IEEE_DENORMAL
+    !Ref: https://stackoverflow.com/questions/44308577/ieee-underflow-flag-ieee-denormal-in-fortran-77
 endif
 
 

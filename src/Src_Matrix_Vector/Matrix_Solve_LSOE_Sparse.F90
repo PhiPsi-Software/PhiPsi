@@ -1,47 +1,24 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
-SUBROUTINE Matrix_Solve_LSOE_Sparse(Key_Indent,Key_LSOE_Sys,c_Key_SLOE,K_CSR_NNZ,&
-                 K_CSR_aa,K_CSR_ja,K_CSR_ia,F,D,n)    
+!-----------------------------------------------------------
+! Brief: Solve a sparse real linear system D = K\F (CSR format).
+!
+! Parameters:
+!   Input:  Key_Indent   - indentation width for log output
+!           Key_LSOE_Sys - LSOE system selector
+!           c_Key_SLOE   - sparse solver selector
+!           K_CSR_NNZ    - number of non-zeros
+!           K_CSR_aa     - CSR non-zero values
+!           K_CSR_ja     - CSR column index array
+!           K_CSR_ia     - CSR row pointer array (size n+1)
+!           F            - RHS vector (size n)
+!           n            - matrix/vector dimension
+!   Output: D            - solution vector (size n)
+!
+! Notes:   Dispatches among several sparse real solvers (PARDISO,
+!          MUMPS, UMFPACK, CHOLMOD, etc.) based on c_Key_SLOE and
+!          the active preprocessor flags.
+!-----------------------------------------------------------
+
+SUBROUTINE Matrix_Solve_LSOE_Sparse(Key_Indent,Key_LSOE_Sys,c_Key_SLOE,K_CSR_NNZ, K_CSR_aa,K_CSR_ja,K_CSR_ia,F,D,n)
 
 ! D = F / K, where K is stored in the form of a sparse matrix.
 
@@ -49,7 +26,8 @@ SUBROUTINE Matrix_Solve_LSOE_Sparse(Key_Indent,Key_LSOE_Sys,c_Key_SLOE,K_CSR_NNZ
 !Read Public Variable Module
 !----------------------------
 use Global_Float_Type
-use Global_Common,only:Keywords_Blank,Key_Cond_Number,Space_4,Space_8
+use Global_Common,only:Keywords_Blank,Key_Cond_Number,Space_4,Space_8, &
+                       Key_Num_Process,Key_Analysis_Type
 use, intrinsic :: ISO_C_BINDING
 #ifdef sffortran
 #ifndef macos
@@ -58,17 +36,16 @@ use strumpack
 #endif
 #endif
 #endif
+USE OMP_LIB 
+
 
 implicit none
-
 
 integer,intent(in)::n,c_Key_SLOE,Key_LSOE_Sys,K_CSR_NNZ
 integer,intent(in)::Key_Indent
 real(kind=FT),intent(in)::K_CSR_aa(K_CSR_NNZ)
 integer,intent(in)::K_CSR_ja(K_CSR_NNZ)
 integer,intent(in)::K_CSR_ia(n+1)
-
-
 real(kind=FT),intent(in)::F(n)
 real(kind=FT),intent(out)::D(n)
 
@@ -103,13 +80,17 @@ integer i
 
 
 #ifdef gfortran
-#if defined(notlinux) || defined(github)
+#if defined(notlinux) || defined(github) || defined(alpine)
 INCLUDE 'mpif.h'
 INCLUDE 'dmumps_struc.h'
 INCLUDE 'smumps_struc.h'
 TYPE (DMUMPS_STRUC) mumps_par
 TYPE (SMUMPS_STRUC) mumps_par_s
 INTEGER IERR_6,IERR
+INTEGER :: k, idx
+INTEGER :: nz_sym
+DOUBLE PRECISION, ALLOCATABLE :: tmpA(:)
+INTEGER, ALLOCATABLE :: tmpIRN(:), tmpJCN(:)
 #endif
 #endif
 
@@ -165,130 +146,130 @@ real(kind=FT),allocatable, target::x_Values(:),F_Values(:)
 1001 FORMAT(5X,'Condition number is',E12.5)
 if(Key_Indent==-1)then
 elseif(Key_Indent==0)then
-  print *, '        Dimension of Linear System:', n
-  if (c_Key_SLOE==1) then
-      print *, '        Solver: direct method'
-  elseif (c_Key_SLOE==2) then
-      print *, '        Solver: Gauss elimination'
-  elseif (c_Key_SLOE==3) then
-      print *, '        Solver: Pardiso'
-  elseif (c_Key_SLOE==4) then
-      print *, '        Solver: ITPACK'
-  elseif (c_Key_SLOE==5) then
-      print *, '        Solver: LAPACK'
-  elseif (c_Key_SLOE==6) then
-      print *, '        Solver: MUMPS'
-  elseif (c_Key_SLOE==7) then
-      print *, '        Solver: UMFPACK'
-  elseif (c_Key_SLOE==8) then
-      print *, '        Solver: Lis'
-  elseif (c_Key_SLOE==9) then
-      print *, '        Solver: SuperLU'
-  elseif (c_Key_SLOE==10) then
-      print *, '        Solver: y12m'
-  elseif (c_Key_SLOE==12) then
-      print *, '        Solver: STRUMPACK'
-  endif
+    print *, '        Dimension of Linear System:', n
+    if (c_Key_SLOE==1) then
+        print *, '        Solver: direct method'
+    elseif (c_Key_SLOE==2) then
+        print *, '        Solver: Gauss elimination'
+    elseif (c_Key_SLOE==3) then
+        print *, '        Solver: Pardiso'
+    elseif (c_Key_SLOE==4) then
+        print *, '        Solver: ITPACK'
+    elseif (c_Key_SLOE==5) then
+        print *, '        Solver: LAPACK'
+    elseif (c_Key_SLOE==6) then
+        print *, '        Solver: MUMPS'
+    elseif (c_Key_SLOE==7) then
+        print *, '        Solver: UMFPACK'
+    elseif (c_Key_SLOE==8) then
+        print *, '        Solver: Lis'
+    elseif (c_Key_SLOE==9) then
+        print *, '        Solver: SuperLU'
+    elseif (c_Key_SLOE==10) then
+        print *, '        Solver: y12m'
+    elseif (c_Key_SLOE==12) then
+        print *, '        Solver: STRUMPACK'
+    endif
 elseif(Key_Indent==1)then
-  print *, '       Dimension of Linear System:', n
-  if (c_Key_SLOE==1) then
-      print *, '       Solver: direct method'
-  elseif (c_Key_SLOE==2) then
-      print *, '       Solver: Gauss elimination'
-  elseif (c_Key_SLOE==3) then
-      print *, '       Solver: Pardiso'
-  elseif (c_Key_SLOE==4) then
-      print *, '       Solver: ITPACK'
-  elseif (c_Key_SLOE==5) then
-      print *, '       Solver: LAPACK'
-  elseif (c_Key_SLOE==6) then
-      print *, '       Solver: MUMPS'
-  elseif (c_Key_SLOE==7) then
-      print *, '       Solver: UMFPACK'
-  elseif (c_Key_SLOE==8) then
-      print *, '       Solver: Lis'
-  elseif (c_Key_SLOE==9) then
-      print *, '       Solver: SuperLU'
-  elseif (c_Key_SLOE==10) then
-      print *, '       Solver: y12m'
-  elseif (c_Key_SLOE==12) then
-      print *, '       Solver: STRUMPACK'
-  endif
+    print *, '       Dimension of Linear System:', n
+    if (c_Key_SLOE==1) then
+        print *, '       Solver: direct method'
+    elseif (c_Key_SLOE==2) then
+        print *, '       Solver: Gauss elimination'
+    elseif (c_Key_SLOE==3) then
+        print *, '       Solver: Pardiso'
+    elseif (c_Key_SLOE==4) then
+        print *, '       Solver: ITPACK'
+    elseif (c_Key_SLOE==5) then
+        print *, '       Solver: LAPACK'
+    elseif (c_Key_SLOE==6) then
+        print *, '       Solver: MUMPS'
+    elseif (c_Key_SLOE==7) then
+        print *, '       Solver: UMFPACK'
+    elseif (c_Key_SLOE==8) then
+        print *, '       Solver: Lis'
+    elseif (c_Key_SLOE==9) then
+        print *, '       Solver: SuperLU'
+    elseif (c_Key_SLOE==10) then
+        print *, '       Solver: y12m'
+    elseif (c_Key_SLOE==12) then
+        print *, '       Solver: STRUMPACK'
+    endif
 elseif(Key_Indent==2)then
-  print *, '      Dimension of Linear System:', n
-  if (c_Key_SLOE==1) then
-      print *, '      Solver: direct method'
-  elseif (c_Key_SLOE==2) then
-      print *, '      Solver: Gauss elimination'
-  elseif (c_Key_SLOE==3) then
-      print *, '      Solver: Pardiso'
-  elseif (c_Key_SLOE==4) then
-      print *, '      Solver: ITPACK'
-  elseif (c_Key_SLOE==5) then
-      print *, '      Solver: LAPACK'
-  elseif (c_Key_SLOE==6) then
-      print *, '      Solver: MUMPS'
-  elseif (c_Key_SLOE==7) then
-      print *, '      Solver: UMFPACK'
-  elseif (c_Key_SLOE==8) then
-      print *, '      Solver: Lis'
-  elseif (c_Key_SLOE==9) then
-      print *, '      Solver: SuperLU'
-  elseif (c_Key_SLOE==10) then
-      print *, '      Solver: y12m'
-  elseif (c_Key_SLOE==12) then
-      print *, '      Solver: STRUMPACK'
-  endif
+    print *, '      Dimension of Linear System:', n
+    if (c_Key_SLOE==1) then
+        print *, '      Solver: direct method'
+    elseif (c_Key_SLOE==2) then
+        print *, '      Solver: Gauss elimination'
+    elseif (c_Key_SLOE==3) then
+        print *, '      Solver: Pardiso'
+    elseif (c_Key_SLOE==4) then
+        print *, '      Solver: ITPACK'
+    elseif (c_Key_SLOE==5) then
+        print *, '      Solver: LAPACK'
+    elseif (c_Key_SLOE==6) then
+        print *, '      Solver: MUMPS'
+    elseif (c_Key_SLOE==7) then
+        print *, '      Solver: UMFPACK'
+    elseif (c_Key_SLOE==8) then
+        print *, '      Solver: Lis'
+    elseif (c_Key_SLOE==9) then
+        print *, '      Solver: SuperLU'
+    elseif (c_Key_SLOE==10) then
+        print *, '      Solver: y12m'
+    elseif (c_Key_SLOE==12) then
+        print *, '      Solver: STRUMPACK'
+    endif
 
 elseif(Key_Indent==4)then
-  print *, '        Dimension of Linear System:', n
-  if (c_Key_SLOE==1) then
-      print *, '        Solver: direct method'
-  elseif (c_Key_SLOE==2) then
-      print *, '        Solver: Gauss elimination'
-  elseif (c_Key_SLOE==3) then
-      print *, '        Solver: Pardiso'
-  elseif (c_Key_SLOE==4) then
-      print *, '        Solver: ITPACK'
-  elseif (c_Key_SLOE==5) then
-      print *, '        Solver: LAPACK'
-  elseif (c_Key_SLOE==6) then
-      print *, '        Solver: MUMPS'
-  elseif (c_Key_SLOE==7) then
-      print *, '        Solver: UMFPACK'
-  elseif (c_Key_SLOE==8) then
-      print *, '        Solver: Lis'
-  elseif (c_Key_SLOE==9) then
-      print *, '        Solver: SuperLU'
-  elseif (c_Key_SLOE==10) then
-      print *, '        Solver: y12m'
-  elseif (c_Key_SLOE==12) then
-      print *, '        Solver: STRUMPACK'
-  endif
+    print *, '        Dimension of Linear System:', n
+    if (c_Key_SLOE==1) then
+        print *, '        Solver: direct method'
+    elseif (c_Key_SLOE==2) then
+        print *, '        Solver: Gauss elimination'
+    elseif (c_Key_SLOE==3) then
+        print *, '        Solver: Pardiso'
+    elseif (c_Key_SLOE==4) then
+        print *, '        Solver: ITPACK'
+    elseif (c_Key_SLOE==5) then
+        print *, '        Solver: LAPACK'
+    elseif (c_Key_SLOE==6) then
+        print *, '        Solver: MUMPS'
+    elseif (c_Key_SLOE==7) then
+        print *, '        Solver: UMFPACK'
+    elseif (c_Key_SLOE==8) then
+        print *, '        Solver: Lis'
+    elseif (c_Key_SLOE==9) then
+        print *, '        Solver: SuperLU'
+    elseif (c_Key_SLOE==10) then
+        print *, '        Solver: y12m'
+    elseif (c_Key_SLOE==12) then
+        print *, '        Solver: STRUMPACK'
+    endif
 elseif(Key_Indent==7)then
-  print *, '               Dimension of Linear System:', n
-  if (c_Key_SLOE==1) then
-      print *, '               Solver: direct method'
-  elseif (c_Key_SLOE==2) then
-      print *, '               Solver: Gauss elimination'
-  elseif (c_Key_SLOE==3) then
-      print *, '               Solver: Pardiso'
-  elseif (c_Key_SLOE==4) then
-  elseif (c_Key_SLOE==5) then
-      print *, '               Solver: LAPACK'
-  elseif (c_Key_SLOE==6) then
-      print *, '               Solver: MUMPS'
-  elseif (c_Key_SLOE==7) then
-      print *, '               Solver: UMFPACK'
-  elseif (c_Key_SLOE==8) then
-      print *, '               Solver: Lis'
-  elseif (c_Key_SLOE==9) then
-      print *, '               Solver: SuperLU'
-  elseif (c_Key_SLOE==10) then
-      print *, '               Solver: y12m'
-  elseif (c_Key_SLOE==12) then
-      print *, '               Solver: STRUMPACK'
-  endif
+    print *, '               Dimension of Linear System:', n
+    if (c_Key_SLOE==1) then
+        print *, '               Solver: direct method'
+    elseif (c_Key_SLOE==2) then
+        print *, '               Solver: Gauss elimination'
+    elseif (c_Key_SLOE==3) then
+        print *, '               Solver: Pardiso'
+    elseif (c_Key_SLOE==4) then
+    elseif (c_Key_SLOE==5) then
+        print *, '               Solver: LAPACK'
+    elseif (c_Key_SLOE==6) then
+        print *, '               Solver: MUMPS'
+    elseif (c_Key_SLOE==7) then
+        print *, '               Solver: UMFPACK'
+    elseif (c_Key_SLOE==8) then
+        print *, '               Solver: Lis'
+    elseif (c_Key_SLOE==9) then
+        print *, '               Solver: SuperLU'
+    elseif (c_Key_SLOE==10) then
+        print *, '               Solver: y12m'
+    elseif (c_Key_SLOE==12) then
+        print *, '               Solver: STRUMPACK'
+    endif
 endif
 D(1:n) =ZR
 
@@ -323,79 +304,72 @@ case(3)
 
 
     DO i = 1, 64
-    pt(i)%DUMMY = 0
+        pt(i)%DUMMY = 0
     END DO
     phase = 11
-    CALL pardiso (pt, maxfct, mnum, mtype, phase, n, & 
-                K_CSR_aa,K_CSR_ia,K_CSR_ja, & 
-                idum, nrhs, iparm, msglvl, ddum, ddum, error)
+    CALL pardiso (pt, maxfct, mnum, mtype, phase, n, K_CSR_aa,K_CSR_ia,K_CSR_ja, &
+    idum, nrhs, iparm, msglvl, ddum, ddum, error)
 
     if(Key_Indent==0)then
-    print *,Space_4//'Reordering completed... '
+        print *,Space_4//'Reordering completed... '
     elseif (Key_Indent==1)then
-    print *,Space_8//'Reordering completed... '
+        print *,Space_8//'Reordering completed... '
     endif
     IF (error .NE. 0) THEN
-    WRITE(*,*) 'The following ERROR was detected: ', error
-    STOP 1
+        WRITE(*,*) 'The following ERROR was detected: ', error
+        STOP 1
     END IF
 
     IF (error .NE. 0) THEN
-    WRITE(*,*) 'The following ERROR was detected in Pardiso solver: ', error
-    if (error== -4)then
-          print *,"Zero pivot, numerical factorization or iterative refinement problem."
-          print *,"If the error appears during the solution phase, try to change the   "
-          print *,"pivoting perturbation (iparm(10)) and also increase the number of   "
-          print *,"iterative refinement steps. If it does not help, consider changing  "
-          print *,"the scaling, matching and pivoting options (iparm(11), iparm(13),   "
-          print *,"iparm(21))                                                          "
-    endif    
-    STOP
+        WRITE(*,*) 'The following ERROR was detected in Pardiso solver: ', error
+        if (error== -4)then
+            print *,"Zero pivot, numerical factorization or iterative refinement problem."
+            print *,"If the error appears during the solution phase, try to change the   "
+            print *,"pivoting perturbation (iparm(10)) and also increase the number of   "
+            print *,"iterative refinement steps. If it does not help, consider changing  "
+            print *,"the scaling, matching and pivoting options (iparm(11), iparm(13),   "
+            print *,"iparm(21))                                                          "
+        endif    
+        STOP
     END IF
     phase = 22
-    CALL pardiso (pt, maxfct, mnum, mtype, phase,n,  & 
-                K_CSR_aa,K_CSR_ia, & 
-                K_CSR_ja,              & 
-                idum, nrhs, iparm, msglvl, ddum, ddum, error)
+    CALL pardiso (pt, maxfct, mnum, mtype, phase,n, K_CSR_aa,K_CSR_ia, K_CSR_ja, &
+    idum, nrhs, iparm, msglvl, ddum, ddum, error)
 
     if(Key_Indent==0)then
-    print *,Space_4//'Factorization completed...'
+        print *,Space_4//'Factorization completed...'
     elseif (Key_Indent==1)then
-    print *,Space_8//'Factorization completed...'
+        print *,Space_8//'Factorization completed...'
     endif
     IF (error .NE. 0) THEN
-    WRITE(*,*) 'The following ERROR was detected: ', error
-    STOP 1
+        WRITE(*,*) 'The following ERROR was detected: ', error
+        STOP 1
     END IF
 
     IF (error .NE. 0) THEN
-    WRITE(*,*) 'The following ERROR was detected in Pardiso solver: ', error
-    if (error== -4)then
-          print *,"Zero pivot, numerical factorization or iterative refinement problem."
-          print *,"If the error appears during the solution phase, try to change the   "
-          print *,"pivoting perturbation (iparm(10)) and also increase the number of   "
-          print *,"iterative refinement steps. If it does not help, consider changing  "
-          print *,"the scaling, matching and pivoting options (iparm(11), iparm(13),   "
-          print *,"iparm(21))                                                          "
-    endif    
-    STOP
+        WRITE(*,*) 'The following ERROR was detected in Pardiso solver: ', error
+        if (error== -4)then
+            print *,"Zero pivot, numerical factorization or iterative refinement problem."
+            print *,"If the error appears during the solution phase, try to change the   "
+            print *,"pivoting perturbation (iparm(10)) and also increase the number of   "
+            print *,"iterative refinement steps. If it does not help, consider changing  "
+            print *,"the scaling, matching and pivoting options (iparm(11), iparm(13),   "
+            print *,"iparm(21))                                                          "
+        endif    
+        STOP
     END IF
     phase = 33
     pardiso_b = F
-    CALL pardiso (pt, maxfct, mnum, mtype, phase, n, & 
-                K_CSR_aa,K_CSR_ia, & 
-                K_CSR_ja,              & 
-                idum, nrhs, iparm, msglvl, pardiso_b, D, error)
+    CALL pardiso (pt, maxfct, mnum, mtype, phase, n, K_CSR_aa,K_CSR_ia, K_CSR_ja, &
+    idum, nrhs, iparm, msglvl, pardiso_b, D, error)
 
 
     phase = -1
-    call pardiso(pt, maxfct, mnum, mtype, phase, n, &
-             ddum, idum, idum, idum, nrhs, &
-             iparm, msglvl, ddum, ddum, error)
+    call pardiso(pt, maxfct, mnum, mtype, phase, n, ddum, idum, idum, idum, nrhs, iparm, msglvl, ddum, ddum, error)
     if(Key_Indent==0)then
-    print *,Space_4//'Solving completed...'
+        print *,Space_4//'Solving completed...'
     elseif (Key_Indent==1)then
-    print *,Space_8//'Solving completed...'
+        print *,Space_8//'Solving completed...'
     endif
 #endif      
 
@@ -404,7 +378,7 @@ case(3)
     elseif (Key_Indent==1)then
     endif
     DO i = 1, 64
-    iparm(i) = 0
+        iparm(i) = 0
     END DO
     iparm(1) = 1
     iparm(2) = 2
@@ -428,123 +402,186 @@ case(3)
 
 
     DO i = 1, 64
-    pt(i)%DUMMY = 0
+        pt(i)%DUMMY = 0
     END DO
     phase = 11
-    CALL pardiso (pt, maxfct, mnum, mtype, phase, n, & 
-                K_CSR_aa,K_CSR_ia,K_CSR_ja, & 
-                idum, nrhs, iparm, msglvl, ddum, ddum, error)
+    CALL pardiso (pt, maxfct, mnum, mtype, phase, n, K_CSR_aa,K_CSR_ia,K_CSR_ja, &
+    idum, nrhs, iparm, msglvl, ddum, ddum, error)
 
     if(Key_Indent==0)then
-    print *,Space_4//'Reordering completed... '
+        print *,Space_4//'Reordering completed... '
     elseif (Key_Indent==1)then
-    print *,Space_8//'Reordering completed... '
+        print *,Space_8//'Reordering completed... '
     endif
     IF (error .NE. 0) THEN
-    WRITE(*,*) 'The following ERROR was detected: ', error
-    STOP 1
+        WRITE(*,*) 'The following ERROR was detected: ', error
+        STOP 1
     END IF
 
     IF (error .NE. 0) THEN
-    WRITE(*,*) 'The following ERROR was detected in Pardiso solver: ', error
-    if (error== -4)then
-          print *,"Zero pivot, numerical factorization or iterative refinement problem."
-          print *,"If the error appears during the solution phase, try to change the   "
-          print *,"pivoting perturbation (iparm(10)) and also increase the number of   "
-          print *,"iterative refinement steps. If it does not help, consider changing  "
-          print *,"the scaling, matching and pivoting options (iparm(11), iparm(13),   "
-          print *,"iparm(21))                                                          "
-    endif    
-    STOP
+        WRITE(*,*) 'The following ERROR was detected in Pardiso solver: ', error
+        if (error== -4)then
+            print *,"Zero pivot, numerical factorization or iterative refinement problem."
+            print *,"If the error appears during the solution phase, try to change the   "
+            print *,"pivoting perturbation (iparm(10)) and also increase the number of   "
+            print *,"iterative refinement steps. If it does not help, consider changing  "
+            print *,"the scaling, matching and pivoting options (iparm(11), iparm(13),   "
+            print *,"iparm(21))                                                          "
+        endif    
+        STOP
     END IF
     phase = 22
-    CALL pardiso (pt, maxfct, mnum, mtype, phase,n,  & 
-                K_CSR_aa,K_CSR_ia, & 
-                K_CSR_ja,              & 
-                idum, nrhs, iparm, msglvl, ddum, ddum, error)
+    CALL pardiso (pt, maxfct, mnum, mtype, phase,n, K_CSR_aa,K_CSR_ia, K_CSR_ja, &
+    idum, nrhs, iparm, msglvl, ddum, ddum, error)
 
     if(Key_Indent==0)then
-    print *,Space_4//'Factorization completed...'
+        print *,Space_4//'Factorization completed...'
     elseif (Key_Indent==1)then
-    print *,Space_8//'Factorization completed...'
+        print *,Space_8//'Factorization completed...'
     endif
     IF (error .NE. 0) THEN
-    WRITE(*,*) 'The following ERROR was detected: ', error
-    STOP 1
+        WRITE(*,*) 'The following ERROR was detected: ', error
+        STOP 1
     END IF
 
     IF (error .NE. 0) THEN
-    WRITE(*,*) 'The following ERROR was detected in Pardiso solver: ', error
-    if (error== -4)then
-          print *,"Zero pivot, numerical factorization or iterative refinement problem."
-          print *,"If the error appears during the solution phase, try to change the   "
-          print *,"pivoting perturbation (iparm(10)) and also increase the number of   "
-          print *,"iterative refinement steps. If it does not help, consider changing  "
-          print *,"the scaling, matching and pivoting options (iparm(11), iparm(13),   "
-          print *,"iparm(21))                                                          "
-    endif    
-    STOP
+        WRITE(*,*) 'The following ERROR was detected in Pardiso solver: ', error
+        if (error== -4)then
+            print *,"Zero pivot, numerical factorization or iterative refinement problem."
+            print *,"If the error appears during the solution phase, try to change the   "
+            print *,"pivoting perturbation (iparm(10)) and also increase the number of   "
+            print *,"iterative refinement steps. If it does not help, consider changing  "
+            print *,"the scaling, matching and pivoting options (iparm(11), iparm(13),   "
+            print *,"iparm(21))                                                          "
+        endif    
+        STOP
     END IF
     phase = 33
     pardiso_b = F
-    CALL pardiso (pt, maxfct, mnum, mtype, phase, n, & 
-                K_CSR_aa,K_CSR_ia, & 
-                K_CSR_ja,              & 
-                idum, nrhs, iparm, msglvl, pardiso_b, D, error)
+    CALL pardiso (pt, maxfct, mnum, mtype, phase, n, K_CSR_aa,K_CSR_ia, K_CSR_ja, &
+    idum, nrhs, iparm, msglvl, pardiso_b, D, error)
 
 
     phase = -1
-    call pardiso(pt, maxfct, mnum, mtype, phase, n, &
-             ddum, idum, idum, idum, nrhs, &
-             iparm, msglvl, ddum, ddum, error)
+    call pardiso(pt, maxfct, mnum, mtype, phase, n, ddum, idum, idum, idum, nrhs, iparm, msglvl, ddum, ddum, error)
     if(Key_Indent==0)then
-    print *,Space_4//'Solving completed...'
+        print *,Space_4//'Solving completed...'
     elseif (Key_Indent==1)then
-    print *,Space_8//'Solving completed...'
+        print *,Space_8//'Solving completed...'
     endif
 #endif   
 case(6)
 #ifdef gfortran
-#if defined(notlinux) || defined(github)
+#if defined(notlinux) || defined(github) || defined(alpine)
 #ifndef SP
-    CALL MPI_INIT(IERR_6)
-    mumps_par%COMM = MPI_COMM_WORLD
-    mumps_par%JOB = -1
-    mumps_par%SYM = 0
-    mumps_par%PAR = 1
-    CALL DMUMPS(mumps_par)
-    mumps_par%ICNTL(1) = 6
-    mumps_par%ICNTL(2) = 0
-    mumps_par%ICNTL(3) = 0
-    mumps_par%ICNTL(4) = 2
+     
+    if(Key_LSOE_Sys==0) then 
+        CALL MPI_INIT(IERR_6)
+        mumps_par%COMM = MPI_COMM_WORLD
+        mumps_par%JOB = -1
+        
+        mumps_par%SYM = 0
+        
+        mumps_par%PAR = 1
+        CALL DMUMPS(mumps_par)
+        mumps_par%ICNTL(1) = 6
+        mumps_par%ICNTL(2) = 0
+        mumps_par%ICNTL(3) = 0
+        mumps_par%ICNTL(4) = 2
+        mumps_par%ICNTL(16)= Key_Num_Process
 
 
 
-    mumps_par%N = n
-    mumps_par%NZ= K_CSR_NNZ
-    ALLOCATE( mumps_par%IRN ( mumps_par%NZ ) )
-    ALLOCATE( mumps_par%JCN ( mumps_par%NZ ) )
-    ALLOCATE( mumps_par%A( mumps_par%NZ ) )
-    ALLOCATE( mumps_par%RHS ( mumps_par%N  ) )
-    call csrcoo(n,3,K_CSR_NNZ,K_CSR_aa,K_CSR_ja,K_CSR_ia,&
-           K_CSR_NNZ,mumps_par%A,mumps_par%IRN,mumps_par%JCN,IERR_6)
+        mumps_par%N = n
+        mumps_par%NZ= K_CSR_NNZ
+        ALLOCATE( mumps_par%IRN ( mumps_par%NZ ) )
+        ALLOCATE( mumps_par%JCN ( mumps_par%NZ ) )
+        ALLOCATE( mumps_par%A( mumps_par%NZ ) )
+        ALLOCATE( mumps_par%RHS ( mumps_par%N  ) )
+        call csrcoo(n,3,K_CSR_NNZ,K_CSR_aa,K_CSR_ja,K_CSR_ia, K_CSR_NNZ,mumps_par%A,mumps_par%IRN,mumps_par%JCN,IERR_6)
 
-    mumps_par%RHS(1:n) = F(1:n)
-    mumps_par%JOB = 6
-    CALL DMUMPS(mumps_par)
-    IF (mumps_par%MYID .eq. 0 ) THEN
-        D(1:n) = mumps_par%RHS(1:n)
-    END IF
-    IF (mumps_par%MYID .eq. 0 )THEN
-        DEALLOCATE( mumps_par%IRN )
-        DEALLOCATE( mumps_par%JCN )
-        DEALLOCATE( mumps_par%A   )
-        DEALLOCATE( mumps_par%RHS )
-    END IF
-    mumps_par%JOB = -2
-    CALL DMUMPS(mumps_par)
-    CALL MPI_FINALIZE(IERR_6)
+        mumps_par%RHS(1:n) = F(1:n)
+        mumps_par%JOB = 6
+        CALL DMUMPS(mumps_par)
+        IF (mumps_par%MYID .eq. 0 ) THEN
+            D(1:n) = mumps_par%RHS(1:n)
+        END IF
+        IF (mumps_par%MYID .eq. 0 )THEN
+            DEALLOCATE( mumps_par%IRN )
+            DEALLOCATE( mumps_par%JCN )
+            DEALLOCATE( mumps_par%A   )
+            DEALLOCATE( mumps_par%RHS )
+        END IF
+        mumps_par%JOB = -2
+        CALL DMUMPS(mumps_par)
+        CALL MPI_FINALIZE(IERR_6)
+    endif
+    
+    if(Key_LSOE_Sys==1) then 
+        CALL MPI_INIT(IERR_6)
+        mumps_par%COMM = MPI_COMM_WORLD
+        mumps_par%JOB = -1
+        mumps_par%SYM = 1          
+        mumps_par%PAR = 1
+        CALL DMUMPS(mumps_par)
+        mumps_par%ICNTL(1) = 6
+        mumps_par%ICNTL(2) = 0
+        mumps_par%ICNTL(3) = 0
+        mumps_par%ICNTL(4) = 2
+        mumps_par%ICNTL(16)= Key_Num_Process
+
+        mumps_par%N = n
+
+        ALLOCATE( tmpA ( K_CSR_NNZ ) )
+        ALLOCATE( tmpIRN( K_CSR_NNZ ) )
+        ALLOCATE( tmpJCN( K_CSR_NNZ ) )
+        call csrcoo(n,3,K_CSR_NNZ,K_CSR_aa,K_CSR_ja,K_CSR_ia, &
+                    K_CSR_NNZ, tmpA, tmpIRN, tmpJCN, IERR_6)
+
+        nz_sym = 0
+        do k = 1, K_CSR_NNZ
+            if ( tmpIRN(k) >= tmpJCN(k) ) nz_sym = nz_sym + 1
+        end do
+
+        mumps_par%NZ = nz_sym
+        ALLOCATE( mumps_par%IRN ( nz_sym ) )
+        ALLOCATE( mumps_par%JCN ( nz_sym ) )
+        ALLOCATE( mumps_par%A   ( nz_sym ) )
+        ALLOCATE( mumps_par%RHS ( mumps_par%N ) )
+
+        idx = 0
+        do k = 1, K_CSR_NNZ
+            if ( tmpIRN(k) >= tmpJCN(k) ) then
+                idx = idx + 1
+                mumps_par%IRN(idx) = tmpIRN(k)
+                mumps_par%JCN(idx) = tmpJCN(k)
+                mumps_par%A(idx)   = tmpA(k)
+            end if
+        end do
+
+        DEALLOCATE( tmpA, tmpIRN, tmpJCN )
+
+        mumps_par%RHS(1:n) = F(1:n)
+        mumps_par%JOB = 6
+        CALL DMUMPS(mumps_par)
+
+        IF (mumps_par%MYID .eq. 0 ) THEN
+            D(1:n) = mumps_par%RHS(1:n)
+        END IF
+        IF (mumps_par%MYID .eq. 0 )THEN
+            DEALLOCATE( mumps_par%IRN )
+            DEALLOCATE( mumps_par%JCN )
+            DEALLOCATE( mumps_par%A   )
+            DEALLOCATE( mumps_par%RHS )
+        END IF
+        mumps_par%JOB = -2
+        CALL DMUMPS(mumps_par)
+        CALL MPI_FINALIZE(IERR_6)
+    endif
+    
 #endif
+
+
 
 #ifdef SP
     CALL MPI_INIT(IERR_6)
@@ -552,12 +589,15 @@ case(6)
     mumps_par_s%JOB = -1
 
     mumps_par_s%SYM = 0
+    
+    
     mumps_par_s%PAR = 1
     CALL SMUMPS(mumps_par_s)
     mumps_par_s%ICNTL(1) = 6
     mumps_par_s%ICNTL(2) = 0
     mumps_par_s%ICNTL(3) = 0
     mumps_par_s%ICNTL(4) = 2
+    mumps_par_s%ICNTL(16)= Key_Num_Process
 
     mumps_par_s%N = n
     mumps_par_s%NZ= K_CSR_NNZ
@@ -565,19 +605,18 @@ case(6)
     ALLOCATE( mumps_par_s%JCN ( mumps_par_s%NZ ) )
     ALLOCATE( mumps_par_s%A( mumps_par_s%NZ ) )
     ALLOCATE( mumps_par_s%RHS ( mumps_par_s%N  ) )
-    call csrcoo(n,3,K_CSR_NNZ,K_CSR_aa,K_CSR_ja,K_CSR_ia,&
-           K_CSR_NNZ,mumps_par_s%A,mumps_par_s%IRN,mumps_par_s%JCN,IERR_6)
-           mumps_par_s%RHS(1:n) = F(1:n)
+    call csrcoo(n,3,K_CSR_NNZ,K_CSR_aa,K_CSR_ja,K_CSR_ia, K_CSR_NNZ,mumps_par_s%A,mumps_par_s%IRN,mumps_par_s%JCN,IERR_6)
+    mumps_par_s%RHS(1:n) = F(1:n)
     mumps_par_s%JOB = 6
     CALL SMUMPS(mumps_par_s)
     IF (mumps_par_s%MYID .eq. 0 ) THEN
-    D(1:n) = mumps_par_s%RHS(1:n)
+        D(1:n) = mumps_par_s%RHS(1:n)
     END IF
     IF (mumps_par_s%MYID .eq. 0 )THEN
-    DEALLOCATE( mumps_par_s%IRN )
-    DEALLOCATE( mumps_par_s%JCN )
-    DEALLOCATE( mumps_par_s%A   )
-    DEALLOCATE( mumps_par_s%RHS )
+        DEALLOCATE( mumps_par_s%IRN )
+        DEALLOCATE( mumps_par_s%JCN )
+        DEALLOCATE( mumps_par_s%A   )
+        DEALLOCATE( mumps_par_s%RHS )
     END IF
     mumps_par_s%JOB = -2
     CALL SMUMPS(mumps_par_s)
@@ -596,8 +635,8 @@ case(7)
     info_7(1:90)    = ZR
 
 
-    call csrcsc(n,1,1,K_CSR_aa(1:K_CSR_NNZ),K_CSR_ja(1:K_CSR_NNZ),K_CSR_ia(1:n+1),&
-                Ax(1:K_CSR_NNZ),Ai(1:K_CSR_NNZ),Ap(1:n+1))
+    call csrcsc(n,1,1,K_CSR_aa(1:K_CSR_NNZ),K_CSR_ja(1:K_CSR_NNZ),K_CSR_ia(1:n+1), &
+    Ax(1:K_CSR_NNZ),Ai(1:K_CSR_NNZ),Ap(1:n+1))
     Ap(1:n+1)  = Ap(1:n+1)  -1
     Ai(1:K_CSR_NNZ)  = Ai(1:K_CSR_NNZ)  -1
 
@@ -610,26 +649,26 @@ case(7)
     call umf4pcon (control_7)
     call umf4sym (n, n, Ap, Ai, Ax,symbolic,control_7, info_7)
     if (info_7(1) .lt. 0) then
-    print *, 'Error occurred in umf4sym: ', info_7(1)
-    stop
+        print *, 'Error occurred in umf4sym: ', info_7(1)
+        stop
     endif
     call umf4num (Ap, Ai, Ax, symbolic, numeric, control_7,info_7)
 
     if (info_7(1) .lt. 0) then
-    print *, 'Error occurred in umf4num: ', info_7 (1)
-    stop
+        print *, 'Error occurred in umf4num: ', info_7 (1)
+        stop
     endif
     filenum = 0
     call umf4ssym (symbolic, filenum, status_7)
     if (status_7 .lt. 0) then
-    print *, 'Error occurred in umf4ssym: ', status_7
-    stop
+        print *, 'Error occurred in umf4ssym: ', status_7
+        stop
     endif
 
     call umf4snum (numeric, filenum, status_7)
     if (status_7 .lt. 0) then
-    print *, 'Error occurred in umf4snum: ', status_7
-    stop
+        print *, 'Error occurred in umf4snum: ', status_7
+        stop
     endif
 
     call umf4fsym (symbolic)
@@ -640,15 +679,15 @@ case(7)
 
     call umf4lnum (numeric, filenum, status_7)
     if (status_7 .lt. 0) then
-    print *, 'Error occurred in umf4lnum: ', status_7
-    stop
+        print *, 'Error occurred in umf4lnum: ', status_7
+        stop
     endif
 
     sys = 0
     call umf4sol (sys, D, F, numeric, control_7, info_7)
     if (info_7 (1) .lt. 0) then
-    print *, 'Error occurred in umf4sol: ', info_7 (1)
-    stop
+        print *, 'Error occurred in umf4sol: ', info_7 (1)
+        stop
     endif
     call umf4fnum (numeric)
 #endif
@@ -660,7 +699,7 @@ case(7)
 
 case(8)
 #ifdef gfortran
-#if defined(notlinux) || defined(github)
+#if defined(notlinux) || defined(github) || defined(alpine)
     ALLOCATE(K_Value(K_CSR_NNZ))
     ALLOCATE(K_Index(K_CSR_NNZ))
     ALLOCATE(K_Ptr(n+1))
@@ -680,11 +719,9 @@ case(8)
         ALLOCATE(Cond_A(K_CSR_NNZ))
         ALLOCATE(Cond_IRN(K_CSR_NNZ))
         ALLOCATE(Cond_JCN(K_CSR_NNZ))
-        call csrcoo(n,3,K_CSR_NNZ,K_CSR_aa,K_CSR_ja,K_CSR_ia,   &
-                   K_CSR_NNZ,Cond_A,Cond_IRN,Cond_JCN,IERR_8)
-        call Matrix_Condition_Number(n,K_CSR_NNZ,&
-                         Cond_A(1:K_CSR_NNZ),Cond_IRN(1:K_CSR_NNZ),&
-                         Cond_JCN(1:K_CSR_NNZ),Condition_Num_Norm2)
+        call csrcoo(n,3,K_CSR_NNZ,K_CSR_aa,K_CSR_ja,K_CSR_ia, K_CSR_NNZ,Cond_A,Cond_IRN,Cond_JCN,IERR_8)
+        call Matrix_Condition_Number(n,K_CSR_NNZ, Cond_A(1:K_CSR_NNZ),Cond_IRN(1:K_CSR_NNZ), &
+        Cond_JCN(1:K_CSR_NNZ),Condition_Num_Norm2)
         write (*,1001) Condition_Num_Norm2
         DEALLOCATE(Cond_A)
         DEALLOCATE(Cond_IRN)
@@ -705,77 +742,72 @@ case(9)
     allocate(SuperLU_colptr(n+1))
     allocate(SuperLU_b(n))
 
-    call CSR_Matrix_Transpose_Real(n, n,SuperLU_nnz,&
-                K_CSR_aa(1:SuperLU_nnz),K_CSR_ja(1:SuperLU_nnz),K_CSR_ia(1:n+1), &
-                SuperLU_value(1:SuperLU_nnz),SuperLU_rowind(1:SuperLU_nnz),SuperLU_colptr(1:n+1))
+    call CSR_Matrix_Transpose_Real(n, n,SuperLU_nnz, K_CSR_aa(1:SuperLU_nnz),K_CSR_ja(1:SuperLU_nnz),K_CSR_ia(1:n+1), &
+    SuperLU_value(1:SuperLU_nnz),SuperLU_rowind(1:SuperLU_nnz),SuperLU_colptr(1:n+1))
 
     SuperLU_b = F
     SuperLU_ldb = n
     SuperLU_nrhs = 1
     SuperLU_iopt = 1
-    call c_fortran_dgssv(SuperLU_iopt,n,  &
-                       SuperLU_nnz,SuperLU_nrhs,SuperLU_value,&
-                       SuperLU_rowind,SuperLU_colptr,   &
-                       SuperLU_b,SuperLU_ldb,SuperLU_factors,SuperLU_info)
+    call c_fortran_dgssv(SuperLU_iopt,n, SuperLU_nnz,SuperLU_nrhs,SuperLU_value, SuperLU_rowind,SuperLU_colptr, &
+    SuperLU_b,SuperLU_ldb,SuperLU_factors,SuperLU_info)
     if (SuperLU_info .eq. 0) then
-    if(Key_Indent==0)then
-          print *,"    Factorization succeeded."
-    elseif(Key_Indent==2)then
-          print *,"      Factorization succeeded."
-    elseif(Key_Indent==4)then
-          print *,"        Factorization succeeded."
-    elseif(Key_Indent==7)then
-          print *,"           Factorization succeeded."
-    endif
+        if(Key_Indent==0)then
+            print *,"    Factorization succeeded."
+        elseif(Key_Indent==2)then
+            print *,"      Factorization succeeded."
+        elseif(Key_Indent==4)then
+            print *,"        Factorization succeeded."
+        elseif(Key_Indent==7)then
+            print *,"           Factorization succeeded."
+        endif
     else
-    if(Key_Indent==0)then
-          print *,"    Linear solver SuperLU failed in step 1: error code-",SuperLU_info
-    elseif(Key_Indent==2)then
-          print *,"      Linear solver SuperLU failed in step 1: error code-",SuperLU_info
-    elseif(Key_Indent==4)then
-          print *,"        Linear solver SuperLU failed in step 1: error code-",SuperLU_info
-    elseif(Key_Indent==7)then
-          print *,"           Linear solver SuperLU failed in step 1: error code-",SuperLU_info
-    endif
-    call Warning_Message('S',Keywords_Blank)
+        if(Key_Indent==0)then
+            print *,"    Linear solver SuperLU failed in step 1: error code-",SuperLU_info
+        elseif(Key_Indent==2)then
+            print *,"      Linear solver SuperLU failed in step 1: error code-",SuperLU_info
+        elseif(Key_Indent==4)then
+            print *,"        Linear solver SuperLU failed in step 1: error code-",SuperLU_info
+        elseif(Key_Indent==7)then
+            print *,"           Linear solver SuperLU failed in step 1: error code-",SuperLU_info
+        endif
+        call Warning_Message('S',Keywords_Blank)
     endif
     SuperLU_iopt = 2
-    call c_fortran_dgssv(SuperLU_iopt,n,SuperLU_nnz,SuperLU_nrhs,SuperLU_value, &
-                       SuperLU_rowind,SuperLU_colptr,   &
-                       SuperLU_b,SuperLU_ldb,SuperLU_factors,SuperLU_info)
+    call c_fortran_dgssv(SuperLU_iopt,n,SuperLU_nnz,SuperLU_nrhs,SuperLU_value, SuperLU_rowind,SuperLU_colptr, &
+    SuperLU_b,SuperLU_ldb,SuperLU_factors,SuperLU_info)
     D=SuperLU_b
     if (SuperLU_info .eq. 0) then
-    if(Key_Indent==0)then
-          print *,"    Solve succeeded."
-    elseif(Key_Indent==2)then
-          print *,"      Solve succeeded."
-    elseif(Key_Indent==4)then
-          print *,"        Solve succeeded."
-    elseif(Key_Indent==7)then
-          print *,"           Solve succeeded."
-    endif
+        if(Key_Indent==0)then
+            print *,"    Solve succeeded."
+        elseif(Key_Indent==2)then
+            print *,"      Solve succeeded."
+        elseif(Key_Indent==4)then
+            print *,"        Solve succeeded."
+        elseif(Key_Indent==7)then
+            print *,"           Solve succeeded."
+        endif
     else
-    if(Key_Indent==0)then
-          print *,"    Linear solver SuperLU failed in step 2: error code-",SuperLU_info
-    elseif(Key_Indent==2)then
-          print *,"      Linear solver SuperLU failed in step 2: error code-",SuperLU_info
-    elseif(Key_Indent==4)then
-          print *,"        Linear solver SuperLU failed in step 2: error code-",SuperLU_info
-    elseif(Key_Indent==7)then
-          print *,"           Linear solver SuperLU failed in step 2: error code-",SuperLU_info
-    endif
-    call Warning_Message('S',Keywords_Blank)
+        if(Key_Indent==0)then
+            print *,"    Linear solver SuperLU failed in step 2: error code-",SuperLU_info
+        elseif(Key_Indent==2)then
+            print *,"      Linear solver SuperLU failed in step 2: error code-",SuperLU_info
+        elseif(Key_Indent==4)then
+            print *,"        Linear solver SuperLU failed in step 2: error code-",SuperLU_info
+        elseif(Key_Indent==7)then
+            print *,"           Linear solver SuperLU failed in step 2: error code-",SuperLU_info
+        endif
+        call Warning_Message('S',Keywords_Blank)
     endif
     SuperLU_iopt = 3
-    call c_fortran_dgssv(SuperLU_iopt,n,SuperLU_nnz,SuperLU_nrhs,SuperLU_value, &
-                       SuperLU_rowind,SuperLU_colptr,   &
-                       SuperLU_b,SuperLU_ldb,SuperLU_factors,SuperLU_info)
+    call c_fortran_dgssv(SuperLU_iopt,n,SuperLU_nnz,SuperLU_nrhs,SuperLU_value, SuperLU_rowind,SuperLU_colptr, &
+    SuperLU_b,SuperLU_ldb,SuperLU_factors,SuperLU_info)
 #endif  
 #endif        
 case(10)
     print *, 'Error :: Solver 10 (y12m) not available for sparse LSOE!'
     call Warning_Message('S',Keywords_Blank)     
-    
+
 case(12)
 #ifdef sffortran
 #ifndef macos
@@ -824,9 +856,8 @@ case(12)
 
     STRUMPACK_n = n
 
-    call STRUMPACK_set_csr_matrix(S, c_loc(STRUMPACK_n), c_loc(K_Row_Pointers), &
-                                c_loc(K_Column_indices), c_loc(K_Values), 1)
-                                
+    call STRUMPACK_set_csr_matrix(S, c_loc(STRUMPACK_n), c_loc(K_Row_Pointers), c_loc(K_Column_indices), c_loc(K_Values), 1)
+
     STRUMPACK_ierr = STRUMPACK_reorder(S)
 
 

@@ -1,45 +1,16 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
+!-----------------------------------------------------------
+! Brief: Assemble the 3D global load (force) vector.
+!
+! Parameters:
+!   Input:  c_Total_FD - total DOFs
+!           isub       - substep index
+!           Lambda     - load factor
+!   Output: globalF    - global 3D force vector
+!
+! Notes:   Includes gravity, contact, hydraulic-fracturing fluid
+!          pressure, thermal loads, and optional surface loads.
+!-----------------------------------------------------------
+
 SUBROUTINE Force_Vector_3D(c_Total_FD,isub,Lambda,globalF)
 ! 3D load vector.
 
@@ -116,6 +87,13 @@ LOGICAL alive_low
 integer c_Num_Sur_Elem
 integer Tool_Count_Lines
 logical Flag_Blank
+logical, save :: Yes_Per_Step_Load_3D = .false.
+logical, save :: Checked_Per_Step_3D = .false.
+character*200 :: temp_name_ps
+character*20  :: iter_str
+logical :: alive_ps
+integer :: nlines_ps, j_ps
+real(kind=FT), allocatable :: Temp_DATA_ps(:,:)
 real(kind=FT),ALLOCATABLE::Temp_DATA(:,:)
 real(kind=FT) tem_result(24)
 real(kind=FT) Tri_P1(3),Tri_P2(3),Tri_P3(3),Tri_Center(3),c_Np(3)
@@ -147,22 +125,79 @@ real(kind=FT) c_Stress_6(6)
 print *,'    Constructing global force vector...'        
 
 globalF(1:c_Total_FD) = ZR
+
+if (.not. Checked_Per_Step_3D) then
+    Checked_Per_Step_3D = .true.
+    write(iter_str, '(I0)') 1
+    temp_name_ps = trim(Full_Pathname)//'.focx_'//trim(adjustl(iter_str))
+    inquire(file=temp_name_ps, exist=alive_ps)
+    Yes_Per_Step_Load_3D = alive_ps
+end if
+
+if (Yes_Per_Step_Load_3D) then
+    write(iter_str, '(I0)') isub
+    temp_name_ps = trim(Full_Pathname)//'.focx_'//trim(adjustl(iter_str))
+    inquire(file=temp_name_ps, exist=alive_ps)
+    if (alive_ps) then
+        nlines_ps = Tool_Count_Lines(temp_name_ps)
+        if (nlines_ps > 0) then
+            allocate(Temp_DATA_ps(nlines_ps, 2))
+            Call Tool_Read_File(temp_name_ps, "focx", nlines_ps, 2, Temp_DATA_ps, Flag_Blank)
+            do j_ps = 1, nlines_ps
+                cur_Node = int(Temp_DATA_ps(j_ps,1))
+                globalF(3*cur_Node-2) = Temp_DATA_ps(j_ps,2)
+            end do
+            deallocate(Temp_DATA_ps)
+        end if
+    end if
+    temp_name_ps = trim(Full_Pathname)//'.focy_'//trim(adjustl(iter_str))
+    inquire(file=temp_name_ps, exist=alive_ps)
+    if (alive_ps) then
+        nlines_ps = Tool_Count_Lines(temp_name_ps)
+        if (nlines_ps > 0) then
+            allocate(Temp_DATA_ps(nlines_ps, 2))
+            Call Tool_Read_File(temp_name_ps, "focy", nlines_ps, 2, Temp_DATA_ps, Flag_Blank)
+            do j_ps = 1, nlines_ps
+                cur_Node = int(Temp_DATA_ps(j_ps,1))
+                globalF(3*cur_Node-1) = Temp_DATA_ps(j_ps,2)
+            end do
+            deallocate(Temp_DATA_ps)
+        end if
+    end if
+    temp_name_ps = trim(Full_Pathname)//'.focz_'//trim(adjustl(iter_str))
+    inquire(file=temp_name_ps, exist=alive_ps)
+    if (alive_ps) then
+        nlines_ps = Tool_Count_Lines(temp_name_ps)
+        if (nlines_ps > 0) then
+            allocate(Temp_DATA_ps(nlines_ps, 2))
+            Call Tool_Read_File(temp_name_ps, "focz", nlines_ps, 2, Temp_DATA_ps, Flag_Blank)
+            do j_ps = 1, nlines_ps
+                cur_Node = int(Temp_DATA_ps(j_ps,1))
+                globalF(3*cur_Node) = Temp_DATA_ps(j_ps,2)
+            end do
+            deallocate(Temp_DATA_ps)
+        end if
+    end if
+    goto 100
+end if
+
 do i = 1,Num_Foc_x
-  cur_Node = int(Foc_x(i,1))
-  globalF(3*cur_Node-2) = Lambda*Foc_x(i,2)                   
+    cur_Node = int(Foc_x(i,1))
+    globalF(3*cur_Node-2) = Lambda*Foc_x(i,2)
 end do
 
 do i = 1,Num_Foc_y
-  cur_Node = int(Foc_y(i,1))
-  globalF(3*cur_Node-1) =   Lambda*Foc_y(i,2)                  
+    cur_Node = int(Foc_y(i,1))
+    globalF(3*cur_Node-1) =   Lambda*Foc_y(i,2)
 end do
 
 do i = 1,Num_Foc_z
-  cur_Node = int(Foc_z(i,1))
-  globalF(3*cur_Node) =   Lambda*Foc_z(i,2)                  
-end do     
+    cur_Node = int(Foc_z(i,1))
+    globalF(3*cur_Node) =   Lambda*Foc_z(i,2)
+end do
 
 
+100 continue
 if(Key_Gravity==1) then
   call Cal_Gauss_Points_3D_8nodes(Num_Gauss_P_FEM_3D,kesi,yita,zeta,weight)  
   do i_E = 1,Num_Elem
@@ -490,7 +525,6 @@ endif
 199 continue 
   
 if (Num_Surface_Loads>=1) then
-#ifndef Silverfrost
     do i_SL = 1,Num_Surface_Loads
         temp_name = trim(trim(Full_Pathname))//'.'//trim(trim(File_Surface_Load(i_SL)))
         inquire(file=temp_name, exist=alive)
@@ -684,12 +718,6 @@ if (Num_Surface_Loads>=1) then
         call Save_Surface_Load_3D(isub,i_SL,c_SL_globalF,c_Total_FD)
     
     enddo
-#endif  
-#ifdef Silverfrost
-      print *,'    ERROR :: Silverfrost compiler failed to compile codes if (Num_Surface_Loads>=1)!'
-      print *,'             In Force_Vector_3D.F90.'
-      call Warning_Message('S',Keywords_Blank)
-#endif  
 endif
 
 

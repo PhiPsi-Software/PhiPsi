@@ -15,40 +15,40 @@ finish
 /PNUM,DOMA,0
 /NUMBER,0
 !---------------------
-! L  =  100  !长,x
-! W  =  100  !宽,y
-! H  =  100  !高,z
+! L  =  100  !Length, x
+! W  =  100  !Width, y
+! H  =  100  !Height, z
 
-! L_of_refined = 25   !加密区域的宽度
-! H_of_refined = 1   !加密区域的高度
+! L_of_refined = 25   !Width of refined region
+! H_of_refined = 1   !Height of refined region
 ! size_mesh          = 15.0
 ! ! size_mesh_of_L_refined  = 0.33
 ! num_of_mesh_of_L_refined  = 70
 ! num_of_mesh_of_refined_mesh_H = 3
 
 ! !
-! ! L_of_refined = 25   !加密区域的宽度
-! ! H_of_refined = 6   !加密区域的高度
+! ! L_of_refined = 25   !Width of refined region
+! ! H_of_refined = 6   !Height of refined region
 ! ! size_mesh          = 8.0
 ! ! size_mesh_of_L_refined  = 0.35
 ! ! num_of_mesh_of_refined_mesh_H = 7
 ! !---------------------
-! ! L  =  150  !长,x
-! ! W  =  150  !宽,y
-! ! H  =  150  !高,z
+! ! L  =  150  !Length, x
+! ! W  =  150  !Width, y
+! ! H  =  150  !Height, z
 ! ! !
-! ! L_of_refined = 25   !加密区域的宽度
-! ! H_of_refined = 8   !加密区域的高度
+! ! L_of_refined = 25   !Width of refined region
+! ! H_of_refined = 8   !Height of refined region
 ! ! size_mesh          = 8.0
 ! ! size_mesh_of_L_refined  = 0.55
 ! ! num_of_mesh_of_refined_mesh_H = 7
 !---------------------
-L  =  200  !长,x
-W  =  200  !宽,y
-H  =  200  !高,z
+L  =  200  !Length, x
+W  =  200  !Width, y
+H  =  200  !Height, z
 
-L_of_refined = 25   !加密区域的宽度
-H_of_refined = 3   !加密区域的高度
+L_of_refined = 25   !Width of refined region
+H_of_refined = 3   !Height of refined region
 size_mesh          = 30.0
 ! size_mesh_of_L_refined  = 0.33
 num_of_mesh_of_L_refined  = 50
@@ -89,7 +89,7 @@ wpof,,,-(W/2 - L_of_refined/2)
 VSBW,all
 wpof,,,-L_of_refined
 VSBW,all
-!---------------------视角及显示
+!---------------------View and display
 /REPLO
 /VIEW,  1,  0.306110853806    , -0.802050055528    ,  0.512846813006
 /ANG,   1,  -34.0367734235
@@ -124,8 +124,8 @@ WPCSYS,-1,0
 CSYS,0  
 WPAVE,0,0,0 
 CSYS,0  
-!----------约束-----------
-!约束全部面
+!----------Constraints-----------
+!Constrain all faces
 ! allsel
 ! asel,all
 ! NSLA,S,1

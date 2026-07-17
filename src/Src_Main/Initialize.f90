@@ -1,45 +1,16 @@
-!     ================================================= !
-!             ____  _       _   ____  _____   _         !
-!            |  _ \| |     |_| |  _ \|  ___| |_|        !
-!            | |_) | |___   _  | |_) | |___   _         !
-!            |  _ /|  _  | | | |  _ /|___  | | |        !
-!            | |   | | | | | | | |    ___| | | |        !
-!            |_|   |_| |_| |_| |_|   |_____| |_|        !
-!     ================================================= !
-!     PhiPsi:     a general-purpose computational       !
-!                 mechanics program written in Fortran. !
-!     Website:    http://phipsi.top                     !
-!     Author:     Shi Fang, Huaiyin Institute of        !
-!                 Technology, Huaian, JiangSu, China    !
-!     Email:      shifang@hyit.edu.cn                   !
-!     ------------------------------------------------- !
-!     Please cite the following papers:                 !
-!     (1)Shi F., Lin C. Modeling fluid-driven           !
-!        propagation of 3D complex crossing fractures   !
-!        with the extended finite element method.       !
-!        Computers and Geotechnics, 2024, 172, 106482.  !
-!     (2)Shi F., Wang D., Li H. An XFEM-based approach  !
-!        for 3D hydraulic fracturing simulation         !
-!        considering crack front segmentation. Journal  !
-!        of Petroleum Science and Engineering, 2022,    !
-!        214, 110518.                                   !
-!     (3)Shi F., Wang D., Yang Q. An XFEM-based         !
-!        numerical strategy to model three-dimensional  !
-!        fracture propagation regarding crack front     !
-!        segmentation. Theoretical and Applied Fracture !
-!        Mechanics, 2022, 118, 103250.                  !
-!     (4)Shi F., Liu J. A fully coupled hydromechanical !
-!        XFEM model for the simulation of 3D non-planar !
-!        fluid-driven fracture propagation. Computers   !
-!        and Geotechnics, 2021, 132: 103971.            !
-!     (5)Shi F., Wang X.L., Liu C., Liu H., Wu H.A. An  !
-!        XFEM-based method with reduction technique     !
-!        for modeling hydraulic fracture propagation    !
-!        in formations containing frictional natural    !
-!        fractures. Engineering Fracture Mechanics,     !
-!        2017, 173: 64-90.                              !
-!     ------------------------------------------------- !
- 
+!-----------------------------------------------------------
+! Brief: Zero-initialize all global arrays and module-level data
+!        structures used by the solver at the start of a run.
+!
+! Parameters:
+!   Input:  (none - reads only keyword switches)
+!   Output: (none - resets globals to defaults)
+!
+! Notes:   This is one of the largest init routines in the project
+!          and touches cracks, holes, inclusions, HF, dynamics,
+!          cohesive, MD, PD, and field-problem modules.
+!-----------------------------------------------------------
+
 SUBROUTINE Initialize
 ! Initialize the program and related variables.
 
@@ -80,10 +51,7 @@ Max_Max_N_FluEl_3D = maxval(Max_N_FluEl_3D)
 Max_Max_N_CalP_3D  = maxval(Max_N_CalP_3D) 
 Max_Max_N_Node_3D  = maxval(Max_N_Node_3D) 
 
-! Crack Coordinate Initialization
-Crack_Coor(1:Max_Num_Cr,1:Max_Num_Cr_P,1:2)=ZR
-! Arc Crack Coordinate Initialization
-Arc_Crack_Coor(1:Max_Num_Cr,1:Max_Num_Cr_P-1,1:11)  = ZR
+
 ! Initialize circular hole
 Hole_Coor(1:Max_Num_Hl,1:3)=ZR
 ! Initialize elliptical holes
@@ -319,8 +287,8 @@ Mat_cylinder_Coor_Vector_z(1:Max_Materials,1:3)  =ZR
 GasP_Well_Nodes(1:100) = -999
 ! Initialization of Gauss points
 Num_Gauss_Points  = 64
-                          ! Supported number of Gauss points: 16, 36, 64, 100, 144 (12*12), 196 (14*14), 400 (20*20), 676
-                          ! (26*26), 900 (30*30)
+                            ! Supported number of Gauss points: 16, 36, 64, 100, 144 (12*12), 196 (14*14), 400 (20*20), 676
+                            ! (26*26), 900 (30*30)
 ! Num_Gauss_Points = 900 !Number of Gauss integration points for enhanced elements, default is 64,
 ! cannot be an odd number, e.g., 9x9=81
                          
@@ -336,8 +304,13 @@ Num_Gauss_P_FEM_3D= 8
 ! Related to dynamic analysis
 Num_Ivex =0
 Num_Ivey =0
+Num_Ivez =0
 Num_Iacx =0
 Num_Iacy =0
+Num_Iacz =0
+Num_Idpx =0
+Num_Idpy =0
+Num_Idpz =0
 ! Gravitational acceleration in all directions
 ! g_X_Y_Z(1:3) = ZR     ! Gravity acceleration in each direction
 g_X_Y_Z           = [0.0D0,9.8D0,0.0D0]
@@ -411,7 +384,6 @@ Key_Save_f_d_Curve      = -999
 f_d_Curve_node_num      = -999
 Key_Save_f_COD_Curve    = 0
 f_COD_Curve_Crack_Num   = 1
-Cracks_Coh_Ele_Type(1:Max_Num_Cr,1:Max_Num_Cr_CalP-1) =0
 Cracks_Tip_Num_of_Coh_Ele(1:Max_Num_Cr,1:2)  =0
 Max_Cohesive_Iter       = 50
 Coh_Integ_Point         = 2
@@ -693,12 +665,23 @@ allocate(KI_3D(Max_Num_Cr_3D))
 allocate(KII_3D(Max_Num_Cr_3D))
 allocate(KIII_3D(Max_Num_Cr_3D))
 allocate(KI_eq_3D(Max_Num_Cr_3D))
+Cracks_Growth_Length_Last_Step(1:Max_Num_Cr) = ZR
+
+
+!------------------
+!2026-06-22.
+!------------------
+Max_Num_Cr_P      = 200
+Max_Num_Cr_CalP   = 300
+
+
 
 !--------------------------------------------------------------------------------------------------
 ! 2022-10-09. IMPROV2022100901. The following are the variables originally in PhiPsi_Read_Input.f.
 !--------------------------------------------------------------------------------------------------
 Key_Junction_Check= 1
-Key_Propa_Type    = 1
+Key_Propa_Type    = 2
+                            ! =2, New crack points are only added when the length of the crack expansion reaches a certain value
 Max_MNR_Iter      = 30
 Max_Num_Lnsrch    = 20
 Prop_Angle_Alowed = 180.0D0
@@ -888,6 +871,65 @@ Key_Save_Stiffness_Matrix = 0
 Key_Initiation_3D_Crack_Normal_Vector = 0
 Initiation_3D_Crack_Normal_Vector(1:3) = [ZR,ZR,ONE]
 Key_3D_Slip_HF_Keep_Pressure = 0
+
+EDY_Data_Save_Interval_Timesteps = 1
+EDY_Info_Show_Interval_Timesteps = 1
+
+EDy_Num_Iteras      = 0
+edy_num_force_itr   = 0
+
+EDY_Total_Time = -999.0D0
+EDY_Force_Time = -999.0D0
+
+Temp_Show_Message = .True.
+
+EDY_Key_Cal_Crack_Aperture =  1
+EDY_Key_Cal_Energy         =  0
+EDY_Internal_Force_Scheme  =  1
+EQ_Ac_nodes_list_method    =  1
+Key_EDY_Save_Nodal_Velocity_Accel=  1
+Key_EDY_Lumped_Mass_Scheme =  3
+Key_EDY_Save_Lumped_Mass   =  0
+Key_EDY_Contact_Penalty_Parameter_Scheme = 1
+EDY_num_Crack_Gauss_Points_3D = 1
+EDY_Contact_Aperture_Tol      = ZR
+Key_SIFs_Method               =  1
+EDY_Save_SIFs_at_Specified_Point(1:3) = -TEN_15
+EDY_Save_SIFs_at_Specified_Plane(1:7) = -TEN_15
+
+User_Specified_Crack_Mesh_Size  = -TEN_15
+EDY_Save_Aperture_at_Specified_Point  = -TEN_15
+EDY_Crack_Propagaton_at_Specified_Time_and_Speed = -TEN_15
+
+Key_Save_Old_Solid_El_Tip_BaseLine = 0
+DY_Save_SIFs_at_Specified_Tip(1:2) = -99999
+DY_Save_Propagation_Speed_at_Specified_Tip(1:2) = -99999
+
+Key_Map_Tip_to_H =  0
+Key_Map_Tip_to_H_Last_Last  = 0
+Data_Map_Tip_to_H(1:1000,1:4) = 0
+Data_Map_Tip_to_H_Last_Last(1:1000,1:3) = 0
+
+Crack_Prop_Velocity(100,2) = ZR
+!Set_All_Nodes_as_Both_Heaviside_and_Tip = 0
+
+DY_Keep_Initial_Velocity = 0
+
+DY_Save_Crack_Length_2D  = 1
+
+DY_Propagation_L_Factor  = ONE
+
+IIM_Radius_Factor = 2.0999D0
+
+DY_Time_to_Active_Crack_Propagation = -999.0D0
+
+DY_SIFs_IIM_Enable_f1_f2             = 0
+DY_SIFs_IIM_Enable_Velocity_Coupling = 0
+
+Key_Cal_Energy = 0
+
+HF_Pres_Initial_Guess = -999.0D0
+
 
 print *," "
 
